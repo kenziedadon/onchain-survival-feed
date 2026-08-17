@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>On-chain survival-horizon feed</title>
+  <style>
+    :root { --bg:#0b0e14; --fg:#e6edf3; --muted:#8b9bb4; --line:#1f2a37; --panel:#121720; }
+    body { background:var(--bg); color:var(--fg); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; margin:0; padding:24px; line-height:1.5; }
+    .wrap { max-width:960px; margin:0 auto; }
+    h1 { font-size:16px; letter-spacing:0.02em; color:var(--muted); margin:0 0 4px; }
+    h2 { font-size:13px; margin:22px 0 8px; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:4px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:14px; }
+    .small { color:var(--muted); font-size:12px; }
+    a { color:#7dd3fc; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .pool { border-top:1px solid var(--line); padding:12px 0; }
+    .pool:first-of-type { border-top:none; }
+    .meta { color:var(--muted); font-size:12px; margin:4px 0 8px; }
+    .meta span { margin-right:14px; }
+    .score { margin:6px 0; }
+    .ptype { margin:4px 0; }
+    .badge { font-size:11px; padding:2px 8px; border-radius:10px; border:1px solid var(--line); }
+    .badge-v2 { color:#7dd3fc; border-color:#1d4e63; }
+    .badge-ss { color:#ffd479; border-color:#5a4a1a; }
+    .score-strong { color:#7ee787; }
+    .score-mid { color:#d2a8ff; }
+    .score-low { color:#f85149; }
+    .reasons { color:var(--muted); font-size:12px; }
+    .tags { color:#99aabb; font-size:11px; margin-top:6px; }
+    .sidebar { position:sticky; top:24px; }
+    .two { display:flex; gap:14px; }
+    .two > div { flex:1; }
+    .hero { border:1px solid var(--line); border-radius:8px; background:linear-gradient(160deg,#0f1620,#121720); padding:18px 20px; margin-bottom:18px; }
+    .hero h1 { font-size:19px; color:var(--fg); margin:0 0 8px; letter-spacing:0.01em; }
+    .hero-sub { color:var(--muted); font-size:13px; margin:0 0 14px; max-width:680px; }
+    .cta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .btn { display:inline-block; background:#1d4e63; color:#7dd3fc; border:1px solid #2b6f8c; border-radius:6px; padding:8px 14px; font-size:13px; font-weight:600; }
+    .btn:hover { background:#235e77; text-decoration:none; }
+    .cta-note { color:var(--muted); font-size:12px; max-width:420px; }
+    .data-h { font-size:15px; color:var(--fg); margin:0 0 2px; }
+    .lead { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:16px 20px; margin-top:20px; }
+    .lead h2 { color:var(--fg); font-size:14px; margin:0 0 4px; }
+    .lead p { color:var(--muted); font-size:12px; margin:0 0 10px; }
+    .lead-row { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; }
+    .lead input, .lead textarea { background:#0b0e14; color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-family:inherit; font-size:13px; }
+    .lead input { width:200px; }
+    .lead textarea { width:340px; min-height:60px; resize:vertical; }
+    .lead .btn { cursor:pointer; }
+    .lead .ok { color:#7ee787; font-size:12px; margin-left:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="two">
+      <div class="panel" style="flex:3">
+        <div class="hero">
+          <h1>Live on-chain intelligence for Base founders raising rounds</h1>
+          <p class="hero-sub">This page is a running demo of the survival-horizon feed behind a paid crypto
+          research service. Every 30 minutes it scores freshly created Aerodrome V2 liquidity pools from live
+          Base mainnet RPC. The same on-chain lens is turned into deck-ready competitor &amp; tokenomic teardowns
+          for founders raising.</p>
+          <div class="cta">
+            <a class="btn" href="/pool-score">Machine-readable feed — x402, $0.01 USDC/req</a>
+            <span class="cta-note">Came from X? Reply to the post you found this on — I pilot a free teardown of
+            one competitor you name.</span>
+          </div>
+        </div>
+        <div class="small">generated 2026-08-17T13:00:47Z UTC · refresh this page to reload the snapshot</div>
+        <h2>recent scored pools</h2>
+        
+        <div class="pool">
+          <h3>0x8a2da8fbd3dc7f3416214858f041090290cf39f1</h3>
+          <div class="meta">
+            <span>created block: 49957653</span>
+            <span>created at: 2026-08-14T10:50:53+00:00</span>
+            <span>deployer: 0xaf556c7284150914cb4bdc0963be15bb932a5e2e</span>
+            <span>nonce: 38</span>
+            <span>last tx: <a href="https://basescan.org/address/0x8a2da8fbd3dc7f3416214858f041090290cf39f1" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 38 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0xf67d7ddbe5b366382a589cf61cb1a8d8174f2744</h3>
+          <div class="meta">
+            <span>created block: 49978505</span>
+            <span>created at: 2026-08-14T22:25:57+00:00</span>
+            <span>deployer: 0x8cf6d3eb74da9e339a38f193e3fb267000ee9cdf</span>
+            <span>nonce: 8297</span>
+            <span>last tx: <a href="https://basescan.org/address/0xf67d7ddbe5b366382a589cf61cb1a8d8174f2744" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 8297 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0xddfb0d4947ec69e47caf76a9e0a5d9e28fef32f7</h3>
+          <div class="meta">
+            <span>created block: 49978551</span>
+            <span>created at: 2026-08-14T22:27:29+00:00</span>
+            <span>deployer: 0x8cf6d3eb74da9e339a38f193e3fb267000ee9cdf</span>
+            <span>nonce: 8301</span>
+            <span>last tx: <a href="https://basescan.org/address/0xddfb0d4947ec69e47caf76a9e0a5d9e28fef32f7" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 8301 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x3404e27ca218cafbfb599459f6fa3cbeb17c0486</h3>
+          <div class="meta">
+            <span>created block: 49979817</span>
+            <span>created at: 2026-08-14T23:09:41+00:00</span>
+            <span>deployer: 0x13588eb60caff1b87c852bf5470cc70dfd52b69f</span>
+            <span>nonce: 8674</span>
+            <span>last tx: <a href="https://basescan.org/address/0x3404e27ca218cafbfb599459f6fa3cbeb17c0486" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 8674 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x046f8e72f4649dcd6dacb773d14864078b9cdfe7</h3>
+          <div class="meta">
+            <span>created block: 50010080</span>
+            <span>created at: 2026-08-15T15:58:27+00:00</span>
+            <span>deployer: 0x70e9bf22c15de0fe92ff5d7d89667813100049cd</span>
+            <span>nonce: 3</span>
+            <span>last tx: <a href="https://basescan.org/address/0x046f8e72f4649dcd6dacb773d14864078b9cdfe7" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-low">score <strong>19</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 3 -> freshness 0.850</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 19</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x79d9d91c6168852acb0a01da3d6ec1bd22f39360</h3>
+          <div class="meta">
+            <span>created block: 50044559</span>
+            <span>created at: 2026-08-16T11:07:45+00:00</span>
+            <span>deployer: 0xd0987eba98af128a51fb908dcb6a2bf7bc2f6bb0</span>
+            <span>nonce: 1012</span>
+            <span>last tx: <a href="https://basescan.org/address/0x79d9d91c6168852acb0a01da3d6ec1bd22f39360" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 1012 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x937f520a5c45a934b86c214a33795c3efeec2231</h3>
+          <div class="meta">
+            <span>created block: 50044561</span>
+            <span>created at: 2026-08-16T11:07:49+00:00</span>
+            <span>deployer: 0xd0987eba98af128a51fb908dcb6a2bf7bc2f6bb0</span>
+            <span>nonce: 1013</span>
+            <span>last tx: <a href="https://basescan.org/address/0x937f520a5c45a934b86c214a33795c3efeec2231" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 1013 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x7274818dfeaf3ffbe798d5903cf9c5c1ba928639</h3>
+          <div class="meta">
+            <span>created block: 50044563</span>
+            <span>created at: 2026-08-16T11:07:53+00:00</span>
+            <span>deployer: 0xd0987eba98af128a51fb908dcb6a2bf7bc2f6bb0</span>
+            <span>nonce: 1014</span>
+            <span>last tx: <a href="https://basescan.org/address/0x7274818dfeaf3ffbe798d5903cf9c5c1ba928639" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 1014 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x2c95ba861de3e7584aa715ba10b1d13777e37b0e</h3>
+          <div class="meta">
+            <span>created block: 50050016</span>
+            <span>created at: 2026-08-16T14:09:39+00:00</span>
+            <span>deployer: 0xcc279a76b37ff631a909edbfc91b2ab3692f5e0d</span>
+            <span>nonce: 3660</span>
+            <span>last tx: <a href="https://basescan.org/address/0x2c95ba861de3e7584aa715ba10b1d13777e37b0e" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 3660 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x3354f85843cd8dd0a0c69acd3b84bb0e230b6a0b</h3>
+          <div class="meta">
+            <span>created block: 50050075</span>
+            <span>created at: 2026-08-16T14:11:37+00:00</span>
+            <span>deployer: 0xcc279a76b37ff631a909edbfc91b2ab3692f5e0d</span>
+            <span>nonce: 3662</span>
+            <span>last tx: <a href="https://basescan.org/address/0x3354f85843cd8dd0a0c69acd3b84bb0e230b6a0b" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 3662 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0xf8d94e7876a580aca3eb6a164e0351de2004ff7d</h3>
+          <div class="meta">
+            <span>created block: 50056319</span>
+            <span>created at: 2026-08-16T17:39:45+00:00</span>
+            <span>deployer: 0xa0c04d4968b24586af5c4282136221136ba0da6f</span>
+            <span>nonce: 127</span>
+            <span>last tx: <a href="https://basescan.org/address/0xf8d94e7876a580aca3eb6a164e0351de2004ff7d" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 127 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x03e9440722648b07ccf9eb53c054a223d75fb5ba</h3>
+          <div class="meta">
+            <span>created block: 50059576</span>
+            <span>created at: 2026-08-16T19:28:19+00:00</span>
+            <span>deployer: 0xa97be4812b99f4cf014d3bd1f2bae18afff771b8</span>
+            <span>nonce: 5480</span>
+            <span>last tx: <a href="https://basescan.org/address/0x03e9440722648b07ccf9eb53c054a223d75fb5ba" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 5480 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0xf735feb4823ec2b04b309534ce10ec34e02c1219</h3>
+          <div class="meta">
+            <span>created block: 50086918</span>
+            <span>created at: 2026-08-17T10:39:43+00:00</span>
+            <span>deployer: 0xaf2bfb6b69dfe6efd257fe8cd694175156a23812</span>
+            <span>nonce: 5223879</span>
+            <span>last tx: <a href="https://basescan.org/address/0xf735feb4823ec2b04b309534ce10ec34e02c1219" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 5223879 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0xbfd31f581c84a401d66667042891993e47dc843d</h3>
+          <div class="meta">
+            <span>created block: 50091075</span>
+            <span>created at: 2026-08-17T12:58:17+00:00</span>
+            <span>deployer: 0x048ef1062cbb39b338ac2685da72adf104b4cef5</span>
+            <span>nonce: 5780266</span>
+            <span>last tx: <a href="https://basescan.org/address/0xbfd31f581c84a401d66667042891993e47dc843d" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>100</strong></div>
+          <div class="ptype"><span class="badge badge-v2">Aerodrome V2</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 5780266 -> freshness 0.000</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 100</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x2ffee4eb2ca171ecf15fe719ffef326c821b3a25</h3>
+          <div class="meta">
+            <span>created block: 50067441</span>
+            <span>created at: 2026-08-16T23:50:29+00:00</span>
+            <span>deployer: 0x4b0c0444a903c8bc603566848da5932cd42bf3f3</span>
+            <span>nonce: 9</span>
+            <span>last tx: <a href="https://basescan.org/address/0x2ffee4eb2ca171ecf15fe719ffef326c821b3a25" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-mid">score <strong>48</strong></div>
+          <div class="ptype"><span class="badge badge-ss">SlipStream · tick=200</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 9 -> freshness 0.550</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 48</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="pool">
+          <h3>0x963ea05c36fe53876217d36f22eb51417deb4645</h3>
+          <div class="meta">
+            <span>created block: 50069279</span>
+            <span>created at: 2026-08-17T00:51:45+00:00</span>
+            <span>deployer: 0x4b0c0444a903c8bc603566848da5932cd42bf3f3</span>
+            <span>nonce: 19</span>
+            <span>last tx: <a href="https://basescan.org/address/0x963ea05c36fe53876217d36f22eb51417deb4645" target="_blank">basescan</a></span>
+          </div>
+          <div class="score score-high">score <strong>95</strong></div>
+          <div class="ptype"><span class="badge badge-ss">SlipStream · tick=200</span></div>
+          <div class="reasons"><ul><li>deployer prior-tx count (nonce) = 19 -> freshness 0.050</li><li>ttl funding-time not available — ttl axis skipped (no penalty)</li><li>survival score (composite) = 95</li></ul></div>
+          <div class="tags">
+            
+            
+            ttl N/A
+          </div>
+        </div>
+        
+        <div class="lead">
+          <h2>want a deck-ready teardown of your space?</h2>
+          <p>Drop a handle (X / Telegram) and what you're raising. No email wall, no CRM — I read every one and
+          reply with a free pilot teardown offer. (Anti-spam: one line, real handle.)</p>
+          <div class="lead-row">
+            <input id="lead-handle" type="text" placeholder="@yourhandle or tg:name" maxlength="120">
+            <textarea id="lead-raising" placeholder="what you're building / raising (e.g. DeFi protocol, $3M seed)" maxlength="500"></textarea>
+            <button class="btn" id="lead-send">send</button>
+            <span class="ok" id="lead-ok"></span>
+          </div>
+        </div>
+        <script>
+          document.getElementById('lead-send').addEventListener('click', async () => {
+            const handle = document.getElementById('lead-handle').value.trim();
+            const raising = document.getElementById('lead-raising').value.trim();
+            const ok = document.getElementById('lead-ok');
+            if (!handle && !raising) { ok.textContent = 'add a handle or a note'; ok.style.color = '#f85149'; return; }
+            try {
+              const r = await fetch('/lead', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ handle, raising, ref: 'landing' })
+              });
+              const j = await r.json();
+              if (j.ok) { ok.textContent = 'got it — talk soon ✓'; ok.style.color = '#7ee787';
+                document.getElementById('lead-handle').value=''; document.getElementById('lead-raising').value=''; }
+              else { ok.textContent = 'try again'; ok.style.color = '#f85149'; }
+            } catch (e) { ok.textContent = 'network error'; ok.style.color = '#f85149'; }
+          });
+        </script>
+      </div>
+      <div class="panel sidebar">
+        <h2 style="visibility:hidden">framing</h2>
+        <h2>honest framing</h2>
+        <div class="small">
+          <p>This feed shows a <strong>heuristics-based survival-horizon score</strong> for freshly created
+          Aerodrome V2 liquidity pools, not a certainty, not a rug guarantee, and <strong>not a price prediction
+          or trading advice</strong>.</p>
+          <p>The score is a rules-based estimate of how survivable a fresh pool's setup looks over the next stretch,
+          inferred from checkable on-chain behavior around creation. It is <strong>calibrated by observed outcomes
+          over time</strong>, not by anything mystical.</p>
+          <p>A higher score means the setup looks more survivable under the current heuristic. A lower score means the
+          setup looks less survivable under the current heuristic. <strong>Many pools with high scores still fail,
+          and many with low scores survive</strong> — the signal is weak and improving, not decisive.</p>
+          <p><strong>Fail-closed behavior</strong>: when inputs are missing or RPC reads fail, the score returns a neutral
+          sentinel — never a confident low or high. The feed never FOMO-pushes a pool because a node timed out.</p>
+          <p><strong>Operator bypass</strong>: verified trusted deployer addresses short-circuit to a trusted score.
+          This is an explicit, narrow trust path — not a blanket safe signal.</p>
+        </div>
+        <div class="small">
+          <h2>limitations</h2>
+          <ul>
+            <li>heuristics only — no labeled outcomes yet (rug/decay/survived labels pending).</li>
+            <li>funding-tx timestamp resolution is partial — some pools show ttl "N/A".</li>
+            <li>dependent on public RPC (mainnet.base.org) when real RPC reads are enabled.</li>
+            <li>deterministic fixture run until real RPC reads are wired.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
