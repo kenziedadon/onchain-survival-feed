@@ -66,7 +66,27 @@
             one competitor you name.</span>
           </div>
         </div>
-        <div class="small">generated 2026-08-18T21:30:12Z UTC · refresh this page to reload the snapshot</div>
+                <div class="panel" style="border-color:#2b6f8c">
+          <h2 style="color:#7dd3fc">Try a live sample — no wallet needed</h2>
+          <p class="small">These are exactly what you get when you pay $0.01 USDC. Copy a curl, or just see the shape of the data.</p>
+
+          <h3 style="font-size:13px;color:var(--fg);margin:14px 0 6px">1 · Wallet Sybil / bot-risk scan</h3>
+          <pre style="background:#0b0e14;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12px;overflow:auto">curl -i "https://indicator-explorer-prayer-design.trycloudflare.com/scan?address=0x426774a6b350101696db40ae7842361cd8c87950"</pre>
+          <div class="small" style="margin-top:8px">→ returns HTTP 402 with the x402 payment header (Base mainnet, USDC $0.01). After payment, the body is:</div>
+          <pre style="background:#0b0e14;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12px;overflow:auto">{ "address": "0x4267...7950", "score": 82, "tier": "A", "label": "HUMAN", "bot_probability": 0.03, "red_flags": [], "funding_depth_hops": 3, "cluster_risk": "low", "scored_at": "2026-08-18T21:00:00Z", "disclaimer": "Decision-support score, not an allow/deny oracle." }</pre>
+
+          <h3 style="font-size:13px;color:var(--fg);margin:14px 0 6px">2 · Sourced founder teardown</h3>
+          <pre style="background:#0b0e14;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:12px;overflow:auto">curl -i "https://indicator-explorer-prayer-design.trycloudflare.com/research-brief?project=aerodrome&depth=brief"</pre>
+          <div class="small" style="margin-top:8px">→ returns a sourced, copy-paste-ready markdown teardown (tokenomics, competitors, risks).</div>
+
+          <div class="cta" style="margin-top:14px">
+            <a class="btn" href="/scan?address=0x426774a6b350101696db40ae7842361cd8c87950">Open /scan (pay $0.01 USDC)</a>
+            <a class="btn" href="/research-brief?project=aerodrome">Open /research-brief</a>
+          </div>
+          <p class="small" style="margin-top:10px">Payments settle on Base mainnet to a Coinbase smart wallet. x402 handles the USDC transfer automatically — no account, no API key.</p>
+        </div>
+
+        <div class="small">generated 2026-08-18T21:30:32Z UTC · refresh this page to reload the snapshot</div>
         <h2>recent scored pools</h2>
         
         <div class="pool">
