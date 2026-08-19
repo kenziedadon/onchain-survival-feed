@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1787101231,
-  "feed_refreshed": "2026-08-19T01:00:31Z",
+  "generated_at_sec": 1787103009,
+  "feed_refreshed": "2026-08-19T01:30:09Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -2074,6 +2074,29 @@
       "created_at_sec": 1787100779,
       "deployer_address": "0x8cf6d3eb74da9e339a38f193e3fb267000ee9cdf",
       "deployer_nonce": 8319
+    },
+    {
+      "pool_address": "0x84bf1696f37e57e9e5e2c0e12f96c62a594592f3",
+      "creation_tx_hash": "0x4639dd054de86d4efa9802c10a1caa461b16b80ba8f38a4687774334ff2f355a",
+      "basescan_url": "https://basescan.org/address/0x84bf1696f37e57e9e5e2c0e12f96c62a594592f3",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 8323 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 50156052,
+      "created_at_sec": 1787101451,
+      "deployer_address": "0x8cf6d3eb74da9e339a38f193e3fb267000ee9cdf",
+      "deployer_nonce": 8323
     },
     {
       "pool_address": "0x2ffee4eb2ca171ecf15fe719ffef326c821b3a25",
