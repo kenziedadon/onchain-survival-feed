@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1787448605,
-  "feed_refreshed": "2026-08-23T01:30:05Z",
+  "generated_at_sec": 1787450418,
+  "feed_refreshed": "2026-08-23T02:00:18Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -621,27 +621,27 @@
       "deployer_nonce": 1803
     },
     {
-      "pool_address": "0xde603e7e7b68df812721fede5a908a37fc417c6d",
-      "creation_tx_hash": "0xf6b78be3d82062fd86882cbaf6d658a72f48076b0759eeb5854da40b2ae8cedf",
-      "basescan_url": "https://basescan.org/address/0xde603e7e7b68df812721fede5a908a37fc417c6d",
-      "score": 100,
+      "pool_address": "0x08c9d9c77caa04f90a21dd7c06558c1312a454ac",
+      "creation_tx_hash": "0x1a1955ebb4b99a5b03dfff3ca0f92e58c54ce364b4bc4a7120c7528f359d444c",
+      "basescan_url": "https://basescan.org/address/0x08c9d9c77caa04f90a21dd7c06558c1312a454ac",
+      "score": 34,
       "reasons": [
-        "deployer prior-tx count (nonce) = 54 -> freshness 0.000",
+        "deployer prior-tx count (nonce) = 6 -> freshness 0.700",
         "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
-        "survival score (composite) = 100"
+        "survival score (composite) = 34"
       ],
       "operator_bypass_used": false,
       "ttl_delta_sec": null,
       "fail_closed": false,
       "fail_closed_reason": "none",
-      "pool_type": "slipstream",
-      "tick_spacing": 200,
-      "token0": "0x4200000000000000000000000000000000000006",
-      "token1": "0xefc70b99b99b5fbefdb88440105f4bf50f9832e3",
-      "created_block": 50180039,
-      "created_at_sec": 1787149425,
-      "deployer_address": "0x4b0c0444a903c8bc603566848da5932cd42bf3f3",
-      "deployer_nonce": 54
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 50329889,
+      "created_at_sec": 1787449125,
+      "deployer_address": "0x77229907ae09206f5f4b3dad3d41ced9bcfb75ff",
+      "deployer_nonce": 6
     },
     {
       "pool_address": "0x25fa8463160234098b866d7820888b41c03b9275",
