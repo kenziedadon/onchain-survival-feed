@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1787571041,
-  "feed_refreshed": "2026-08-24T11:30:41Z",
+  "generated_at_sec": 1787572851,
+  "feed_refreshed": "2026-08-24T12:00:51Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -16,9 +16,9 @@
       "survival_rate": 1.0
     },
     "70-100": {
-      "n": 16,
-      "survived": 13,
-      "survival_rate": 0.812
+      "n": 17,
+      "survived": 14,
+      "survival_rate": 0.824
     }
   },
   "pools": [
