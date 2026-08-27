@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1787868006,
-  "feed_refreshed": "2026-08-27T22:00:06Z",
+  "generated_at_sec": 1787869814,
+  "feed_refreshed": "2026-08-27T22:30:14Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -22,52 +22,6 @@
     }
   },
   "pools": [
-    {
-      "pool_address": "0xb64ce58ed12a84ba00dc4dd58d28771b9308597d",
-      "creation_tx_hash": "0xe669db3d67f03fede81cf0dce27fb48e147a65440533577679ef9df3f3e46a35",
-      "basescan_url": "https://basescan.org/address/0xb64ce58ed12a84ba00dc4dd58d28771b9308597d",
-      "score": 100,
-      "reasons": [
-        "deployer prior-tx count (nonce) = 2163 -> freshness 0.000",
-        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
-        "survival score (composite) = 100"
-      ],
-      "operator_bypass_used": false,
-      "ttl_delta_sec": null,
-      "fail_closed": false,
-      "fail_closed_reason": "none",
-      "pool_type": null,
-      "tick_spacing": null,
-      "token0": null,
-      "token1": null,
-      "created_block": 50390210,
-      "created_at_sec": 1787569767,
-      "deployer_address": "0x3cc4f0ca3476996815cb5d6f86b97e83ab74578d",
-      "deployer_nonce": 2163
-    },
-    {
-      "pool_address": "0x1b45e938d80c660c9cf6f53afc4bd58b64926991",
-      "creation_tx_hash": "0x774c0ab3551755e2a593c1070e0d35d7576264be3be7427713d9292062a533f5",
-      "basescan_url": "https://basescan.org/address/0x1b45e938d80c660c9cf6f53afc4bd58b64926991",
-      "score": 100,
-      "reasons": [
-        "deployer prior-tx count (nonce) = 2164 -> freshness 0.000",
-        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
-        "survival score (composite) = 100"
-      ],
-      "operator_bypass_used": false,
-      "ttl_delta_sec": null,
-      "fail_closed": false,
-      "fail_closed_reason": "none",
-      "pool_type": null,
-      "tick_spacing": null,
-      "token0": null,
-      "token1": null,
-      "created_block": 50390211,
-      "created_at_sec": 1787569769,
-      "deployer_address": "0x3cc4f0ca3476996815cb5d6f86b97e83ab74578d",
-      "deployer_nonce": 2164
-    },
     {
       "pool_address": "0xeb567ff61d467c16b56b689532c571229505190a",
       "creation_tx_hash": "0x491f73c8a0992dafa22dce0813d129ab201484fc2f65a434a017168592a6b4af",
