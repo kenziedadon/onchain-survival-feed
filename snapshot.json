@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1787851842,
-  "feed_refreshed": "2026-08-27T17:30:42Z",
+  "generated_at_sec": 1787853610,
+  "feed_refreshed": "2026-08-27T18:00:10Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
