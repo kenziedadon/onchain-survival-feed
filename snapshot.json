@@ -1,13 +1,13 @@
 {
-  "generated_at_sec": 1788087630,
-  "feed_refreshed": "2026-08-30T11:00:30Z",
+  "generated_at_sec": 1788089417,
+  "feed_refreshed": "2026-08-30T11:30:17Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
   "calibration": {
     "0-39": {
-      "n": 11,
-      "survived": 11,
+      "n": 12,
+      "survived": 12,
       "survival_rate": 1.0
     },
     "40-69": {
