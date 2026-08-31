@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1788184846,
-  "feed_refreshed": "2026-08-31T14:00:46Z",
+  "generated_at_sec": 1788186645,
+  "feed_refreshed": "2026-08-31T14:30:45Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -782,12 +782,12 @@
       "deployer_nonce": 203
     },
     {
-      "pool_address": "0xe35b94e7f1ed1d0ce037d3b3bf73b8ffbf0f15d9",
-      "creation_tx_hash": "0x80176711f9177cd9c847148e924ef9744d7df837f97c408da745aea3bb8cf784",
-      "basescan_url": "https://basescan.org/address/0xe35b94e7f1ed1d0ce037d3b3bf73b8ffbf0f15d9",
+      "pool_address": "0xe093ba7af6dccd3790467e95f5ab89d7f83410ef",
+      "creation_tx_hash": "0xd74ed00239dfed0fd0304388c4318ffd65ab26ca00546467ed5ef9f9c5613248",
+      "basescan_url": "https://basescan.org/address/0xe093ba7af6dccd3790467e95f5ab89d7f83410ef",
       "score": 100,
       "reasons": [
-        "deployer prior-tx count (nonce) = 60 -> freshness 0.000",
+        "deployer prior-tx count (nonce) = 5838276 -> freshness 0.000",
         "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
         "survival score (composite) = 100"
       ],
@@ -795,14 +795,14 @@
       "ttl_delta_sec": null,
       "fail_closed": false,
       "fail_closed_reason": "none",
-      "pool_type": "slipstream",
-      "tick_spacing": 200,
-      "token0": "0x0bd22f9cb2b8663697f321b887702afe3c6c4117",
-      "token1": "0x4200000000000000000000000000000000000006",
-      "created_block": 50548385,
-      "created_at_sec": 1787886117,
-      "deployer_address": "0x8aa9e9d1710fbef6bd4dfb7f425a09b2b350315e",
-      "deployer_nonce": 60
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 50697805,
+      "created_at_sec": 1788184957,
+      "deployer_address": "0x501ef174b66883ba40f92e6fb24bfb49331d4d4c",
+      "deployer_nonce": 5838276
     },
     {
       "pool_address": "0xde7481f0e109803ce8f3b180c1d4ff2bc8285511",
