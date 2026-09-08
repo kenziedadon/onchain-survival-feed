@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1788885017,
-  "feed_refreshed": "2026-09-08T16:30:17Z",
+  "generated_at_sec": 1788886836,
+  "feed_refreshed": "2026-09-08T17:00:36Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -16,8 +16,8 @@
       "survival_rate": 0.8
     },
     "70-100": {
-      "n": 194,
-      "survived": 188,
+      "n": 195,
+      "survived": 189,
       "survival_rate": 0.969
     }
   },
@@ -8439,6 +8439,167 @@
       "created_at_sec": 1788884181,
       "deployer_address": "0xc7ccd4686e72fc0502d660f60dde8e542336a92f",
       "deployer_nonce": 625
+    },
+    {
+      "pool_address": "0x6c8432dd20e37fe168e342dab5cb4992f0556bc4",
+      "creation_tx_hash": "0xecdb62e740b49928d5a282fcdfb2fa150fc565950e8f2b4d7c135dbffb913179",
+      "basescan_url": "https://basescan.org/address/0x6c8432dd20e37fe168e342dab5cb4992f0556bc4",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 3461 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51047878,
+      "created_at_sec": 1788885103,
+      "deployer_address": "0xc271e8776a8369d5a1d2bfcfee4bb629527dbc65",
+      "deployer_nonce": 3461
+    },
+    {
+      "pool_address": "0x8f522df6f2521bce85d6c248a295f227b25fd60c",
+      "creation_tx_hash": "0x7e8c3ae2661787ee24eef69e5bab01a4b781f75f15fe284ce27ba32806c7025b",
+      "basescan_url": "https://basescan.org/address/0x8f522df6f2521bce85d6c248a295f227b25fd60c",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 3462 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51047878,
+      "created_at_sec": 1788885103,
+      "deployer_address": "0xc271e8776a8369d5a1d2bfcfee4bb629527dbc65",
+      "deployer_nonce": 3462
+    },
+    {
+      "pool_address": "0xfba895b84ccf87ca1a14883178d9d465c3173ea9",
+      "creation_tx_hash": "0x10f9edfa9391aa7c53fcd73241e773b1601863bcc11f4c424b9cdb14f452994f",
+      "basescan_url": "https://basescan.org/address/0xfba895b84ccf87ca1a14883178d9d465c3173ea9",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 3488 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51047922,
+      "created_at_sec": 1788885191,
+      "deployer_address": "0xc271e8776a8369d5a1d2bfcfee4bb629527dbc65",
+      "deployer_nonce": 3488
+    },
+    {
+      "pool_address": "0x7d9e58d9f3ee1e3571413c685b8dc3e715be41bb",
+      "creation_tx_hash": "0x95d91a814ff91f2cb6fa04aef72f91e546dd91d77d52cf23065c0117dacefa8a",
+      "basescan_url": "https://basescan.org/address/0x7d9e58d9f3ee1e3571413c685b8dc3e715be41bb",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 3502 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51047942,
+      "created_at_sec": 1788885231,
+      "deployer_address": "0xc271e8776a8369d5a1d2bfcfee4bb629527dbc65",
+      "deployer_nonce": 3502
+    },
+    {
+      "pool_address": "0x51f0a6d6901e61d9e32de72261a867c1ca4778b8",
+      "creation_tx_hash": "0x303c0bbda7aaf71aed62fddc73dd5377988cafbd57b3b2d82d74978d80f93c99",
+      "basescan_url": "https://basescan.org/address/0x51f0a6d6901e61d9e32de72261a867c1ca4778b8",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 3504 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51047947,
+      "created_at_sec": 1788885241,
+      "deployer_address": "0xc271e8776a8369d5a1d2bfcfee4bb629527dbc65",
+      "deployer_nonce": 3504
+    },
+    {
+      "pool_address": "0x48462c5d52020f98aac62044a146c8ee7d819775",
+      "creation_tx_hash": "0xd30ac3c926076aac41a717554bcc5202192f1612d427e083b0de374c02d1d9f0",
+      "basescan_url": "https://basescan.org/address/0x48462c5d52020f98aac62044a146c8ee7d819775",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 3528 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51047992,
+      "created_at_sec": 1788885331,
+      "deployer_address": "0xc271e8776a8369d5a1d2bfcfee4bb629527dbc65",
+      "deployer_nonce": 3528
+    },
+    {
+      "pool_address": "0x7451d6030f7cc9e82741b2b92c67ce2b58c5cfcb",
+      "creation_tx_hash": "0xfbfca0753295d454c7c877d5746b06effeaecccbebe0defecb2b7a56091b07a1",
+      "basescan_url": "https://basescan.org/address/0x7451d6030f7cc9e82741b2b92c67ce2b58c5cfcb",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 121 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51048731,
+      "created_at_sec": 1788886809,
+      "deployer_address": "0x34fe32f2bb121bac940a7d94342ba9c1997663a6",
+      "deployer_nonce": 121
     },
     {
       "pool_address": "0xdcc902b41c9478f32abcc1cb8cc2b8fa7318e271",
