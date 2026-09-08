@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1788831042,
-  "feed_refreshed": "2026-09-08T01:30:42Z",
+  "generated_at_sec": 1788832890,
+  "feed_refreshed": "2026-09-08T02:01:30Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -1771,12 +1771,12 @@
       "deployer_nonce": 86
     },
     {
-      "pool_address": "0xaa6f0df5ab0f6e68befb95f8bdaaf7ec13a7b275",
-      "creation_tx_hash": "0xf4e7ad74cec5ffff6b84f773a123b010cc0ac20b0ab32a50e1c72e2196e738ed",
-      "basescan_url": "https://basescan.org/address/0xaa6f0df5ab0f6e68befb95f8bdaaf7ec13a7b275",
+      "pool_address": "0xad8ef99cb808f0711bb3c95ce0df38b47503108d",
+      "creation_tx_hash": "0x86b838cae2b24a9491787f47366efdd3d1f7fef53e98da023252df161f8e4781",
+      "basescan_url": "https://basescan.org/address/0xad8ef99cb808f0711bb3c95ce0df38b47503108d",
       "score": 100,
       "reasons": [
-        "deployer prior-tx count (nonce) = 218 -> freshness 0.000",
+        "deployer prior-tx count (nonce) = 9601 -> freshness 0.000",
         "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
         "survival score (composite) = 100"
       ],
@@ -1784,14 +1784,14 @@
       "ttl_delta_sec": null,
       "fail_closed": false,
       "fail_closed_reason": "none",
-      "pool_type": "slipstream",
-      "tick_spacing": 200,
-      "token0": "0x2b57495df3964f732059a17194c4a2527d5f8568",
-      "token1": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-      "created_block": 50871322,
-      "created_at_sec": 1788531991,
-      "deployer_address": "0xd08ea03a8ebca3bf987353274356bac48c2ff318",
-      "deployer_nonce": 218
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51021676,
+      "created_at_sec": 1788832699,
+      "deployer_address": "0x0cc1a1958fc33475c03267fc7481e13ab6b5fdb1",
+      "deployer_nonce": 9601
     },
     {
       "pool_address": "0x9421883671f0d2c3cd51023fa09d1350afdd0023",
