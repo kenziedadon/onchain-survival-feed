@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1788924670,
-  "feed_refreshed": "2026-09-09T03:31:10Z",
+  "generated_at_sec": 1788926469,
+  "feed_refreshed": "2026-09-09T04:01:09Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -11705,6 +11705,52 @@
       "created_at_sec": 1788923375,
       "deployer_address": "0x8f8713f963973d0c1759543fca3bcadc695fcb26",
       "deployer_nonce": 90
+    },
+    {
+      "pool_address": "0xb91a8b13bfb6376a9e307c5f93c56b8012e24346",
+      "creation_tx_hash": "0x45a2ab9416e368cd9f879679a839b23a7ef655935f52e3fd9c5677f587f71259",
+      "basescan_url": "https://basescan.org/address/0xb91a8b13bfb6376a9e307c5f93c56b8012e24346",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 640 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": "slipstream",
+      "tick_spacing": 200,
+      "token0": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "token1": "0xbd8683251f9b0c53929a4dbdde4a38bd15e63082",
+      "created_block": 51068174,
+      "created_at_sec": 1788925695,
+      "deployer_address": "0xce27825f205be99e49b2d81e96dc62320a7ea0be",
+      "deployer_nonce": 640
+    },
+    {
+      "pool_address": "0x5a6faacd798ec422724c2dff3625c09c732b05de",
+      "creation_tx_hash": "0x4a37d4293b33bd47ed7bb99c23ff6d2a891a8173283a8eb4be22c6ac5960bdac",
+      "basescan_url": "https://basescan.org/address/0x5a6faacd798ec422724c2dff3625c09c732b05de",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 4796 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": "slipstream",
+      "tick_spacing": 200,
+      "token0": "0x3e10dc9436a30f279bcc040507f0600d2f5e54a7",
+      "token1": "0xaa86143ddfe3de8b7fbbc343fbe8bd7f3ef0205c",
+      "created_block": 51068721,
+      "created_at_sec": 1788926789,
+      "deployer_address": "0xcc40ecf7eec22603ab0bdaf4ad09b4669fea6ba4",
+      "deployer_nonce": 4796
     }
   ]
 }
