@@ -1,6 +1,6 @@
 {
-  "generated_at_sec": 1788955263,
-  "feed_refreshed": "2026-09-09T12:01:03Z",
+  "generated_at_sec": 1788957047,
+  "feed_refreshed": "2026-09-09T12:30:47Z",
   "runner": "onchain-survival/feed.py",
   "calibration_state": "calibrating \u2014 outcome-sweeper live (sweeper.py)",
   "source": "live RPC reads (mainnet.base.org)",
@@ -11291,6 +11291,52 @@
       "created_at_sec": 1788954491,
       "deployer_address": "0x34fe32f2bb121bac940a7d94342ba9c1997663a6",
       "deployer_nonce": 207
+    },
+    {
+      "pool_address": "0x0f5a4039d809d93413fe9a67c465dd4336b9c63e",
+      "creation_tx_hash": "0x619411c396b25200bf120511ee4728daa4938e2eecd29c07455981c5762f386e",
+      "basescan_url": "https://basescan.org/address/0x0f5a4039d809d93413fe9a67c465dd4336b9c63e",
+      "score": 52,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 10 -> freshness 0.500",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 52"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51083636,
+      "created_at_sec": 1788956619,
+      "deployer_address": "0xb7104a27bab5e152638efb9a382c3918a9865cc3",
+      "deployer_nonce": 10
+    },
+    {
+      "pool_address": "0x37b83d21345f7bfe7fde77a105264102615f8c72",
+      "creation_tx_hash": "0x32c8eb4bf319bb06408b7e0fd27d65bc97097467addb807bee092c543b03ee08",
+      "basescan_url": "https://basescan.org/address/0x37b83d21345f7bfe7fde77a105264102615f8c72",
+      "score": 100,
+      "reasons": [
+        "deployer prior-tx count (nonce) = 177 -> freshness 0.000",
+        "ttl funding-time not available \u2014 ttl axis skipped (no penalty)",
+        "survival score (composite) = 100"
+      ],
+      "operator_bypass_used": false,
+      "ttl_delta_sec": null,
+      "fail_closed": false,
+      "fail_closed_reason": "none",
+      "pool_type": null,
+      "tick_spacing": null,
+      "token0": null,
+      "token1": null,
+      "created_block": 51083735,
+      "created_at_sec": 1788956817,
+      "deployer_address": "0x8dbca1cb6478e653a041a08709a09ba71122f734",
+      "deployer_nonce": 177
     },
     {
       "pool_address": "0xf68b49030624a40917c249fbd047b1661be1d8a2",
