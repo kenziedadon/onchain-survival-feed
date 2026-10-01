@@ -1,0 +1,903 @@
+{
+  "STAMP": "POST_HOC / NOT_EVIDENCE",
+  "analysis_unchanged": {
+    "alpha": 0.05,
+    "min_trades": 10,
+    "test": "welch_t_one_sided"
+  },
+  "gates_unchanged": {
+    "maxdd_max": 40.0,
+    "min_trades_test": 10,
+    "pf_min": 1.1
+  },
+  "pools": [
+    {
+      "address": "0x7c7420dd105e2779316423ba3e973f434315efa9",
+      "bars": 999,
+      "fee_bps": 0.8999999999999999,
+      "pool": "cbBTC / WETH 0.009%",
+      "splits": {
+        "test": {
+          "bars": 400,
+          "benchmarks": {
+            "bh_flat_windows_pct": -3.0268,
+            "bh_full_pct": 9.1664,
+            "flat_bars": 178,
+            "flat_fraction_pct": 44.5
+          },
+          "exposure": {
+            "avg_hold_bars": 74.0,
+            "bars_in_market": 222,
+            "exposure_pct": 55.5,
+            "n_trades": 3
+          },
+          "n_trades": 3,
+          "regime_buckets": [
+            {
+              "bars": 153,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 82,
+              "in_market_pct": 53.595,
+              "trend": "down",
+              "vol": "lo_vol"
+            },
+            {
+              "bars": 224,
+              "entries": 11,
+              "entry_rate_pct": 4.9107,
+              "in_market": 140,
+              "in_market_pct": 62.5,
+              "trend": "up",
+              "vol": "lo_vol"
+            }
+          ],
+          "same_exposure_control": {
+            "draws": 500,
+            "matched_trade_count": 3,
+            "mean_pct": 4.6529,
+            "median_pct": 4.5403,
+            "p05_pct": -3.0629,
+            "p95_pct": 12.6468
+          },
+          "signal_audit": {
+            "bars_eligible": 377,
+            "conjunct_pass_rate_pct": 11.6711,
+            "per_condition_fail_count": {
+              "px_vs_fast_sma": 205,
+              "px_vs_slow_sma": 153
+            },
+            "per_condition_pass_rate_pct": {
+              "px_vs_fast_sma": 45.62,
+              "px_vs_slow_sma": 59.42
+            },
+            "signals_emitted": 44
+          },
+          "strategy_net_pct": 10.6351,
+          "trade_detail": [
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 46,
+              "entry_px": 76321.5449953659,
+              "exit_bar": 83,
+              "exit_px": 80226.6898634176,
+              "gross_return": 5.116700491701032,
+              "net_return": 4.958700491701032,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 134,
+              "entry_px": 81273.2247052037,
+              "exit_bar": 155,
+              "exit_px": 85473.4080481542,
+              "gross_return": 5.167979193868,
+              "net_return": 5.009979193868,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 235,
+              "entry_px": 84316.8378701644,
+              "exit_bar": 399,
+              "exit_px": 84769.8209878928,
+              "gross_return": 0.5372392148125016,
+              "net_return": 0.3792392148125016,
+              "reason": "window_end"
+            }
+          ]
+        },
+        "train": {
+          "bars": 599,
+          "benchmarks": {
+            "bh_flat_windows_pct": 6.1126,
+            "bh_full_pct": 3.8765,
+            "flat_bars": 166,
+            "flat_fraction_pct": 27.713
+          },
+          "exposure": {
+            "avg_hold_bars": 86.6,
+            "bars_in_market": 433,
+            "exposure_pct": 72.287,
+            "n_trades": 5
+          },
+          "n_trades": 5,
+          "regime_buckets": [
+            {
+              "bars": 309,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 212,
+              "in_market_pct": 68.608,
+              "trend": "down",
+              "vol": "lo_vol"
+            },
+            {
+              "bars": 267,
+              "entries": 15,
+              "entry_rate_pct": 5.618,
+              "in_market": 221,
+              "in_market_pct": 82.772,
+              "trend": "up",
+              "vol": "lo_vol"
+            }
+          ],
+          "same_exposure_control": {
+            "draws": 500,
+            "matched_trade_count": 5,
+            "mean_pct": -0.0001,
+            "median_pct": 0.0185,
+            "p05_pct": -5.1283,
+            "p95_pct": 4.695
+          },
+          "signal_audit": {
+            "bars_eligible": 576,
+            "conjunct_pass_rate_pct": 8.5069,
+            "per_condition_fail_count": {
+              "px_vs_fast_sma": 294,
+              "px_vs_slow_sma": 309
+            },
+            "per_condition_pass_rate_pct": {
+              "px_vs_fast_sma": 48.96,
+              "px_vs_slow_sma": 46.35
+            },
+            "signals_emitted": 49
+          },
+          "strategy_net_pct": -2.9768,
+          "trade_detail": [
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 58,
+              "entry_px": 77458.4568847051,
+              "exit_bar": 328,
+              "exit_px": 81693.4044463734,
+              "gross_return": 5.467379201695066,
+              "net_return": 5.309379201695067,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 373,
+              "entry_px": 80060.6604792385,
+              "exit_bar": 442,
+              "exit_px": 77929.3271488482,
+              "gross_return": -2.6621480732637814,
+              "net_return": -2.820148073263782,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 457,
+              "entry_px": 79192.6805841896,
+              "exit_bar": 489,
+              "exit_px": 76904.4993414494,
+              "gross_return": -2.889384758617486,
+              "net_return": -3.0473847586174863,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 514,
+              "entry_px": 79559.5990781343,
+              "exit_bar": 518,
+              "exit_px": 77531.2833060385,
+              "gross_return": -2.5494293530863854,
+              "net_return": -2.7074293530863858,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 15.8,
+              "entry_bar": 540,
+              "entry_px": 77381.4017109538,
+              "exit_bar": 598,
+              "exit_px": 77895.4367148713,
+              "gross_return": 0.6642875323422226,
+              "net_return": 0.5062875323422226,
+              "reason": "window_end"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "0x3f0296bf652e19bca772ec3df08b32732f93014a",
+      "bars": 999,
+      "fee_bps": 5.0,
+      "pool": "VIRTUAL / WETH 0.05%",
+      "splits": {
+        "test": {
+          "bars": 400,
+          "benchmarks": {
+            "bh_flat_windows_pct": 32.6294,
+            "bh_full_pct": 29.4041,
+            "flat_bars": 302,
+            "flat_fraction_pct": 75.5
+          },
+          "exposure": {
+            "avg_hold_bars": 14.0,
+            "bars_in_market": 98,
+            "exposure_pct": 24.5,
+            "n_trades": 7
+          },
+          "n_trades": 7,
+          "regime_buckets": [
+            {
+              "bars": 3,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 1,
+              "in_market_pct": 33.333,
+              "trend": "down",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 108,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 7,
+              "in_market_pct": 6.481,
+              "trend": "down",
+              "vol": "lo_vol"
+            },
+            {
+              "bars": 266,
+              "entries": 7,
+              "entry_rate_pct": 2.6316,
+              "in_market": 90,
+              "in_market_pct": 33.835,
+              "trend": "up",
+              "vol": "lo_vol"
+            }
+          ],
+          "same_exposure_control": {
+            "draws": 500,
+            "matched_trade_count": 7,
+            "mean_pct": 6.2865,
+            "median_pct": 6.4197,
+            "p05_pct": -8.6022,
+            "p95_pct": 21.3456
+          },
+          "signal_audit": {
+            "bars_eligible": 377,
+            "conjunct_pass_rate_pct": 14.8541,
+            "per_condition_fail_count": {
+              "px_vs_fast_sma": 232,
+              "px_vs_slow_sma": 111
+            },
+            "per_condition_pass_rate_pct": {
+              "px_vs_fast_sma": 38.46,
+              "px_vs_slow_sma": 70.56
+            },
+            "signals_emitted": 56
+          },
+          "strategy_net_pct": -6.5363,
+          "trade_detail": [
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 45,
+              "entry_px": 0.601250733498998,
+              "exit_bar": 72,
+              "exit_px": 0.633140074495067,
+              "gross_return": 5.303834027858545,
+              "net_return": 5.0559673745311,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 135,
+              "entry_px": 0.671617894344267,
+              "exit_bar": 152,
+              "exit_px": 0.705628465104952,
+              "gross_return": 5.06397626494024,
+              "net_return": 4.816109611612795,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 229,
+              "entry_px": 0.746726615659108,
+              "exit_bar": 240,
+              "exit_px": 0.727774089652435,
+              "gross_return": -2.5380809534884974,
+              "net_return": -2.7859476068159426,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 292,
+              "entry_px": 0.80095629201587,
+              "exit_bar": 317,
+              "exit_px": 0.780758842699571,
+              "gross_return": -2.521666852190596,
+              "net_return": -2.7695335055180412,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 328,
+              "entry_px": 0.821086868533603,
+              "exit_bar": 335,
+              "exit_px": 0.791020110776888,
+              "gross_return": -3.661824212389586,
+              "net_return": -3.9096908657170313,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 340,
+              "entry_px": 0.818210831535918,
+              "exit_bar": 349,
+              "exit_px": 0.796437104203743,
+              "gross_return": -2.6611389745723635,
+              "net_return": -2.9090056278998087,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 370,
+              "entry_px": 0.82126618563196,
+              "exit_bar": 372,
+              "exit_px": 0.792510957069639,
+              "gross_return": -3.501328687993399,
+              "net_return": -3.7491953413208443,
+              "reason": "closed"
+            }
+          ]
+        },
+        "train": {
+          "bars": 599,
+          "benchmarks": {
+            "bh_flat_windows_pct": 9.9285,
+            "bh_full_pct": -6.0643,
+            "flat_bars": 393,
+            "flat_fraction_pct": 65.609
+          },
+          "exposure": {
+            "avg_hold_bars": 18.73,
+            "bars_in_market": 206,
+            "exposure_pct": 34.391,
+            "n_trades": 11
+          },
+          "n_trades": 11,
+          "regime_buckets": [
+            {
+              "bars": 25,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 0,
+              "in_market_pct": 0.0,
+              "trend": "down",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 298,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 79,
+              "in_market_pct": 26.51,
+              "trend": "down",
+              "vol": "lo_vol"
+            },
+            {
+              "bars": 13,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 0,
+              "in_market_pct": 0.0,
+              "trend": "up",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 240,
+              "entries": 14,
+              "entry_rate_pct": 5.8333,
+              "in_market": 127,
+              "in_market_pct": 52.917,
+              "trend": "up",
+              "vol": "lo_vol"
+            }
+          ],
+          "same_exposure_control": {
+            "draws": 500,
+            "matched_trade_count": 11,
+            "mean_pct": -5.7012,
+            "median_pct": -6.7052,
+            "p05_pct": -22.2889,
+            "p95_pct": 12.991
+          },
+          "signal_audit": {
+            "bars_eligible": 576,
+            "conjunct_pass_rate_pct": 9.2014,
+            "per_condition_fail_count": {
+              "px_vs_fast_sma": 263,
+              "px_vs_slow_sma": 323
+            },
+            "per_condition_pass_rate_pct": {
+              "px_vs_fast_sma": 54.34,
+              "px_vs_slow_sma": 43.92
+            },
+            "signals_emitted": 53
+          },
+          "strategy_net_pct": -18.3202,
+          "trade_detail": [
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 58,
+              "entry_px": 0.702476096021773,
+              "exit_bar": 78,
+              "exit_px": 0.750236464811783,
+              "gross_return": 6.798860354179181,
+              "net_return": 6.550993700851738,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 147,
+              "entry_px": 0.746272352600353,
+              "exit_bar": 167,
+              "exit_px": 0.715921615740174,
+              "gross_return": -4.0669785976156225,
+              "net_return": -4.314845250943067,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 207,
+              "entry_px": 0.700948127809101,
+              "exit_bar": 236,
+              "exit_px": 0.664770433204529,
+              "gross_return": -5.1612513350523965,
+              "net_return": -5.409117988379842,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 257,
+              "entry_px": 0.693693206249086,
+              "exit_bar": 285,
+              "exit_px": 0.676003229302376,
+              "gross_return": -2.550115351765181,
+              "net_return": -2.797982005092626,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 292,
+              "entry_px": 0.700592545624077,
+              "exit_bar": 295,
+              "exit_px": 0.676188863910398,
+              "gross_return": -3.4832916601960973,
+              "net_return": -3.7311583135235424,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 313,
+              "entry_px": 0.685611825804524,
+              "exit_bar": 345,
+              "exit_px": 0.664647364781823,
+              "gross_return": -3.0577741272330705,
+              "net_return": -3.3056407805605157,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 363,
+              "entry_px": 0.684386652643532,
+              "exit_bar": 402,
+              "exit_px": 0.724958040351629,
+              "gross_return": 5.928138363216862,
+              "net_return": 5.680271709889417,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 445,
+              "entry_px": 0.734183589986024,
+              "exit_bar": 448,
+              "exit_px": 0.711908356022617,
+              "gross_return": -3.034014144041408,
+              "net_return": -3.2818807973688533,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 514,
+              "entry_px": 0.670037591092612,
+              "exit_bar": 516,
+              "exit_px": 0.643623882611984,
+              "gross_return": -3.942123372146311,
+              "net_return": -4.189990025473756,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 537,
+              "entry_px": 0.638041342436942,
+              "exit_bar": 546,
+              "exit_px": 0.621649556878346,
+              "gross_return": -2.569078908897815,
+              "net_return": -2.81694556222526,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 24.786665332744484,
+              "entry_bar": 577,
+              "entry_px": 0.620345289326437,
+              "exit_bar": 598,
+              "exit_px": 0.611680411998999,
+              "gross_return": -1.3967829653137476,
+              "net_return": -1.6446496186411925,
+              "reason": "window_end"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "0x20cb8f872ae894f7c9e32e621c186e5afce82fd0",
+      "bars": 999,
+      "fee_bps": 5.0,
+      "pool": "AERO / WETH 0.05%",
+      "splits": {
+        "test": {
+          "bars": 400,
+          "benchmarks": {
+            "bh_flat_windows_pct": 45.4894,
+            "bh_full_pct": 41.998,
+            "flat_bars": 312,
+            "flat_fraction_pct": 78.0
+          },
+          "exposure": {
+            "avg_hold_bars": 11.0,
+            "bars_in_market": 88,
+            "exposure_pct": 22.0,
+            "n_trades": 8
+          },
+          "n_trades": 8,
+          "regime_buckets": [
+            {
+              "bars": 1,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 0,
+              "in_market_pct": 0.0,
+              "trend": "down",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 153,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 15,
+              "in_market_pct": 9.804,
+              "trend": "down",
+              "vol": "lo_vol"
+            },
+            {
+              "bars": 14,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 0,
+              "in_market_pct": 0.0,
+              "trend": "up",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 209,
+              "entries": 9,
+              "entry_rate_pct": 4.3062,
+              "in_market": 73,
+              "in_market_pct": 34.928,
+              "trend": "up",
+              "vol": "lo_vol"
+            }
+          ],
+          "same_exposure_control": {
+            "draws": 500,
+            "matched_trade_count": 8,
+            "mean_pct": 7.6888,
+            "median_pct": 7.0656,
+            "p05_pct": -10.3982,
+            "p95_pct": 28.8206
+          },
+          "signal_audit": {
+            "bars_eligible": 377,
+            "conjunct_pass_rate_pct": 12.7321,
+            "per_condition_fail_count": {
+              "px_vs_fast_sma": 208,
+              "px_vs_slow_sma": 154
+            },
+            "per_condition_pass_rate_pct": {
+              "px_vs_fast_sma": 44.83,
+              "px_vs_slow_sma": 59.15
+            },
+            "signals_emitted": 48
+          },
+          "strategy_net_pct": -8.6542,
+          "trade_detail": [
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 43,
+              "entry_px": 0.53569980913772,
+              "exit_bar": 58,
+              "exit_px": 0.582357003458547,
+              "gross_return": 8.70957829832495,
+              "net_return": 8.353279086347321,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 118,
+              "entry_px": 0.667725817292775,
+              "exit_bar": 120,
+              "exit_px": 0.641682777363176,
+              "gross_return": -3.900259545929763,
+              "net_return": -4.256558757907392,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 134,
+              "entry_px": 0.664316571302484,
+              "exit_bar": 165,
+              "exit_px": 0.698608488762483,
+              "gross_return": 5.161984352244153,
+              "net_return": 4.805685140266524,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 191,
+              "entry_px": 0.725048496456836,
+              "exit_bar": 200,
+              "exit_px": 0.699709455925188,
+              "gross_return": -3.494806299919906,
+              "net_return": -3.8511055118975355,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 228,
+              "entry_px": 0.707683063256861,
+              "exit_bar": 236,
+              "exit_px": 0.686634961499846,
+              "gross_return": -2.9742271434543777,
+              "net_return": -3.3305263554320073,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 330,
+              "entry_px": 0.824517129960401,
+              "exit_bar": 336,
+              "exit_px": 0.801419082797733,
+              "gross_return": -2.801402945233822,
+              "net_return": -3.1577021572114514,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 370,
+              "entry_px": 0.834060378547631,
+              "exit_bar": 372,
+              "exit_px": 0.808283046820726,
+              "gross_return": -3.0905834145714572,
+              "net_return": -3.446882626549087,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 381,
+              "entry_px": 0.822901212483386,
+              "exit_bar": 396,
+              "exit_px": 0.798423172330739,
+              "gross_return": -2.974602513803104,
+              "net_return": -3.3309017257807336,
+              "reason": "closed"
+            }
+          ]
+        },
+        "train": {
+          "bars": 599,
+          "benchmarks": {
+            "bh_flat_windows_pct": -4.2519,
+            "bh_full_pct": 16.6349,
+            "flat_bars": 469,
+            "flat_fraction_pct": 78.297
+          },
+          "exposure": {
+            "avg_hold_bars": 14.44,
+            "bars_in_market": 130,
+            "exposure_pct": 21.703,
+            "n_trades": 9
+          },
+          "n_trades": 9,
+          "regime_buckets": [
+            {
+              "bars": 12,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 0,
+              "in_market_pct": 0.0,
+              "trend": "down",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 294,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 22,
+              "in_market_pct": 7.483,
+              "trend": "down",
+              "vol": "lo_vol"
+            },
+            {
+              "bars": 36,
+              "entries": 0,
+              "entry_rate_pct": 0.0,
+              "in_market": 0,
+              "in_market_pct": 0.0,
+              "trend": "up",
+              "vol": "hi_vol"
+            },
+            {
+              "bars": 234,
+              "entries": 11,
+              "entry_rate_pct": 4.7009,
+              "in_market": 108,
+              "in_market_pct": 46.154,
+              "trend": "up",
+              "vol": "lo_vol"
+            }
+          ],
+          "same_exposure_control": {
+            "draws": 500,
+            "matched_trade_count": 9,
+            "mean_pct": 1.5578,
+            "median_pct": 0.388,
+            "p05_pct": -16.835,
+            "p95_pct": 25.9589
+          },
+          "signal_audit": {
+            "bars_eligible": 576,
+            "conjunct_pass_rate_pct": 10.5903,
+            "per_condition_fail_count": {
+              "px_vs_fast_sma": 281,
+              "px_vs_slow_sma": 306
+            },
+            "per_condition_pass_rate_pct": {
+              "px_vs_fast_sma": 51.22,
+              "px_vs_slow_sma": 46.88
+            },
+            "signals_emitted": 61
+          },
+          "strategy_net_pct": 19.5336,
+          "trade_detail": [
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 59,
+              "entry_px": 0.473034665916005,
+              "exit_bar": 76,
+              "exit_px": 0.496884270151999,
+              "gross_return": 5.041830114038381,
+              "net_return": 4.685530902060752,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 149,
+              "entry_px": 0.523778597078175,
+              "exit_bar": 173,
+              "exit_px": 0.50813864768611,
+              "gross_return": -2.9859848186448046,
+              "net_return": -3.342284030622434,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 226,
+              "entry_px": 0.496327519568923,
+              "exit_bar": 236,
+              "exit_px": 0.479550853487436,
+              "gross_return": -3.3801603618630938,
+              "net_return": -3.7364595738407234,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 264,
+              "entry_px": 0.491153380460377,
+              "exit_bar": 277,
+              "exit_px": 0.476999800526828,
+              "gross_return": -2.8817026404831636,
+              "net_return": -3.238001852460793,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 311,
+              "entry_px": 0.475913312131644,
+              "exit_bar": 323,
+              "exit_px": 0.500611377129017,
+              "gross_return": 5.189614235993734,
+              "net_return": 4.8333150240161045,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 359,
+              "entry_px": 0.514899687160196,
+              "exit_bar": 376,
+              "exit_px": 0.545878302900015,
+              "gross_return": 6.016437087129356,
+              "net_return": 5.660137875151727,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 419,
+              "entry_px": 0.565930999815676,
+              "exit_bar": 423,
+              "exit_px": 0.607227444275318,
+              "gross_return": 7.29708117652017,
+              "net_return": 6.940781964542541,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 510,
+              "entry_px": 0.555592175418024,
+              "exit_bar": 514,
+              "exit_px": 0.60579430383986,
+              "gross_return": 9.035787515197512,
+              "net_return": 8.679488303219884,
+              "reason": "closed"
+            },
+            {
+              "cost_bps": 35.62992119776294,
+              "entry_bar": 569,
+              "entry_px": 0.569014645369269,
+              "exit_bar": 598,
+              "exit_px": 0.562587468962216,
+              "gross_return": -1.1295274136366107,
+              "net_return": -1.48582662561424,
+              "reason": "window_end"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "spec_hash_discussed": "8c98bdbee6af2720818e77890158052aa66985a8fd63d35f59ef75873b428e42",
+  "strategy_id": "simple_ema_v1",
+  "strategy_version": "1.0.0",
+  "ts": "2026-10-01T14:26:24-0500",
+  "verdict": {
+    "is_evidence": false,
+    "next_step": "If a regime-conditional edge is visible here, it is a hypothesis for a NEW preregistration on fresh data. It does not reopen this evaluation.",
+    "sealed_ledger": "0/6 \u2014 UNCHANGED by this run"
+  },
+  "warning": "Regime buckets, exposure framing and the same-exposure control were all chosen AFTER seeing results. Nothing in this file is confirmatory. The sealed ledger remains 0/6 and cannot be changed by this run. No p-value may be derived from these numbers.",
+  "window_bars": 1000
+}
