@@ -22,9 +22,11 @@ import sys
 import time
 import urllib.request
 
-from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreeableError,
-                         UnscreeableField, parse_fields)
+from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreenableError,
+                         UnscreenableField, parse_fields)
 from base_data import BaseData, WETH, USDC
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 # --- Constants ---
 CHAIN_ID = 8453
@@ -50,8 +52,12 @@ GOPLUS_BASE = "https://api.gopluslabs.io/api/v1"
 # DexScreener
 DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex"
 
-# Superchain token list
-SUPERCHAIN_LIST_URL = " "
+# Superchain token list — UNCONFIGURED (WO #1 follow-up).
+# Left empty deliberately: the previous value was the literal string " ",
+# which built a bogus URL and silently ate -10 points on the promotion
+# path via the broad market-check handler. Empty fails closed to False
+# with no network call until a real URL is set.
+SUPERCHAIN_LIST_URL = ""
 
 # --- Grading thresholds ---
 GRADE_BLUECHIP = "BLUECHIP"
@@ -81,7 +87,7 @@ GATE_CANT_SELL = "cannot_sell"
 GATE_BLACKLIST = "blacklist"
 GATE_HIDDEN_OWNER = "hidden_owner"
 GATE_MINTABLE = "mintable"
-GABLE_PAUSABLE = "pausable"
+GATE_PAUSABLE = "pausable"
 GATE_SELFDESTRUCT = "selfdestruct"
 GATE_TAX_TOO_HIGH = "tax_over_10"
 
@@ -108,7 +114,7 @@ class TokenGrader:
         # WO #1 scope 5: rejections are self-describing in the journal,
         # so a token is never rejected without saying which field broke.
         self.journal_path = journal_path or os.path.join(
-            HERE, "state", "unscreeable.jsonl")
+            HERE, "state", "unscreenable.jsonl")
 
     def _journal_rejection(self, addr: str, result: dict) -> None:
         """Append one self-describing rejection line.
@@ -118,7 +124,7 @@ class TokenGrader:
         """
         try:
             os.makedirs(os.path.dirname(self.journal_path), exist_ok=True)
-            uns = result.get("unscreeable", {}) or {}
+            uns = result.get("unscreenable", {}) or {}
             line = {
                 "ts": result.get("ts"),
                 "token": addr,
@@ -201,7 +207,7 @@ class TokenGrader:
                 reasons.append(GATE_MINTABLE)
                 score -= 30
             if security.get("is_pausable"):
-                reasons.append(GABLE_PAUSABLE)
+                reasons.append(GATE_PAUSABLE)
                 score -= 20
             if security.get("selfdestruct"):
                 reasons.append(GATE_SELFDESTRUCT)
@@ -224,14 +230,14 @@ class TokenGrader:
             if security.get("top10_holder_concentration", 0) > 80:
                 reasons.append("concentrated_holders")
                 score -= PENALTY_CONCENTRATED
-        except UnscreeableError as e:
+        except UnscreenableError as e:
             # WO #1 scope 3: a crashed or unparseable check FAILS CLOSED.
             # The previous handler docked 20 points and let the token
             # through, so a GoPlus '?' tax field produced "not honeypot,
             # renounced" — a PASSING verdict from a CRASHED check.
             reasons.append(GATE_UNSCREENABLE)
             result["verdict"] = GRADE_UNSCREENABLE
-            result["unscreeable"] = e.as_dict()
+            result["unscreenable"] = e.as_dict()
             # `reasons` is a local list; the returned result needs its
             # own copy or a caller inspecting the result sees none.
             result["reasons"] = list(reasons)
@@ -246,7 +252,7 @@ class TokenGrader:
             # code must not emit a passing security verdict.
             reasons.append(GATE_UNSCREENABLE)
             result["verdict"] = GRADE_UNSCREENABLE
-            result["unscreeable"] = {
+            result["unscreenable"] = {
                 "verdict": "UNSCREENABLE", "check": "goplus",
                 "fields": [{"field": None, "raw_value": None,
                             "reason": f"exception: {str(e)[:80]}"}],
@@ -290,7 +296,7 @@ class TokenGrader:
             
             # Promotion path: high score + high liquidity + old + superchain
             if (score >= SCORE_BLUECHIP and liq >= 5_000_000 and 
-                age_days >= 180 and self._is_superchain_token(addr)):
+                age_days >= 180 and self._is_superchain(addr)):
                 score = max(score, 90)
                 reasons.append("superchain_promotion")
         except Exception as e:
@@ -333,8 +339,8 @@ class TokenGrader:
         if not result:
             # No data at all is not a pass. An empty result means the
             # safety fields are unknown, and unknown fails closed.
-            raise UnscreeableError(
-                [UnscreeableField("goplus_result", None,
+            raise UnscreenableError(
+                [UnscreenableField("goplus_result", None,
                                   "empty security payload")],
                 check="goplus")
 

@@ -19,14 +19,13 @@ from __future__ import annotations
 import json
 import os
 import sys
-import tempfile
 
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreeableError,
-                        UnscreeableField, parse_fields, parse_num)
+from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreenableError,
+                        UnscreenableField, parse_fields, parse_num)
 import token_grade as TG
 
 
@@ -36,7 +35,7 @@ import token_grade as TG
 
 def test_case_1_null_tax_field():
     """McKenzie's case 1: a null tax field is unscreenable, not 0."""
-    with pytest.raises(UnscreeableError) as exc:
+    with pytest.raises(UnscreenableError) as exc:
         parse_num(None, "buy_tax")
     assert exc.value.fields[0].name == "buy_tax"
     assert exc.value.fields[0].reason == "missing/null"
@@ -44,7 +43,7 @@ def test_case_1_null_tax_field():
 
 def test_case_2_empty_string_tax_field():
     """McKenzie's case 2 — the exact string that crashed tick 1964."""
-    with pytest.raises(UnscreeableError) as exc:
+    with pytest.raises(UnscreenableError) as exc:
         parse_num("", "sell_tax")
     f = exc.value.fields[0]
     assert f.name == "sell_tax"
@@ -55,7 +54,7 @@ def test_case_2_empty_string_tax_field():
 def test_case_3_malformed_numeric():
     """McKenzie's case 3: 'abc' and '12.34.56' are malformed."""
     for bad in ("abc", "12.34.56", "1,5", "0x10", "--5"):
-        with pytest.raises(UnscreeableError) as exc:
+        with pytest.raises(UnscreenableError) as exc:
             parse_num(bad, "buy_tax")
         assert exc.value.fields[0].reason == "malformed numeric"
 
@@ -63,14 +62,14 @@ def test_case_3_malformed_numeric():
 def test_case_4_whitespace_only():
     """Whitespace-only is empty, not a number. A subtle fail-open."""
     for blank in ("   ", "\t", "\n", " \t\n "):
-        with pytest.raises(UnscreeableError):
+        with pytest.raises(UnscreenableError):
             parse_num(blank, "buy_tax")
 
 
-def test_case_5_missing_key_is_unscreeable():
+def test_case_5_missing_key_is_unscreenable():
     """An absent key must not read as 0. Source uses .get(k) -> None."""
     source = {"sell_tax": "1.0"}   # buy_tax key simply absent
-    with pytest.raises(UnscreeableError) as exc:
+    with pytest.raises(UnscreenableError) as exc:
         parse_fields(source, GOPLUS_NUMERIC_FIELDS, check="goplus")
     names = [f.name for f in exc.value.fields]
     assert "buy_tax" in names
@@ -78,7 +77,7 @@ def test_case_5_missing_key_is_unscreeable():
 
 def test_case_6_goplus_question_mark_token():
     """GoPlus returns "?" for GITLAWB. That is UNKNOWN, not zero."""
-    with pytest.raises(UnscreeableError) as exc:
+    with pytest.raises(UnscreenableError) as exc:
         parse_num("?", "buy_tax")
     assert "empty/unknown" in exc.value.fields[0].reason
 
@@ -86,14 +85,14 @@ def test_case_6_goplus_question_mark_token():
 def test_nan_and_inf_rejected():
     """NaN compares false against every threshold and would pass a gate."""
     for bad in (float("nan"), float("inf"), float("-inf")):
-        with pytest.raises(UnscreeableError) as exc:
+        with pytest.raises(UnscreenableError) as exc:
             parse_num(bad, "buy_tax")
         assert exc.value.fields[0].reason == "nan/inf"
 
 
 def test_bool_rejected_where_number_expected():
     """bool subclasses int; a flag is not a tax rate of 0 or 1."""
-    with pytest.raises(UnscreeableError) as exc:
+    with pytest.raises(UnscreenableError) as exc:
         parse_num(True, "buy_tax")
     assert "bool" in exc.value.fields[0].reason
 
@@ -102,7 +101,7 @@ def test_all_failures_collected_not_just_the_first():
     """One error naming three bad fields beats three errors."""
     source = {"buy_tax": "", "sell_tax": "abc",
               "top10_holder_concentration": None}
-    with pytest.raises(UnscreeableError) as exc:
+    with pytest.raises(UnscreenableError) as exc:
         parse_fields(source, GOPLUS_NUMERIC_FIELDS)
     assert len(exc.value.fields) == 3
 
@@ -117,24 +116,16 @@ def test_valid_values_still_parse():
 # 7. The gate: an unparseable field yields UNSCREENABLE, blocked
 # ====================================================================== #
 
-def _grader_with_payload(payload, journal=None):
-    """A TokenGrader whose GoPlus call returns `payload`."""
-    g = TG.TokenGrader(journal_path=journal)
-    g._check_security = lambda addr: TG.TokenGrader._check_security.__wrapped__(g, addr) if False else _parse_like_real(g, payload)
-    return g
-
-
 def _parse_like_real(g, payload):
     """Replicate _check_security's parse step against a fixed payload."""
-    import urllib.request
     if payload is None or not payload:
-        raise UnscreeableError(
-            [UnscreeableField("goplus_result", None,
+        raise UnscreenableError(
+            [UnscreenableField("goplus_result", None,
                               "empty security payload")], check="goplus")
     result = payload.get("result", {}).get("0xtest", {})
     if not result:
-        raise UnscreeableError(
-            [UnscreeableField("goplus_result", None,
+        raise UnscreenableError(
+            [UnscreenableField("goplus_result", None,
                               "empty security payload")], check="goplus")
     nums = parse_fields(result, GOPLUS_NUMERIC_FIELDS, check="goplus")
     return {
@@ -233,18 +224,18 @@ def test_synthetic_crash_records_the_exception(tmp_path):
     g = TG.TokenGrader(journal_path=jp)
     g._check_security = lambda a: (_ for _ in ()).throw(ZeroDivisionError("boom"))
     out = g.grade("0xTEST")
-    assert out["unscreeable"]["verdict"] == "UNSCREENABLE"
-    assert "boom" in json.dumps(out["unscreeable"])
+    assert out["unscreenable"]["verdict"] == "UNSCREENABLE"
+    assert "boom" in json.dumps(out["unscreenable"])
 
 
-def test_pre_fix_behaviour_would_have_been_fail_open():
+def test_pre_fix_behaviour_would_have_been_fail_open(tmp_path):
     """Documents the exact regression being prevented.
 
     The old handler docked 20 points from 100 and continued, so a token
     scored 80 — a passing grade from a crashed check. This asserts the
     new handler does not reproduce that.
     """
-    jp = tempfile.mktemp(suffix=".jsonl")
+    jp = str(tmp_path / "pre.jsonl")
     g = TG.TokenGrader(journal_path=jp)
     g._check_security = lambda a: (_ for _ in ()).throw(ValueError("crash"))
     out = g.grade("0xTEST")

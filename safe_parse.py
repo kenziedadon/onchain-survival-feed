@@ -13,7 +13,8 @@ expensive kind of wrong answer this stack can emit.
 The rule here: a field we cannot parse is NOT zero. It is unknown, and
 unknown about a safety field means unscreenable, which means blocked.
 `parse_num` never returns a default for a malformed value — it raises
-`UnscreeableField`, and the caller converts that to a blocked verdict.
+`UnscreenableError` (carrying one or more `UnscreenableField` records), and
+the caller converts that to a blocked verdict.
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ import math
 from typing import Any, NamedTuple
 
 
-class UnscreeableField(NamedTuple):
+class UnscreenableField(NamedTuple):
     """A field that could not be parsed. Carries what went wrong."""
     name: str
     raw: Any
@@ -32,14 +33,14 @@ class UnscreeableField(NamedTuple):
                 "reason": self.reason}
 
 
-class UnscreeableError(Exception):
+class UnscreenableError(Exception):
     """Raised when a security field cannot be safely interpreted.
 
-    Carries one or more UnscreeableField records so the journal line can
+    Carries one or more UnscreenableField records so the journal line can
     name the offending field and its raw value — WO #1 scope 5.
     """
 
-    def __init__(self, fields: list[UnscreeableField], check: str = "") -> None:
+    def __init__(self, fields: list[UnscreenableField], check: str = "") -> None:
         self.fields = list(fields)
         self.check = check
         names = ", ".join(f.name for f in self.fields)
@@ -59,7 +60,7 @@ _UNKNOWN_TOKENS = {"", "?", "n/a", "na", "null", "none", "-", "unknown",
 
 
 def parse_num(value: Any, name: str) -> float:
-    """Parse an external numeric field, or raise UnscreeableError.
+    """Parse an external numeric field, or raise UnscreenableError.
 
     Rejects, per WO #1 scope 2: missing key (caller passes None), None,
     null, empty string, whitespace-only, and malformed numerics like
@@ -67,35 +68,35 @@ def parse_num(value: Any, name: str) -> float:
     unpredictably against thresholds and can silently pass a `> 10` gate.
     """
     if value is None:
-        raise UnscreeableError([UnscreeableField(name, value, "missing/null")],
+        raise UnscreenableError([UnscreenableField(name, value, "missing/null")],
                                check=name)
     if isinstance(value, bool):
         # bool is an int subclass; a flag where a number belongs is a
         # schema mismatch, not a tax rate of 0 or 1.
-        raise UnscreeableError([UnscreeableField(name, value, "bool not numeric")],
+        raise UnscreenableError([UnscreenableField(name, value, "bool not numeric")],
                                check=name)
     if isinstance(value, str):
         stripped = value.strip()
         if stripped.lower() in _UNKNOWN_TOKENS:
-            raise UnscreeableError(
-                [UnscreeableField(name, value, "empty/unknown token")],
+            raise UnscreenableError(
+                [UnscreenableField(name, value, "empty/unknown token")],
                 check=name)
         try:
             out = float(stripped)
         except ValueError:
-            raise UnscreeableError(
-                [UnscreeableField(name, value, "malformed numeric")],
+            raise UnscreenableError(
+                [UnscreenableField(name, value, "malformed numeric")],
                 check=name) from None
     elif isinstance(value, (int, float)):
         out = float(value)
     else:
-        raise UnscreeableError(
-            [UnscreeableField(name, value, f"unsupported type "
+        raise UnscreenableError(
+            [UnscreenableField(name, value, f"unsupported type "
                                            f"{type(value).__name__}")],
             check=name)
 
     if math.isnan(out) or math.isinf(out):
-        raise UnscreeableError([UnscreeableField(name, value, "nan/inf")],
+        raise UnscreenableError([UnscreenableField(name, value, "nan/inf")],
                                check=name)
     return out
 
@@ -108,15 +109,15 @@ def parse_fields(source: dict, spec: dict[str, str],
     on the first — a journal line naming three bad fields is more useful
     than three lines naming one.
     """
-    bad: list[UnscreeableField] = []
+    bad: list[UnscreenableField] = []
     out: dict[str, float] = {}
     for name, key in spec.items():
         try:
             out[name] = parse_num(source.get(key), key)
-        except UnscreeableError as exc:
+        except UnscreenableError as exc:
             bad.extend(exc.fields)
     if bad:
-        raise UnscreeableError(bad, check=check)
+        raise UnscreenableError(bad, check=check)
     return out
 
 
