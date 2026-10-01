@@ -27,7 +27,7 @@
   },
   "kill_switch": true,
   "live_trading": false,
-  "require_confirmation": false,
+  "require_confirmation": true,
   "max_trade_eth": 0.0003,
   "max_daily_loss_eth": 0.0004,
   "max_slippage_bps": 100,
@@ -127,7 +127,7 @@
     ]
   },
   "currency_pair_note": "Native ETH/WETH trading (reverted 2026-09-09) \u2014 WETH quote preferred; USDC path available as fallback; DRY_RUN guard off; ready for live broadcast",
-  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA) \u2014 on-chain verified 2026-09-25: current 0.007833 ETH. DISARMED (kill_switch=true). Paper-trade only (live_trading=false). No auto-broadcast. EDGE gate valid.",
+  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated to 0x7702cb554e6bfb442cb743a7df23154544a7176c) \u2014 on-chain verified 2026-10-01: 0.00295266739727199 ETH, nonce 249, block 52044143. Previous record 0.007833 ETH (2026-09-25) is stale; delta -0.004880332602728009 ETH UNATTRIBUTED \u2014 cause not verified. DISARMED (kill_switch=true, live_trading=false). No live edge: harness walkforward 2026-10-01 rejects both simple_ema_v1 (-9.62%) and pullback_v2 (-2.42%) on unseen data.",
   "_arm_provenance": "arm_signal_v1",
   "auto_confirm": false
 }
