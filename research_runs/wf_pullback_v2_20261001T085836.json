@@ -1,0 +1,127 @@
+{
+  "summary": {
+    "evaluated": 3,
+    "no_trades": 0,
+    "scored": 3,
+    "negative": 3,
+    "positive": 0,
+    "mean_net_pct_scored_only": -1.8104073455430563,
+    "status": "MEASURED"
+  },
+  "statistics": {
+    "test": {
+      "test": "welch_t",
+      "insufficient": true,
+      "n_a": 3,
+      "n_b": 0
+    },
+    "alpha": 0.05,
+    "note": "NO_TRADES rows are excluded from every average, the win rate, and the t-test denominator. Averaging in zeros is how a dead strategy looks neutral.",
+    "report_refuses_p": true
+  },
+  "rows": [
+    {
+      "pool": "cbBTC / WETH 0.009%",
+      "strategy_id": "pullback_v2",
+      "outcome": "NEGATIVE",
+      "n_trades": 1,
+      "net_pct": -0.19481056065213664,
+      "bench_pct": 1.0069753433484818,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 1 < 10",
+        "FAILS benchmark: BH +1.0% beat strategy -0.2%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 1 < 10; FAILS benchmark: BH +1.0% beat strategy -0.2%; FAILS live: non-positive on unseen data"
+    },
+    {
+      "pool": "VIRTUAL / WETH 0.05%",
+      "strategy_id": "pullback_v2",
+      "outcome": "NEGATIVE",
+      "n_trades": 1,
+      "net_pct": -3.3964581351146106,
+      "bench_pct": -2.947906283811974,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 1 < 10",
+        "FAILS benchmark: BH -2.9% beat strategy -3.4%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 1 < 10; FAILS benchmark: BH -2.9% beat strategy -3.4%; FAILS live: non-positive on unseen data"
+    },
+    {
+      "pool": "AERO / WETH 0.05%",
+      "strategy_id": "pullback_v2",
+      "outcome": "NEGATIVE",
+      "n_trades": 1,
+      "net_pct": -1.8399533408624213,
+      "bench_pct": 0.13822689931624055,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 1 < 10",
+        "FAILS benchmark: BH +0.1% beat strategy -1.8%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 1 < 10; FAILS benchmark: BH +0.1% beat strategy -1.8%; FAILS live: non-positive on unseen data"
+    }
+  ],
+  "guard": {
+    "no_lookahead_guard": "enforced",
+    "mechanism": "structural_truncation + assertive_signal_validation",
+    "bars_processed": 300,
+    "guard_version": "1.0.0"
+  },
+  "provenance": {
+    "spec_hash": "2d3aa6fce60c7832dade73d0c4d2063997b9a23c31177fa3913ee6bcf2793bb8",
+    "spec_short": "2d3aa6fce60c",
+    "strategy_hash": "577edb8cd585eab65fb76e9fff83ae490024a44feb01ecac16522ee8c19b1388",
+    "registered_before_run": true,
+    "registered_at": "2026-10-01T08:58:27-0500",
+    "infrastructure_validation": false,
+    "preregistered": true
+  },
+  "cost_constants": {
+    "version": "pessimistic_v1",
+    "asof": "2026-10-01",
+    "constants": [
+      {
+        "name": "SLIPPAGE_MULTIPLIER",
+        "value": 2.0,
+        "source": "adverse-fill assumption, half-spread, no empirical fit",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "SLIPPAGE_FLOOR_BPS",
+        "value": 5.0,
+        "source": "conservative uniform floor; replaces legacy max(computed,1.0)",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "SLIPPAGE_CEILING_BPS",
+        "value": 500.0,
+        "source": "input sanity bound; a broken liquidity figure must not silently zero every trade",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "GAS_USD_FALLBACK",
+        "value": 0.04,
+        "source": "Base L2 execution cost, live oracle preferred",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "FAILED_ATTEMPT_USD",
+        "value": 0.0,
+        "source": "Not charged. Memo-trading paper fills assume every entry fills; charging for failures would be pessimistic but the failure rate is unmeasured. Once paper fills exist this becomes a real constant, not a guess.",
+        "asof": "2026-10-01"
+      }
+    ],
+    "pool_fee_bps": {
+      "source": "GeckoTerminal pool metadata, read live per pool",
+      "note": "never defaulted; a missing fee is an input error"
+    },
+    "scenarios": [
+      "nominal",
+      "pessimistic"
+    ],
+    "headline_scenario": "pessimistic",
+    "rule": "passing only under nominal costs => MARGINAL, never PASS"
+  }
+}

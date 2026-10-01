@@ -1,0 +1,142 @@
+{
+  "summary": {
+    "evaluated": 3,
+    "no_trades": 0,
+    "scored": 3,
+    "negative": 3,
+    "positive": 0,
+    "mean_net_pct_scored_only": -2.4201475951671103,
+    "status": "MEASURED"
+  },
+  "statistics": {
+    "test": {
+      "test": "welch_t_one_sided",
+      "one_sided": true,
+      "insufficient": true,
+      "n_a": 3,
+      "n_b": 0
+    },
+    "alpha": 0.05,
+    "registered_test": "welch_t_one_sided",
+    "one_sided": true,
+    "note": "NO_TRADES rows are excluded from every average, the win rate, and the t-test denominator. Averaging in zeros is how a dead strategy looks neutral.",
+    "report_refuses_p": true
+  },
+  "rows": [
+    {
+      "pool": "cbBTC / WETH 0.009%",
+      "strategy_id": "pullback_v2",
+      "outcome": "NEGATIVE",
+      "n_trades": 1,
+      "net_pct": -0.016802676731664246,
+      "bench_pct": 1.1868419326692026,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 1 < 10",
+        "FAILS benchmark: BH +1.2% beat strategy -0.0%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 1 < 10; FAILS benchmark: BH +1.2% beat strategy -0.0%; FAILS live: non-positive on unseen data"
+    },
+    {
+      "pool": "VIRTUAL / WETH 0.05%",
+      "strategy_id": "pullback_v2",
+      "outcome": "NEGATIVE",
+      "n_trades": 1,
+      "net_pct": -4.565559285170773,
+      "bench_pct": -4.120142681757022,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 1 < 10",
+        "FAILS benchmark: BH -4.1% beat strategy -4.6%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 1 < 10; FAILS benchmark: BH -4.1% beat strategy -4.6%; FAILS live: non-positive on unseen data"
+    },
+    {
+      "pool": "AERO / WETH 0.05%",
+      "strategy_id": "pullback_v2",
+      "outcome": "NEGATIVE",
+      "n_trades": 1,
+      "net_pct": -2.678080823598894,
+      "bench_pct": -0.7099106870778082,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 1 < 10",
+        "FAILS benchmark: BH -0.7% beat strategy -2.7%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 1 < 10; FAILS benchmark: BH -0.7% beat strategy -2.7%; FAILS live: non-positive on unseen data"
+    }
+  ],
+  "guard": {
+    "no_lookahead_guard": "enforced",
+    "mechanism": "structural_truncation + assertive_signal_validation",
+    "bars_processed": 299,
+    "guard_version": "1.0.0"
+  },
+  "provenance": {
+    "spec_hash": "dc4f65468c2295643281f08473b5625af040adc22727a5bd41bc469ccbd547ed",
+    "spec_short": "dc4f65468c22",
+    "strategy_hash": "577edb8cd585eab65fb76e9fff83ae490024a44feb01ecac16522ee8c19b1388",
+    "registered_before_run": true,
+    "registered_at": "2026-10-01T10:44:12-0500",
+    "infrastructure_validation": false,
+    "preregistered": true,
+    "data_pin": {
+      "pinned": true,
+      "data_hash": "ce4b7e4b74409ef6a0775a70aadaadbd983afdce48763ee1fffabd2868d045f4",
+      "data_hash_short": "ce4b7e4b7440",
+      "window": {
+        "bars": 299,
+        "end_ts": 1790863200,
+        "start_ts": 1789790400
+      },
+      "pool": "0x7c7420dd105e2779316423ba3e973f434315efa9",
+      "pinned_at": "2026-10-01T10:42:11-0500"
+    }
+  },
+  "cost_constants": {
+    "version": "pessimistic_v1",
+    "asof": "2026-10-01",
+    "constants": [
+      {
+        "name": "SLIPPAGE_MULTIPLIER",
+        "value": 2.0,
+        "source": "adverse-fill assumption, half-spread, no empirical fit",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "SLIPPAGE_FLOOR_BPS",
+        "value": 5.0,
+        "source": "conservative uniform floor; replaces legacy max(computed,1.0)",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "SLIPPAGE_CEILING_BPS",
+        "value": 500.0,
+        "source": "input sanity bound; a broken liquidity figure must not silently zero every trade",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "GAS_USD_FALLBACK",
+        "value": 0.04,
+        "source": "Base L2 execution cost, live oracle preferred",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "FAILED_ATTEMPT_USD",
+        "value": 0.0,
+        "source": "Not charged. Memo-trading paper fills assume every entry fills; charging for failures would be pessimistic but the failure rate is unmeasured. Once paper fills exist this becomes a real constant, not a guess.",
+        "asof": "2026-10-01"
+      }
+    ],
+    "pool_fee_bps": {
+      "source": "GeckoTerminal pool metadata, read live per pool",
+      "note": "never defaulted; a missing fee is an input error"
+    },
+    "scenarios": [
+      "nominal",
+      "pessimistic"
+    ],
+    "headline_scenario": "pessimistic",
+    "rule": "passing only under nominal costs => MARGINAL, never PASS"
+  }
+}

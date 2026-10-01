@@ -1,0 +1,141 @@
+{
+  "summary": {
+    "evaluated": 3,
+    "no_trades": 0,
+    "scored": 3,
+    "negative": 2,
+    "positive": 1,
+    "mean_net_pct_scored_only": -1.4974720649928368,
+    "status": "MEASURED"
+  },
+  "statistics": {
+    "test": {
+      "test": "welch_t_one_sided",
+      "one_sided": true,
+      "insufficient": true,
+      "n_a": 18,
+      "n_b": 0
+    },
+    "alpha": 0.05,
+    "registered_test": "welch_t_one_sided",
+    "one_sided": true,
+    "note": "NO_TRADES rows are excluded from every average, the win rate, and the t-test denominator. Averaging in zeros is how a dead strategy looks neutral.",
+    "report_refuses_p": false
+  },
+  "rows": [
+    {
+      "pool": "cbBTC / WETH 0.009%",
+      "strategy_id": "simple_ema_v1",
+      "outcome": "PROFITABLE",
+      "n_trades": 3,
+      "net_pct": 10.687344781879071,
+      "bench_pct": 11.079474223366748,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 3 < 10",
+        "FAILS benchmark: BH +11.1% beat strategy +10.7%"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 3 < 10; FAILS benchmark: BH +11.1% beat strategy +10.7%"
+    },
+    {
+      "pool": "VIRTUAL / WETH 0.05%",
+      "strategy_id": "simple_ema_v1",
+      "outcome": "NEGATIVE",
+      "n_trades": 7,
+      "net_pct": -6.535724884764349,
+      "bench_pct": 32.169663719479914,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 7 < 10",
+        "FAILS benchmark: BH +32.2% beat strategy -6.5%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 7 < 10; FAILS benchmark: BH +32.2% beat strategy -6.5%; FAILS live: non-positive on unseen data"
+    },
+    {
+      "pool": "AERO / WETH 0.05%",
+      "strategy_id": "simple_ema_v1",
+      "outcome": "NEGATIVE",
+      "n_trades": 8,
+      "net_pct": -8.644036092093232,
+      "bench_pct": 46.263314514295104,
+      "flags": [
+        "INSUFFICIENT_SAMPLE: 8 < 10",
+        "FAILS benchmark: BH +46.3% beat strategy -8.6%",
+        "FAILS live: non-positive on unseen data"
+      ],
+      "verdict": "REJECT: INSUFFICIENT_SAMPLE: 8 < 10; FAILS benchmark: BH +46.3% beat strategy -8.6%; FAILS live: non-positive on unseen data"
+    }
+  ],
+  "guard": {
+    "no_lookahead_guard": "enforced",
+    "mechanism": "structural_truncation + assertive_signal_validation",
+    "bars_processed": 999,
+    "guard_version": "1.0.0"
+  },
+  "provenance": {
+    "spec_hash": "8c98bdbee6af2720818e77890158052aa66985a8fd63d35f59ef75873b428e42",
+    "spec_short": "8c98bdbee6af",
+    "strategy_hash": "ddf90adc20cc117bb17af47ce3f5e191205dae9b93700168d8867755d40c99c9",
+    "registered_before_run": true,
+    "registered_at": "2026-10-01T13:54:24-0500",
+    "infrastructure_validation": false,
+    "preregistered": true,
+    "data_pin": {
+      "pinned": true,
+      "data_hash": "1b28cd9df8a41e0caf063a66ec7e6ec9b2dd27f26b460057ab7b5b840ec1bd93",
+      "data_hash_short": "1b28cd9df8a4",
+      "window": {
+        "bars": 999,
+        "end_ts": 1790874000,
+        "start_ts": 1787281200
+      },
+      "pool": "0x7c7420dd105e2779316423ba3e973f434315efa9",
+      "pinned_at": "2026-10-01T13:50:26-0500"
+    }
+  },
+  "cost_constants": {
+    "version": "pessimistic_v1",
+    "asof": "2026-10-01",
+    "constants": [
+      {
+        "name": "SLIPPAGE_MULTIPLIER",
+        "value": 2.0,
+        "source": "adverse-fill assumption, half-spread, no empirical fit",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "SLIPPAGE_FLOOR_BPS",
+        "value": 5.0,
+        "source": "conservative uniform floor; replaces legacy max(computed,1.0)",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "SLIPPAGE_CEILING_BPS",
+        "value": 500.0,
+        "source": "input sanity bound; a broken liquidity figure must not silently zero every trade",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "GAS_USD_FALLBACK",
+        "value": 0.04,
+        "source": "Base L2 execution cost, live oracle preferred",
+        "asof": "2026-10-01"
+      },
+      {
+        "name": "FAILED_ATTEMPT_USD",
+        "value": 0.0,
+        "source": "Not charged. Memo-trading paper fills assume every entry fills; charging for failures would be pessimistic but the failure rate is unmeasured. Once paper fills exist this becomes a real constant, not a guess.",
+        "asof": "2026-10-01"
+      }
+    ],
+    "pool_fee_bps": {
+      "source": "GeckoTerminal pool metadata, read live per pool",
+      "note": "never defaulted; a missing fee is an input error"
+    },
+    "scenarios": [
+      "nominal",
+      "pessimistic"
+    ],
+    "headline_scenario": "pessimistic",
+    "rule": "passing only under nominal costs => MARGINAL, never PASS"
+  }
+}
