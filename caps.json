@@ -127,7 +127,7 @@
     ]
   },
   "currency_pair_note": "Native ETH/WETH trading (reverted 2026-09-09) \u2014 WETH quote preferred; USDC path available as fallback; DRY_RUN guard off; ready for live broadcast",
-  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated to 0x7702cb554e6bfb442cb743a7df23154544a7176c) \u2014 on-chain verified 2026-10-01: 0.00295266739727199 ETH, nonce 249, block 52044143. Previous record 0.007833 ETH (2026-09-25) is stale; delta -0.004880332602728009 ETH UNATTRIBUTED \u2014 cause not verified. DISARMED (kill_switch=true, live_trading=false). No live edge: harness walkforward 2026-10-01 rejects both simple_ema_v1 (-9.62%) and pullback_v2 (-2.42%) on unseen data.",
+  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated to 0x7702cb554e6bfb442cb743a7df23154544a7176c) \u2014 on-chain verified 2026-10-01: 0.00295266739727199 ETH @ block 52044143. Prior 0.007833 ETH record INVALID \u2014 on-chain Sep 24-25 was 0.0026732912741; +0.01072941 top-up Sep 26 02:25. All movements operator-confirmed: -0.003720240 (Sep 26 -> secondary), -0.003722250 (Sep 29 -> 0x4A030aCb61e14447f0262bee1b191B329e1c2a56), +0.003096010 (Sep 29 secondary -> main), -0.003265197493276063 net (Sep 29 bundle, received 8,311 GITLAWB), -0.003722200 (Sep 30 -> 0x4A030aCb61e14447f0262bee1b191B329e1c2a56), -0.000037074612 gas (Oct 01 LiFi route, no ETH moved). No unattributed movement. DISARMED (kill_switch=true, live_trading=false, require_confirmation=true). No live edge: harness walkforward 2026-10-01 rejects both simple_ema_v1 and pullback_v2; sealed ledger 0/6.",
   "_arm_provenance": "arm_signal_v1",
   "auto_confirm": false
 }
