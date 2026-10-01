@@ -186,6 +186,14 @@ sha256 `1ed7b13bbc7612ed0ebdfdbe5ef6f2adde3e4cacfde46b230267c898ea56c1a8`
 `research_runs/POSTHOC_regime_simple_ema_v1_20261001T142653.json`
 sha256 `4761d3eda0a5fadc243003bc93c2586c9fda570915cf2eedd16371a7528daff8`
 
+**The pin-gate bypass in that diagnostic is not a pattern.** It is legitimate
+only because the script emits `POST_HOC / NOT_EVIDENCE` artifacts that cannot
+touch this ledger. Any run whose numbers will be cited toward `min_trades`,
+`pf_min`, or the 0/6 verdict must go through `run_walkforward.py` /
+`run_deep_window.py`, which enforce `prereg.require_registered` and
+`prereg.require_pinned_data` and refuse to emit an artifact otherwise.
+Re-running a diagnostic to obtain a citable number is research misconduct.
+
 ## 7. Caveats on the record
 
 1. **`pullback_v2` train counts are low** (2, 2, 1 against a ~600-bar

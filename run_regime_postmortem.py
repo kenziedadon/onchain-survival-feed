@@ -31,6 +31,18 @@ from the sealed artifacts, whose bars were pinned hours earlier and have since
 been superseded by a newly closed hourly bar. Compare same-split net_pct
 before quoting either number.
 
+  !! THIS BYPASS IS NOT A PATTERN. It is legitimate here for exactly one
+  reason: this script produces POST_HOC / NOT_EVIDENCE artifacts and cannot
+  touch the sealed ledger. An EVIDENCE run -- anything whose numbers will be
+  cited toward min_trades, pf_min, or the 0/6 verdict -- MUST go through
+  run_walkforward.py / run_deep_window.py, which enforce
+  prereg.require_registered and prereg.require_pinned_data and refuse to
+  produce an artifact otherwise. Re-running this file to obtain a citable
+  number is research misconduct, and the whole reason the refusal gate exists
+  is that a rolling upstream window makes re-run-until-it-looks-good legal
+  while still looking fully preregistered. If you want an evidence run,
+  register a spec and pin the data first. There is no shortcut here.
+
 What this measures, per pool and split:
   1. entries / exits / signal-candidate counts, and WHY entries were rejected
   2. exposure: fraction of bars in-market, avg holding period
