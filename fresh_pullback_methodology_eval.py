@@ -1,3 +1,15 @@
+"""DEPRECATED — superseded by research_harness/ (WO4, 2026-10-01).
+
+Kept on disk so the historical artifacts can be reproduced. DO NOT extend.
+The consolidated harness applies the no-lookahead guard, preregistration, and
+a pessimistic cost model; none of that exists here.
+
+To reproduce an old number, run the equivalent registered spec through
+run_walkforward.py. If the new harness disagrees materially on the same
+input, that discrepancy is a FINDING, not a nuisance.
+
+Replaced by: research_harness/harness.py
+"""
 #!/usr/bin/env python3
 """
 Fresh pullback_v2 methodology eval on today's discovered coins.
