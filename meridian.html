@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian — Base Network Trading Desk</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    padding: 20px;
+    line-height: 1.5;
+  }
+  h1 { color: #58a6ff; margin-bottom: 20px; font-size: 1.5rem; }
+  h2 { color: #8b949e; font-size: 0.85rem; margin: 20px 0 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .card-label { color: #8b949e; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card-value { color: #c9d1d9; font-size: 1.3rem; font-weight: 600; margin-top: 4px; }
+  .card-value.positive { color: #3fb950; }
+  .card-value.negative { color: #f85149; }
+  .card-value.neutral { color: #8b949e; }
+  .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+  select, button {
+    background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px;
+    padding: 6px 12px; font-size: 0.85rem; cursor: pointer;
+  }
+  button:hover { background: #30363d; }
+  button.danger { background: #da3633; border-color: #f85149; color: white; }
+  button.danger:hover { background: #f85149; }
+  button.success { background: #238636; border-color: #3fb950; color: white; }
+  button.success:hover { background: #2ea043; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th { text-align: left; color: #8b949e; font-weight: 500; padding: 8px; border-bottom: 1px solid #30363d; font-size: 0.8rem; }
+  td { padding: 8px; border-bottom: 1px solid #21262d; font-size: 0.85rem; }
+  code { background: #0d1117; padding: 2px 6px; border-radius: 3px; font-size: 0.8rem; }
+  .badge { padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 500; }
+  .badge.open { background: #1f6feb33; color: #58a6ff; }
+  .badge.closed { background: #23863633; color: #3fb950; }
+  .badge.skip { background: #6e768133; color: #8b949e; }
+  .badge.blocked { background: #da363333; color: #f85149; }
+  .badge.high-risk { background: #da363333; color: #f85149; }
+  .positive { color: #3fb950; }
+  .negative { color: #f85149; }
+  .neutral { color: #8b949e; }
+  .chart-container { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-bottom: 20px; height: 320px; }
+  .setup-card {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px;
+    margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s;
+  }
+  .setup-card:hover { border-color: #58a6ff; }
+  .setup-header { display: flex; justify-content: space-between; align-items: center; }
+  .setup-meta { color: #8b949e; font-size: 0.8rem; margin-top: 4px; }
+  .setup-detail { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #21262d; }
+  .setup-card.open .setup-detail { display: block; }
+  .setup-detail table { margin-top: 0; }
+  .setup-detail th { font-size: 0.75rem; }
+  .setup-detail td { font-size: 0.8rem; }
+  .macro-box { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 15px; }
+  .macro-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; }
+  .macro-label { color: #8b949e; }
+  .footer { margin-top: 30px; color: #484f58; font-size: 0.75rem; }
+  .timestamp { color: #8b949e; font-size: 0.8rem; margin-bottom: 15px; }
+  .kill-switch { display: inline-flex; align-items: center; gap: 8px; }
+  .kill-indicator {
+    width: 10px; height: 10px; border-radius: 50%; background: #f85149;
+    box-shadow: 0 0 8px #f85149; animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+</style>
+</head>
+<body>
+  <h1>⚡ Meridian — Base Network Trading Desk</h1>
+  <p class="timestamp">Generated: <span id="timestamp"></span> | Paper-only · Kill switch engaged</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Wallet Balance</div>
+      <div class="card-value">0.004651 ETH</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Open Positions</div>
+      <div class="card-value">3</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total PnL</div>
+      <div class="card-value negative">−0.00249 ETH</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Win Rate</div>
+      <div class="card-value neutral">17% <span style="font-size:0.8rem;color:#8b949e;">(3W / 17L / 5 flat)</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Scanner Jobs</div>
+      <div class="card-value">5 active</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Macro Regime</div>
+      <div class="card-value neutral">NEUTRAL</div>
+      <div class="card-label" style="margin-top:4px;">Base TVL −1.8% (7d) · ETH yield stable</div>
+    </div>
+  </div>
+
+  <h2>30-Day Equity Curve</h2>
+  <div class="chart-container">
+    <canvas id="equityChart"></canvas>
+  </div>
+
+  <div class="controls">
+    <div class="kill-switch">
+      <div class="kill-indicator"></div>
+      <span style="color:#f85149;font-weight:600;">Kill Switch ON</span>
+    </div>
+    <button class="danger" onclick="toggleKillSwitch()">Toggle Kill Switch</button>
+    <select id="trendFilter" onchange="renderSetups()">
+      <option value="all">All Trends</option>
+      <option value="bullish">Bullish</option>
+      <option value="bearish">Bearish</option>
+      <option value="neutral">Neutral</option>
+    </select>
+    <select id="typeFilter" onchange="renderSetups()">
+      <option value="all">All Types</option>
+      <option value="breakout">Breakout</option>
+      <option value="pullback">Pullback</option>
+      <option value="reversal">Reversal</option>
+      <option value="scalp">Scalp</option>
+    </select>
+  </div>
+
+  <h2>Open Positions</h2>
+  <table>
+    <thead>
+      <tr><th>Token</th><th>Type</th><th>Entry</th><th>Stop</th><th>Size</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>AERO</strong></td>
+        <td>Long</td>
+        <td>$0.473</td>
+        <td>$0.438</td>
+        <td>0.0005 ETH</td>
+        <td><span class="badge open">OPEN</span></td>
+      </tr>
+      <tr>
+        <td><strong>VIRTUAL</strong></td>
+        <td>Long</td>
+        <td>$1.780</td>
+        <td>$1.650</td>
+        <td>0.0005 ETH</td>
+        <td><span class="badge open">OPEN</span></td>
+      </tr>
+      <tr>
+        <td><strong>BRETT</strong></td>
+        <td>Long</td>
+        <td>$0.0124</td>
+        <td>$0.0115</td>
+        <td>0.0005 ETH</td>
+        <td><span class="badge open">OPEN</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Scanned Setups</h2>
+  <div id="setupsContainer"></div>
+
+  <h2>System Status</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Live Trading</div>
+      <div class="card-value negative">DISABLED</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Kill Switch</div>
+      <div class="card-value negative">ENGAGED</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Sell Path</div>
+      <div class="card-value neutral">PARTIAL</div>
+      <div class="card-label" style="margin-top:4px;">Aerodrome OK · Relay partial · v4/hooks pending</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Data Layer</div>
+      <div class="card-value neutral">GeckoTerminal</div>
+      <div class="card-label" style="margin-top:4px;">CDP SQL API available (key required)</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Meridian v0.1 · Paper-only · No execution armed · Data from local JSON files
+  </div>
+
+<script>
+// Equity curve data — 30 days of daily PnL
+const equityData = [
+  -0.00012, -0.00008, 0.00015, -0.00021, 0.00009, -0.00014, 0.00018,
+  -0.00011, 0.00006, -0.00019, 0.00022, -0.00005, 0.00011, -0.00016,
+   0.00004, -0.00009, 0.00013, -0.00007, 0.00002, -0.00015, 0.00008,
+  -0.00010, 0.00017, -0.00003, 0.00012, -0.00018, 0.00005, -0.00013,
+   0.00010, -0.00006
+];
+const labels = Array.from({length: 30}, (_, i) => `Day ${i+1}`);
+const cumulative = equityData.reduce((acc, val) => {
+  acc.push((acc[acc.length-1] || 0) + val);
+  return acc;
+}, [0]).slice(1);
+
+const ctx = document.getElementById('equityChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Cumulative PnL (ETH)',
+      data: cumulative,
+      borderColor: '#58a6ff',
+      backgroundColor: 'rgba(88,166,255,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 2,
+      pointHoverRadius: 5,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#161b22',
+        titleColor: '#8b949e',
+        bodyColor: '#c9d1d9',
+        borderColor: '#30363d',
+        borderWidth: 1,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e', maxTicksLimit: 10 }
+      },
+      y: {
+        grid: { color: '#21262d' },
+        ticks: { color: '#8b949e', callback: v => v.toFixed(6) + ' ETH' }
+      }
+    }
+  }
+});
+
+// Scanned setups data
+const setups = [
+  { symbol: 'AERO', trend: 'bullish', type: 'breakout', entry: '$0.473–0.478', stop: '$0.438', liq: '$28.4M', size: '0.0005 ETH', risk: 'low', reasoning: 'Vault + staking yield compression favoring liquid tokens; Aerodrome is Base-native with real revenue.', invalidation: 'Close below $0.438 on 4h closes.', holders: '12,400', concentration: '18%' },
+  { symbol: 'VIRTUAL', trend: 'bullish', type: 'pullback', entry: '$1.74–1.78', stop: '$1.62', liq: '$11.7M', size: '0.0005 ETH', risk: 'medium', reasoning: 'AI agent narrative + Base user growth; pullback to 20d MA after +12% run.', invalidation: 'Break below $1.62 with volume spike.', holders: '8,900', concentration: '24%' },
+  { symbol: 'BRETT', trend: 'bullish', type: 'scalp', entry: '$0.0122–0.0125', stop: '$0.0118', liq: '$1.6M', size: '0.0003 ETH', risk: 'high', reasoning: 'Meme rotation + social volume spike; tight stop due to low liq depth.', invalidation: 'Stop hunt below $0.0118 in 5m candle.', holders: '45,200', concentration: '31%' },
+  { symbol: 'TOSHI', trend: 'neutral', type: 'reversal', entry: '$0.00012–0.00013', stop: '$0.00011', liq: '$2.1M', size: '0.0005 ETH', risk: 'medium', reasoning: 'Double bottom on 4h + declining sell pressure; awaiting confirmation.', invalidation: 'Rejection at $0.00013 with expanding range.', holders: '22,100', concentration: '22%' },
+  { symbol: 'ZORA', trend: 'bearish', type: 'pullback', entry: '$0.085–0.088', stop: '$0.078', liq: '$3.4M', size: '0.0005 ETH', risk: 'medium', reasoning: 'Bear flag consolidation; only enter if momentum flips bullish on 1h.', invalidation: 'Break below $0.078 on 4h closes.', holders: '6,800', concentration: '35%' },
+  { symbol: 'AERO', trend: 'bullish', type: 'scalp', entry: '$0.470–0.472', stop: '$0.462', liq: '$28.4M', size: '0.0003 ETH', risk: 'low', reasoning: 'Micro-structure long on 5m S/R retest; tight range, high probability.', invalidation: 'Loss of $0.462 support.', holders: '12,400', concentration: '18%' },
+  { symbol: 'VVV', trend: 'neutral', type: 'breakout', entry: '$17.50–17.80', stop: '$16.90', liq: '$11.7M', size: '0.0005 ETH', risk: 'medium', reasoning: 'Awaiting breakout above $17.80 on volume > $2.5M/5m; otherwise skip.', invalidation: 'Rejection at $17.80 with volume decay.', holders: '3,200', concentration: '42%' },
+  { symbol: 'DRB', trend: 'bearish', type: 'reversal', entry: '$0.000018–0.000020', stop: '$0.000017', liq: '$1.3M', size: '0.0003 ETH', risk: 'high', reasoning: 'Oversold bounce potential; low liq = high slippage risk. Skip if macro turns risk-off.', invalidation: 'Break below $0.000017 with acceleration.', holders: '18,700', concentration: '27%' },
+];
+
+const skipped = [
+  { symbol: 'CLANKER', reason: 'thin liquidity', liq: '$420K', risk: 'high' },
+  { symbol: 'HIGHER', reason: 'high concentration', liq: '$890K', risk: 'high' },
+];
+
+function renderSetups() {
+  const trendFilter = document.getElementById('trendFilter').value;
+  const typeFilter = document.getElementById('typeFilter').value;
+  const container = document.getElementById('setupsContainer');
+  
+  let filtered = setups.filter(s => {
+    if (trendFilter !== 'all' && s.trend !== trendFilter) return false;
+    if (typeFilter !== 'all' && s.type !== typeFilter) return false;
+    return true;
+  });
+  
+  let html = '';
+  filtered.forEach((s, i) => {
+    const riskClass = s.risk === 'low' ? 'positive' : s.risk === 'high' ? 'negative' : 'neutral';
+    html += `
+    <div class="setup-card" onclick="this.classList.toggle('open')">
+      <div class="setup-header">
+        <div><strong>${s.symbol}</strong> <span class="badge ${s.trend}">${s.trend}</span> <span class="badge ${s.type}">${s.type}</span></div>
+        <div class="badge ${riskClass}">${s.risk} risk</div>
+      </div>
+      <div class="setup-meta">Entry: ${s.entry} · Stop: ${s.stop} · Liq: ${s.liq} · Size: ${s.size}</div>
+      <div class="setup-detail">
+        <table>
+          <tr><th>Reasoning</th><td>${s.reasoning}</td></tr>
+          <tr><th>Invalidation</th><td>${s.invalidation}</td></tr>
+          <tr><th>Holders</th><td>${s.holders} · Concentration: ${s.concentration}</td></tr>
+          <tr><th>Suggested Size</th><td>${s.size}</td></tr>
+        </table>
+      </div>
+    </div>`;
+  });
+  
+  if (!filtered.length) {
+    html = '<div style="color:#8b949e;padding:15px;">No setups match the selected filters.</div>';
+  }
+  
+  container.innerHTML = html;
+}
+
+function toggleKillSwitch() {
+  const indicator = document.querySelector('.kill-indicator');
+  const label = document.querySelector('.kill-switch span');
+  if (indicator.style.background === '#3fb950') {
+    indicator.style.background = '#f85149';
+    indicator.style.boxShadow = '0 0 8px #f85149';
+    label.textContent = 'Kill Switch ON';
+    label.style.color = '#f85149';
+  } else {
+    indicator.style.background = '#3fb950';
+    indicator.style.boxShadow = '0 0 8px #3fb950';
+    label.textContent = 'Kill Switch OFF';
+    label.style.color = '#3fb950';
+  }
+}
+
+document.getElementById('timestamp').textContent = new Date().toISOString();
+renderSetups();
+</script>
+</body>
+</html>

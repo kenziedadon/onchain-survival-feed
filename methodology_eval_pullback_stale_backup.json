@@ -1,0 +1,91 @@
+{
+  "ts": "2026-08-21T07:17:17.464461+00:00",
+  "script": "pullback_v2_walkforward_fixed",
+  "strategy": "pullback_v2_rsi20-55_roc-10%-0%",
+  "total": 9,
+  "passed": 5,
+  "any_passed": true,
+  "rows": [
+    {
+      "name": "DRB / WETH 1%",
+      "test_net": 23.002521418830526,
+      "bh_test": 43.327269093015005,
+      "pf_test": 3.076921917703519,
+      "maxdd_test": 11.075294272143232,
+      "trades_test": 2,
+      "verdict": "REJECT: FAILS time-matched BH (+43.3%)"
+    },
+    {
+      "name": "VVV / WETH",
+      "test_net": 14.965053007742203,
+      "bh_test": null,
+      "pf_test": 9.99,
+      "maxdd_test": 0.0,
+      "trades_test": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "LFI / WETH",
+      "test_net": 51.367912169697824,
+      "bh_test": 44.800291587000785,
+      "pf_test": 3.523612445247624,
+      "maxdd_test": 9.764651475012476,
+      "trades_test": 3,
+      "verdict": "PASS"
+    },
+    {
+      "name": "BNKR / WETH 1%",
+      "test_net": 10.121063388848262,
+      "bh_test": null,
+      "pf_test": 9.99,
+      "maxdd_test": 0.0,
+      "trades_test": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "KTA / WETH",
+      "test_net": 2.277019644412648,
+      "bh_test": null,
+      "pf_test": 9.99,
+      "maxdd_test": 0.0,
+      "trades_test": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "cbBTC / WETH 0.01%",
+      "test_net": 7.0016102511109235,
+      "bh_test": 7.164558101660634,
+      "pf_test": 9.99,
+      "maxdd_test": 0.0,
+      "trades_test": 1,
+      "verdict": "REJECT: FAILS time-matched BH (+7.2%)"
+    },
+    {
+      "name": "Ratspeak / WETH",
+      "test_net": 82.40944284829466,
+      "bh_test": 93.52424466702618,
+      "pf_test": 9.495309718405908,
+      "maxdd_test": 0.0,
+      "trades_test": 2,
+      "verdict": "REJECT: FAILS time-matched BH (+93.5%)"
+    },
+    {
+      "name": "BRETT / WETH 1%",
+      "test_net": 0.0,
+      "bh_test": null,
+      "pf_test": 0,
+      "maxdd_test": 0.0,
+      "trades_test": 0,
+      "verdict": "REJECT: no trades in test window"
+    },
+    {
+      "name": "DOT / ETH 1%",
+      "test_net": 36.4948908297488,
+      "bh_test": null,
+      "pf_test": 9.99,
+      "maxdd_test": 0.0,
+      "trades_test": 1,
+      "verdict": "PASS"
+    }
+  ]
+}

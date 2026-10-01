@@ -1,0 +1,1 @@
+OmniRoute wired to team: base-research + ops-briefing via gateway; trade-execution direct.

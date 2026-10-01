@@ -1,0 +1,8 @@
+{
+  "recovered": false,
+  "reconstruction_source": "backtest_results.json + grid_results.json (not original replay)",
+  "cycles_replayed": 0,
+  "last_cycle_timestamp": null,
+  "note": "Replay unrecoverable (original replay_state + .bak missing; rebuild_caps.json excludes replay; 2026-09-04 user-approved recommendation: skip replay, proceed harness soak -> v8 -> un-pause)",
+  "reconstruction_only": true
+}

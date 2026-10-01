@@ -1,0 +1,16 @@
+{
+  "pool_address": "0x6c561b446416e1a00e8e93e221854d6ea4171372",
+  "symbol": "WETH",
+  "quote": "USDC",
+  "liquidity_usd": 115464047,
+  "ema9": 2455.420495,
+  "ema21": 2453.251755,
+  "prev_ema9": 2455.860619,
+  "prev_ema21": 2453.210931,
+  "bullish_crossover": false,
+  "current_price": 2453.66,
+  "volume_5m": 0.0,
+  "volume_1h": 8617.742468742455,
+  "price_change_24h": 0.0,
+  "ohlcv_points": 120
+}

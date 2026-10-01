@@ -1,0 +1,5 @@
+{
+  "consecutive": 0,
+  "last_pass_at": "2026-08-30T18:39:02.850152+00:00",
+  "reset_by": "orchestrator-cron 2026-09-15T02:15Z stale-artifact auto-arm"
+}

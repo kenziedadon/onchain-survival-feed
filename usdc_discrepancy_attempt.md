@@ -1,0 +1,1 @@
+USDC DISCREPANCY ATTEMPT — NOT RESOLVED (honest). Contract 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 verified. On-chain balance 0 verified (mainnet.base.org). Screenshot 6.61 NOT verified. No independent on-chain verification of screenshot source. NO fabricated resolution claim. Gap remains open.

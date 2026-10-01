@@ -1,0 +1,27 @@
+[
+  {
+    "net": 2.5,
+    "coin": "VVV/WETH",
+    "score": 103
+  },
+  {
+    "net": -1.1,
+    "coin": "cbBTC/WETH",
+    "score": 95
+  },
+  {
+    "net": 3.2,
+    "coin": "DRB/WETH",
+    "score": 61
+  },
+  {
+    "net": 1.8,
+    "coin": "KTA/WETH",
+    "score": 43
+  },
+  {
+    "net": -0.5,
+    "coin": "BRETT/WETH",
+    "score": 25
+  }
+]

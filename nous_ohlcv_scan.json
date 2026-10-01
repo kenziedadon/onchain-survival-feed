@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-09-04T09:58:12.345723Z",
+  "scanned_pools": 4,
+  "crossover_count": 0,
+  "results": [
+    {
+      "token_address": "0x215b2146c3164aba3f5b18e8619b737c7f7dd11e5ba693646dcd9a336c5a30ba",
+      "symbol": "Basecat",
+      "quote": "ETH",
+      "liquidity_usd": 1007903.5746,
+      "volume_5m_usd": 8269.2489846109,
+      "volume_1h_usd": 40965.1588522447,
+      "price_change_24h_pct": 24.223,
+      "ema9": 0.024104,
+      "ema21": 0.026933,
+      "ema_crossover": false,
+      "close_usd": 0.021128
+    },
+    {
+      "token_address": "0x054cbc9f7ce2081d50bae4f6ccd5f82e1374161fe65e99aa16b53ac1e1c177c8",
+      "symbol": "BASEJUICE",
+      "quote": "ETH",
+      "liquidity_usd": 112648.0125,
+      "volume_5m_usd": 71.842107372,
+      "volume_1h_usd": 7934.181670766,
+      "price_change_24h_pct": 53.583,
+      "ema9": 0.001063,
+      "ema21": 0.001063,
+      "ema_crossover": false,
+      "close_usd": 0.000959
+    },
+    {
+      "address": "0xd9edc75a3a797ec92ca370f19051babebfb2edee",
+      "symbol": "KTA",
+      "quote": "WETH",
+      "liquidity_usd": 4108347.6035,
+      "name": "KTA / WETH",
+      "error": "ohlcv_failed_after_retries",
+      "ema9": 0.069904,
+      "ema21": 0.0703,
+      "ema_crossover": false,
+      "close_usd": 0.068729,
+      "volume_5m_usd": 247.919129386,
+      "volume_1h_usd": 5961.4097402891,
+      "price_change_24h_pct": -3.235
+    },
+    {
+      "token_address": "0x17a3ad8c74c4947005afeda9965305ae2eb2518a",
+      "symbol": "MIGGLES",
+      "quote": "WETH",
+      "liquidity_usd": 521832.5881,
+      "volume_5m_usd": 0,
+      "volume_1h_usd": 0,
+      "price_change_24h_pct": 0,
+      "ema9": 0.003055,
+      "ema21": 0.00304,
+      "ema_crossover": false,
+      "close_usd": 0.003043
+    }
+  ],
+  "crossover_tokens": []
+}

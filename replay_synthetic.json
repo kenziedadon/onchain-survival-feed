@@ -1,0 +1,14 @@
+{
+  "created": "2026-09-04T23:22:02.981999+00:00",
+  "source": "SYNTHETIC (original replay unrecovered)",
+  "note": "NOT verified 60% \u2014 synthetic only",
+  "disarmed": true,
+  "trades": [
+    {
+      "pair": "WETH/USDC",
+      "entry_price": 2450,
+      "exit_price": 2590,
+      "return_pct": 5.7
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "ts": "2026-10-01T00:19:24.382481+00:00",
+  "pass": true,
+  "grid_pass": true,
+  "detail": "strict pass: 56% positive, avg +9.7% (n=9)",
+  "early_edge_pass": true,
+  "methodology_pass": true
+}

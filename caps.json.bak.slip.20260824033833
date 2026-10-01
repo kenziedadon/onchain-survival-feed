@@ -1,0 +1,97 @@
+{
+  "kill_switch": true,
+  "live_trading": false,
+  "edge_evidence": {
+    "ts": "2026-08-24T03:07:17.500140+00:00",
+    "pass": false,
+    "grid_pass": false,
+    "early_edge_pass": false,
+    "detail": "grid: strict bar not met: only 33% positive (<60%); median -1.4% (<0 \u2014 outlier-driven) | early: no early_edge_results.json (no backtestable new pools yet)",
+    "status": "no_edge"
+  },
+  "require_confirmation": true,
+  "max_trade_eth": 0.0005,
+  "max_daily_loss_eth": 0.001869,
+  "max_slippage_bps": 100,
+  "min_score": 50,
+  "max_positions": 5,
+  "max_buys_per_cycle": 1,
+  "liquidity_floor_usd": 1000000,
+  "volume_to_liquidity_min": 0.1,
+  "portfolio_context": true,
+  "max_position_allocation_pct": 50.0,
+  "max_open_positions_portfolio": 6,
+  "exit_cooldown_hours": 2.0,
+  "max_position_age_hours": 12.0,
+  "allowed_actions": [
+    "swap"
+  ],
+  "blocked_tokens": [],
+  "strategy": {
+    "name": "kinetic_v2",
+    "source": "strategy_kinetic.py",
+    "grid_search": "backtests/grid_search_kinetic_v2_1787332839.json",
+    "discovery": "GeckoTerminal trending ETH/WETH pools, stables excluded, vol_24h>$50k, 24h change>+2%",
+    "entry": "isHighEnergy(ER>0.30) + kineticBullBreak: close>upperBand AND k_ema>k_sma | kineticBearBreak: close<lowerBand AND k_ema<k_sma | Chop fade: in chop regime, fade to centerLine",
+    "exit": "ATR trailing stop (1.0x initial SL, 3.0x TP) + chop positions target centerLine, max 8 bars in chop",
+    "sizing": "ATR-based: risk 2% equity per trade, sized by 1x ATR, clamped to capital band",
+    "costs": "real DEX fee + slippage-from-liquidity + Base gas",
+    "length": 20,
+    "mult": 2.0,
+    "sl_type": "ATR Multiplier",
+    "sl_val": 1.0,
+    "tp_val": 3.0,
+    "atr_len": 14,
+    "use_trailing": true,
+    "trail_act": 1.5,
+    "trail_offset": 0.5,
+    "er_min": 0.3,
+    "entropy_max": "off",
+    "pred_length": 10,
+    "max_chop_bars": 8,
+    "grid_search_result": {
+      "basket": "+178.3%",
+      "trades": 24,
+      "win_rate": "58%",
+      "profit_factor": 1.4,
+      "max_dd_pct": 3.1
+    },
+    "live_test_result": {
+      "basket": "+19.7% +8.1% +4.4% -1.0% -2.0% -3.8% +4.3%",
+      "total_return": "+181.3%",
+      "trades": 29,
+      "profitable_coins": 4,
+      "losing_coins": 3
+    }
+  },
+  "wallet": {
+    "address": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F",
+    "balance_eth": "0.0052676",
+    "tier": "very_small",
+    "max_trade_eth_actual": 0.0005,
+    "note": "SAFER DEFAULTS: conservative caps, dry-run default, require confirmation for all trades.",
+    "balance_eth_updated_block": 50366274,
+    "balance_eth_updated": "idempotent fix"
+  },
+  "nonstandard_sell_tokens": [
+    {
+      "token": "0xC52aeDec3374422d7510E294cfAa90799595CBa3",
+      "name": "Surplus",
+      "reason": "Uniswap v4 hook pool \u2014 no v3/Aerodrome route; Relay routes it but min sell is ~25-50M raw (0.000025-0.00005 tokens); holding is dust (5891779 raw) and unsellable"
+    }
+  ],
+  "macro_regime": {
+    "enabled": true,
+    "lookback_days": 30,
+    "yield_drop_pct": -0.05,
+    "yield_rise_pct": 0.05,
+    "tvl_rise_pct": 0.02,
+    "tvl_drop_pct": -0.02
+  },
+  "sell_path_verified": {
+    "VIRTUAL": "aerodrome getAmountsOut quote OK 2026-08-22",
+    "KTA": "aerodrome getAmountsOut quote OK 2026-08-22",
+    "AERO": "buy+sell getAmountsOut quotes OK 2026-08-23 (0x940181a94A35A4569E4529A3CDfB74e38FD98631)",
+    "note": "swap.js now checksum-normalizes token addresses and falls back to Relay aggregator for v4/hook pools"
+  }
+}

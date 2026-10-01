@@ -1,0 +1,43 @@
+# --- Secrets: never commit ---
+.env
+.env.*
+!.env.example
+.secrets
+*.pem
+.payer_key_tmp*
+wallet.json
+team_wallet.json
+*_key.json
+secrets/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+
+# --- Node ---
+node_modules/
+package-lock.json
+
+# --- Generated / runtime state (large, machine-local) ---
+discovered.jsonl
+discovered.jsonl.bak*
+telemetry.jsonl
+vanguard_execution.log
+vanguard_signals.jsonl
+auto_trade.log
+candles_cache.json
+candle_cache/
+shadow_book*.jsonl
+paper_signals*.jsonl
+*.log
+
+# --- Caches / output ---
+backtests/
+logs/
+reports/
+__pycache__/

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "KTA / WETH",
+    "net_pct": 0.0,
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0,
+    "pf": 0,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.05,
+    "adx": 44.73331149509121
+  },
+  {
+    "name": "cbBTC / WETH 0.05%",
+    "net_pct": 0.0,
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0,
+    "pf": 0,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.05,
+    "adx": 86.04429852514266
+  },
+  {
+    "name": "VVV / WETH 0.05%",
+    "net_pct": -3.666420450298802,
+    "trades": 2,
+    "wins": 1,
+    "losses": 1,
+    "win_rate": 50.0,
+    "pf": 5.904831341234954,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.05,
+    "adx": 30.379267166461332
+  },
+  {
+    "name": "Surplus / WETH",
+    "net_pct": -2.117031653740098,
+    "trades": 4,
+    "wins": 1,
+    "losses": 3,
+    "win_rate": 25.0,
+    "pf": 0.04638218736780953,
+    "mdd_pct": 9.480282419365304,
+    "trade_eth": 0.035399999999999994,
+    "adx": 28.312749171346102
+  },
+  {
+    "name": "KEYCAT / WETH",
+    "net_pct": 13.93319857166575,
+    "trades": 2,
+    "wins": 2,
+    "losses": 0,
+    "win_rate": 100.0,
+    "pf": 9.99,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.0264,
+    "adx": 34.28529328028506
+  }
+]

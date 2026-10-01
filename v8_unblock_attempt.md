@@ -1,0 +1,1 @@
+v8 UNBLOCK ATTEMPT — BLOCKED (honest). v8_reconstructed exists. scp BLOCKED remains. Rebuild complete for skeleton only; NO live scp execution. NO fabricated unblock claim. Replay unrecovered preserved.

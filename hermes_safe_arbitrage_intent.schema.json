@@ -1,0 +1,27 @@
+{
+  "name": "hermes_safe_arbitrage_intent",
+  "description": "Registers an arbitrage swap-path intent. Generates ZERO execution payloads directly from the LLM; only typed trading pairs are parsed for local evaluation. The local execution layer owns calldata generation, on-chain simulation (read-only eth_call: router has code + live Uniswap V3 pool exists at a real fee tier via Factory.getPool + pool.slot0), risk gating, and human approval. The LLM can never supply raw calldata, a target contract, or a transaction hash. Broadcast (if ever enabled) is delegated to the Base Account smart wallet, which requires per-tx tap-approve.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "sourceToken": {
+        "type": "string",
+        "description": "The ERC20 contract address of the input token on Base (e.g. WETH 0x4200...0006, USDC 0x8335...2913). Must be a valid 20-byte hex address; validated against the local blocklist and risk gate before any action."
+      },
+      "targetToken": {
+        "type": "string",
+        "description": "The ERC20 contract address of the output token on Base. Must differ from sourceToken and pass the same validation."
+      },
+      "inputAmountWei": {
+        "type": "string",
+        "description": "The exact input size denominated in wei as a base-10 integer string (e.g. \"50000000000000000\" for 0.05 ETH) to preserve precision. Validated as a non-negative integer > 0."
+      },
+      "venue": {
+        "type": "string",
+        "enum": ["UNIV3", "AERODROME"],
+        "description": "Enforces execution strictly through authorized local protocol integrations. Mapped to a verified router allowlist; any other value is rejected."
+      }
+    },
+    "required": ["sourceToken", "targetToken", "inputAmountWei", "venue"]
+  }
+}

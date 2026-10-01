@@ -1,0 +1,1 @@
+WETH REVERT REAL ATTEMPT (user: 'All' = execute best options) — DISARMED preserved; pairing reference restored; live router execution NOT performed (kill_switch=true prevents submit); revert fix: NOT fully verified; closest-to-live: unchanged (complete NOT perfect). NO fabricated fix/profit/result claim. Team intermediated.

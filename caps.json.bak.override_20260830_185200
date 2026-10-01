@@ -1,0 +1,77 @@
+{
+  "active_strategy": "simple_ema_v1",
+  "strategy": {
+    "name": "simple_ema_v1",
+    "source": "simple_ema.py",
+    "discovery": "GeckoTerminal trending ETH/WETH pools, stables excluded, vol_24h>$50k, 24h change>+2%",
+    "entry": "Fast EMA(9) crosses above Slow EMA(21) on hourly candles",
+    "exit": "Fast EMA(9) crosses below Slow EMA(21); fallback fixed stop",
+    "sizing": "ATR-based band clamp via existing capital band logic",
+    "costs": "real DEX fee + slippage-from-liquidity + Base gas"
+  },
+  "strategy_params": {
+    "fast_period": 8,
+    "slow_period": 24,
+    "stop_loss_pct": 2.0,
+    "take_profit_pct": 4.0,
+    "use_momentum_confirm": true,
+    "use_macd_filter": true,
+    "use_stochrsi_filter": true,
+    "stochrsi_hi": 80,
+    "min_vol_24h_usd": 100000,
+    "min_liquidity_usd": 250000
+  },
+  "kill_switch": true,
+  "live_trading": false,
+  "edge_evidence": {
+    "ts": "2026-08-30T18:50:22.549269",
+    "pass": false,
+    "grid_pass": false,
+    "detail": "strict bar not met: only 56% positive (<60%)",
+    "early_edge_pass": true,
+    "methodology_pass": true
+  },
+  "require_confirmation": true,
+  "max_trade_eth": 0.0005,
+  "max_daily_loss_eth": 0.001869,
+  "max_slippage_bps": 100,
+  "min_score": 50,
+  "max_positions": 5,
+  "max_buys_per_cycle": 2,
+  "liquidity_floor_usd": 100000,
+  "volume_to_liquidity_min": 0.1,
+  "portfolio_context": true,
+  "max_position_allocation_pct": 50.0,
+  "max_open_positions_portfolio": 6,
+  "exit_cooldown_hours": 2.0,
+  "max_position_age_hours": 12.0,
+  "allowed_actions": [
+    "swap"
+  ],
+  "blocked_tokens": [],
+  "wallet": {
+    "address": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F",
+    "balance_eth": "0.005216446431726265",
+    "tier": "very_small",
+    "max_trade_eth_actual": 0.0005,
+    "note": "SAFER DEFAULTS: conservative caps, dry-run default, require confirmation for all trades.",
+    "balance_eth_updated_block": "latest",
+    "balance_eth_updated": "2026-08-26T17:33:47.062510+00:00"
+  },
+  "nonstandard_sell_tokens": [],
+  "macro_regime": {
+    "enabled": true,
+    "lookback_days": 30,
+    "yield_drop_pct": -0.05,
+    "yield_rise_pct": 0.05,
+    "tvl_rise_pct": 0.02,
+    "tvl_drop_pct": -0.02
+  },
+  "sell_path_verified": {
+    "VIRTUAL": "aerodrome getAmountsOut quote OK 2026-08-22",
+    "KTA": "aerodrome getAmountsOut quote OK 2026-08-22",
+    "AERO": "buy+sell getAmountsOut quotes OK 2026-08-23 (0x940181a94A35A4569E4529A3CDfB74e38FD98631)",
+    "note": "swap.js now checksum-normalizes token addresses and falls back to Relay aggregator for v4/hook pools"
+  },
+  "_arm_ts": "2026-08-30T09:30:10.752982+00:00"
+}

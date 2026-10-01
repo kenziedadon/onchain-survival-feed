@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Meridian — Base desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0c0e; --surface: #13151a; --elev: #1a1d24;
+      --fg: #ecece8; --muted: #8b909a; --subtle: #6a6f78; --border: #262a32;
+      --accent: #6d8cff; --pos: #3d9a78; --neg: #c45c4a; --warn: #c4a35a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--fg);
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased; min-height: 100%; }
+    button { font: inherit; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .4; }
+    .wrap { max-width: 72rem; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+    header { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between;
+      align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+    .brand { display: flex; gap: .75rem; align-items: center; }
+    .mark { width: 2.5rem; height: 2.5rem; border: 1px solid var(--border); border-radius: .5rem;
+      display: grid; place-items: center; background: var(--surface); color: var(--accent); }
+    .brand p { margin: 0; font-size: .875rem; font-weight: 500; }
+    .brand span { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
+    .pills { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: .15rem .5rem;
+      font-size: .75rem; font-weight: 500; background: var(--elev); color: var(--muted); }
+    .badge.pos { background: color-mix(in oklab, var(--pos) 18%, transparent); color: var(--pos); }
+    .badge.neg { background: color-mix(in oklab, var(--neg) 18%, transparent); color: var(--neg); }
+    .badge.warn { background: color-mix(in oklab, var(--warn) 18%, transparent); color: var(--warn); }
+    .badge.acc { background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent); }
+    .btn { height: 2.25rem; padding: 0 .75rem; border-radius: .5rem; border: 1px solid var(--border);
+      background: transparent; color: var(--fg); font-size: .75rem; }
+    .btn.danger { background: color-mix(in oklab, var(--neg) 15%, transparent); color: var(--neg); border-color: transparent; }
+    .btn.solid { background: var(--fg); color: var(--bg); border-color: transparent; }
+    .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-top: 1.5rem; }
+    @media (min-width: 1024px) { .kpis { grid-template-columns: repeat(5, 1fr); } }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.1rem 1.25rem; }
+    .kpi .l { font-size: .75rem; color: var(--muted); }
+    .kpi .v { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.125rem;
+      font-variant-numeric: tabular-nums; margin-top: .4rem; }
+    .kpi .h { font-size: .75rem; color: var(--muted); margin-top: .25rem; }
+    .grid2 { display: grid; gap: .75rem; margin-top: .75rem; }
+    @media (min-width: 1024px) { .grid2 { grid-template-columns: 3fr 2fr; } }
+    h2 { margin: 0; font-size: .875rem; font-weight: 500; }
+    .sub { margin: .2rem 0 0; font-size: .75rem; color: var(--muted); }
+    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .pos { color: var(--pos); } .neg { color: var(--neg); }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th { text-align: left; font-size: .75rem; font-weight: 500; color: var(--muted); padding: 0 .75rem .5rem 0; border-bottom: 1px solid var(--border); }
+    td { padding: .75rem .75rem .75rem 0; border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent); vertical-align: top; }
+    .scroll { overflow-x: auto; }
+    .filters { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+    .chip { height: 2.25rem; padding: 0 .75rem; border: 0; border-radius: .5rem; background: var(--elev); color: var(--muted); font-size: .75rem; text-transform: capitalize; }
+    .chip.on { background: var(--fg); color: var(--bg); }
+    .ops { display: grid; gap: .75rem; }
+    @media (min-width: 768px) { .ops { grid-template-columns: 1fr 1fr; } }
+    .op { width: 100%; text-align: left; background: var(--elev); border: 1px solid var(--border);
+      border-radius: .75rem; padding: 1rem; color: inherit; display: flex; flex-direction: column; }
+    .op:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+    .op .head { display: flex; justify-content: space-between; gap: .75rem; align-items: flex-start; width: 100%; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: .75rem; font-size: .75rem; }
+    @media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+    .stats dt { color: var(--muted); } .stats dd { margin: .15rem 0 0; }
+    .sys { display: grid; gap: .5rem; }
+    @media (min-width: 640px) { .sys { grid-template-columns: 1fr 1fr; } }
+    .sys li { list-style: none; background: var(--elev); border-radius: .5rem; padding: .75rem; display: flex; flex-direction: column; gap: .2rem; }
+    .sys ul { margin: .75rem 0 0; padding: 0; }
+    .sys .k { font-size: .75rem; color: var(--muted); }
+    .drawer { position: fixed; inset: 0; background: color-mix(in oklab, var(--bg) 70%, transparent); z-index: 20; display: none; }
+    .drawer.on { display: block; }
+    .panel { position: absolute; top: 0; right: 0; height: 100%; width: min(28rem, 100%);
+      background: var(--surface); border-left: 1px solid var(--border); padding: 1.5rem; overflow: auto; }
+    .panel h3 { margin: 0; font-size: 1.125rem; font-weight: 500; }
+    .x { position: absolute; top: 1rem; right: 1rem; width: 2.75rem; height: 2.75rem; border: 0;
+      background: transparent; color: var(--muted); font-size: 1.25rem; }
+    .note { font-size: .875rem; color: var(--muted); line-height: 1.5; }
+    .inv { border: 1px solid var(--border); background: var(--elev); border-radius: .75rem; padding: .75rem; }
+    .addr { font-size: .7rem; color: var(--subtle); word-break: break-all; }
+    svg.spark { width: 100%; height: 11rem; display: block; }
+    .muted { color: var(--muted); font-size: .75rem; }
+    .mt { margin-top: 1.5rem; }
+    .row { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M12 2l9 5v10l-9 5-9-5V7z"/>
+        </svg>
+      </div>
+      <p>Meridian<span>Base Network desk · live bot feed</span></p>
+    </div>
+    <div class="pills">
+      <span class="badge" id="srcBadge">demo book</span>
+      <span class="badge" id="liveBadge">Live trading off</span>
+      <button class="btn danger" id="killBtn" type="button">Kill switch on</button>
+      <button class="btn solid" id="copyBtn" type="button">Copy this file</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <p class="muted" id="loadNote">Loading bot state from <code>/api/state</code>… falls back to embedded demo book if unreachable.</p>
+
+    <section class="kpis" id="kpis"></section>
+
+    <section class="grid2">
+      <div class="card">
+        <div class="row">
+          <div><h2>Equity</h2><p class="sub">Last 30 days · paper book</p></div>
+          <span class="mono pos" id="eqPct"></span>
+        </div>
+        <svg class="spark" id="spark" viewBox="0 0 600 176" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="card" id="macro"></div>
+    </section>
+
+    <section class="card mt">
+      <h2>Positions</h2>
+      <p class="sub">Open book first, then closed</p>
+      <div class="scroll mt" id="posTable"></div>
+    </section>
+
+    <section class="card mt">
+      <div class="row">
+        <div>
+          <h2>Opportunities</h2>
+          <p class="sub" id="opMeta"></p>
+        </div>
+        <div>
+          <div class="filters" id="trendF"></div>
+          <div class="filters" style="margin-top:.35rem" id="setupF"></div>
+        </div>
+      </div>
+      <div class="ops mt" id="ops"></div>
+    </section>
+
+    <section class="card mt" id="sys"></section>
+  </div>
+
+  <div class="drawer" id="drawer">
+    <div class="panel" id="panel"></div>
+  </div>
+
+<script>
+/* Meridian desk. Live overlay sources, in order:
+   1. /api/state  (dash_server.py — caps, risk_state, holdings, discovered.jsonl, backtest_results.json)
+   2. dashboard-data.json dropped next to this file
+   3. embedded demo book */
+const DEMO = {
+  snapshot: {
+    walletEth: 2.184, walletUsd: 8742.16, liveTrading: false, killSwitch: true,
+    latestReport: "2026-08-22 11:40 CDT — scan complete, 8 setups, 0 fills",
+    cronJobs: 4
+  },
+  macro: {
+    regime: "neutral", yieldApy: 4.82, yieldDelta: 0.14, tvlUsd: 4.12e9, tvlChange7d: -1.8,
+    note: "Base TVL slightly softer week-over-week. Yields stable. No expansion impulse — wait for structure, skip FOMO entries."
+  },
+  equity: [
+    ["Jul 24", 8200], ["Jul 27", 8310], ["Jul 30", 8184], ["Aug 02", 8422], ["Aug 05", 8510],
+    ["Aug 08", 8390], ["Aug 11", 8620], ["Aug 14", 8578], ["Aug 17", 8710], ["Aug 20", 8688], ["Aug 22", 8742]
+  ],
+  positions: [
+    { token: "Aerodrome", symbol: "AERO", amount: 1840, entry: 1.12, current: 1.186, status: "open", setup: "pullback" },
+    { token: "Virtuals", symbol: "VIRTUAL", amount: 620, entry: 1.84, current: 1.71, status: "open", setup: "breakout" },
+    { token: "Brett", symbol: "BRETT", amount: 12500, entry: 0.084, current: 0.0912, status: "open", setup: "reversal" },
+    { token: "Toshi", symbol: "TOSHI", amount: 88000, entry: 0.00062, current: 0.00058, status: "closed", setup: "scalp", realizedPnl: -42.4 },
+    { token: "Zora", symbol: "ZORA", amount: 4100, entry: 0.041, current: 0.0488, status: "closed", setup: "breakout", realizedPnl: 186.2 }
+  ],
+  opportunities: [
+    { token: "Aerodrome", symbol: "AERO", address: "0x940181a94A35A4569E4529A3CDfB74e38FD98631", trend: "bullish", setup: "pullback", entryLow: 1.14, entryHigh: 1.18, stopLoss: 1.06, takeProfits: [1.28, 1.36], risk: "low", liquidityUsd: 18400000, volume24h: 6200000, holders: 184200, topHolderPct: 8.4, positionSizePct: 2.5, invalidation: "Daily close below 1.06 with volume expansion.", reasoning: "Higher-low on the 4h after a clean range break. Liquidity is deep on Aerodrome pools; holder concentration is acceptable. Pullback into prior breakout is the only entry — no chase." },
+    { token: "Moonwell", symbol: "WELL", address: "0xA88594D6b4528C0D3E9C19268A8c34501121d6ad", trend: "bullish", setup: "breakout", entryLow: 0.0284, entryHigh: 0.0296, stopLoss: 0.0258, takeProfits: [0.033, 0.0365], risk: "medium", liquidityUsd: 4100000, volume24h: 890000, holders: 22400, topHolderPct: 14.2, positionSizePct: 1.5, invalidation: "Failed hold of 0.028 after a 1h close back inside the range.", reasoning: "Yield + TVL on Base lending is stable; WELL is coiling under a 3-week high. Volume is not yet confirmatory — only take a breakout with a 1h close and rising volume. Size down for holder concentration." },
+    { token: "Degen", symbol: "DEGEN", address: "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed", trend: "neutral", setup: "scalp", entryLow: 0.0048, entryHigh: 0.005, stopLoss: 0.00455, takeProfits: [0.00525, 0.0054], risk: "medium", liquidityUsd: 7800000, volume24h: 3100000, holders: 1120000, topHolderPct: 11.1, positionSizePct: 1, invalidation: "Loss of 0.00455 or a failed reclaim of VWAP on 15m.", reasoning: "Range-bound. Only a mean-reversion scalp at the lower third of the 24h range. No swing thesis until a higher high prints. Liquidity is fine; skip if spread widens." },
+    { token: "Brett", symbol: "BRETT", address: "0x532f27101965dd16442E59d40670FaF5eBB142E4", trend: "bullish", setup: "reversal", entryLow: 0.088, entryHigh: 0.092, stopLoss: 0.081, takeProfits: [0.102, 0.112], risk: "medium", liquidityUsd: 12200000, volume24h: 4400000, holders: 890000, topHolderPct: 9.6, positionSizePct: 2, invalidation: "Sweep of 0.081 that fails to reclaim within two 1h candles.", reasoning: "Wick rejection off a weekly demand zone with rising spot volume. Meme beta is noisy — this is a defined reversal, not a narrative trade. Cap size; do not add if it rips without you." },
+    { token: "Clanker", symbol: "CLANKER", address: "0x1bc0c42215582d5A706Ac5B3a1a34284ecCf2f85", trend: "bearish", setup: "pullback", entryLow: 0, entryHigh: 0, stopLoss: 0, takeProfits: [], risk: "high", liquidityUsd: 620000, volume24h: 410000, holders: 4800, topHolderPct: 38.4, positionSizePct: 0, invalidation: "Any long is invalid while top-10 wallets hold >35%.", reasoning: "Rejected. Liquidity is thin and holder concentration is a rug vector. Downtrend is intact. Capital preservation — no entry, no chase, no averaging." },
+    { token: "AIXBT", symbol: "AIXBT", address: "0x4F9Fd6Be4a90f2620860d680c0d4d5Fb53d1A825", trend: "neutral", setup: "breakout", entryLow: 0.112, entryHigh: 0.118, stopLoss: 0.101, takeProfits: [0.132, 0.148], risk: "high", liquidityUsd: 2400000, volume24h: 1900000, holders: 31200, topHolderPct: 21.7, positionSizePct: 0.75, invalidation: "Breakout that closes back below 0.112 on 4h.", reasoning: "Compression under resistance. Volume is real but concentration is elevated. Only a confirmed breakout with reduced size. Skip if kill switch is on for high-risk names." },
+    { token: "Higher", symbol: "HIGHER", address: "0x0578d8A44db98B23BF096A382e016e29a5Ce0ffe", trend: "bearish", setup: "reversal", entryLow: 0.0019, entryHigh: 0.00205, stopLoss: 0.00172, takeProfits: [0.00228], risk: "high", liquidityUsd: 890000, volume24h: 210000, holders: 18600, topHolderPct: 24.1, positionSizePct: 0, invalidation: "No long while 4h structure is lower-highs.", reasoning: "Trend is down. A bounce is not a reversal. Liquidity is marginal. Wait for a higher low and a close above the last swing — until then, stand aside." },
+    { token: "Virtuals", symbol: "VIRTUAL", address: "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b", trend: "neutral", setup: "pullback", entryLow: 1.62, entryHigh: 1.7, stopLoss: 1.52, takeProfits: [1.88, 2.02], risk: "medium", liquidityUsd: 9600000, volume24h: 5100000, holders: 64000, topHolderPct: 16.8, positionSizePct: 1.25, invalidation: "4h close under 1.52 or a failed defense of the rising 50-MA.", reasoning: "Open position is slightly underwater. Fresh adds only in the 1.62–1.70 demand band. Do not average up. If structure breaks, flatten — do not hope." }
+  ]
+};
+
+let data = structuredClone(DEMO);
+let src = "demo";
+let kill = true, trend = "all", setup = "all", selected = null;
+
+const usd = n => {
+  const a = Math.abs(n ?? 0);
+  if (a >= 1e9) return "$" + (n/1e9).toFixed(2) + "B";
+  if (a >= 1e6) return "$" + (n/1e6).toFixed(2) + "M";
+  if (a >= 1e4) return "$" + (n/1e3).toFixed(1) + "k";
+  return Number(n ?? 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
+};
+const pct = n => (n > 0 ? "+" : "") + (n ?? 0).toFixed(1) + "%";
+const num = (n, d=2) => Number(n ?? 0).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const toneT = t => t === "bullish" ? "pos" : t === "bearish" ? "neg" : "";
+const toneR = r => r === "low" ? "pos" : r === "high" ? "neg" : "warn";
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : "";
+const pnl = p => p.status === "closed" && p.realizedPnl != null ? p.realizedPnl : ((p.current - p.entry) * p.amount) || 0;
+const pnlPct = p => p.entry ? ((p.current - p.entry) / p.entry) * 100 : 0;
+
+function stats() {
+  const closed = data.positions.filter(p => p.status === "closed");
+  const open = data.positions.filter(p => p.status !== "closed");
+  const wins = closed.filter(p => (p.realizedPnl ?? 0) > 0);
+  const losses = closed.filter(p => (p.realizedPnl ?? 0) <= 0);
+  const realized = closed.reduce((s, p) => s + (p.realizedPnl ?? 0), 0);
+  const unrealized = open.reduce((s, p) => s + pnl(p), 0);
+  return { openCount: open.length, wins: wins.length, losses: losses.length,
+    winRate: closed.length ? wins.length / closed.length * 100 : 0, realized, unrealized, total: realized + unrealized };
+}
+
+function spark() {
+  const pts = data.equity || [];
+  const el = document.getElementById("spark");
+  if (pts.length < 2) { el.innerHTML = ""; document.getElementById("eqPct").textContent = ""; return; }
+  const ys = pts.map(p => p[1]);
+  const min = Math.min(...ys), max = Math.max(...ys);
+  const w = 600, h = 176, pad = 8;
+  const x = i => pad + i * (w - 2*pad) / (pts.length - 1);
+  const y = v => h - pad - ((v - min) / (max - min || 1)) * (h - 2*pad);
+  const d = pts.map((pt, i) => (i ? "L" : "M") + x(i) + " " + y(pt[1])).join(" ");
+  const area = d + ` L${x(pts.length-1)} ${h} L${x(0)} ${h} Z`;
+  el.innerHTML =
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6d8cff" stop-opacity=".28"/>
+      <stop offset="100%" stop-color="#6d8cff" stop-opacity="0"/></linearGradient></defs>
+     <path d="${area}" fill="url(#g)"/>
+     <path d="${d}" fill="none" stroke="#6d8cff" stroke-width="1.5"/>`;
+  const first = ys[0], last = ys[ys.length-1];
+  const eqEl = document.getElementById("eqPct");
+  eqEl.textContent = pct((last - first) / first * 100);
+  eqEl.className = "mono " + (last >= first ? "pos" : "neg");
+}
+
+function renderKpis(s) {
+  const snap = data.snapshot;
+  document.getElementById("liveBadge").textContent = snap.liveTrading ? "Live trading ON" : "Live trading off";
+  document.getElementById("liveBadge").className = "badge " + (snap.liveTrading ? "neg" : "");
+  kill = !!snap.killSwitch;
+  document.getElementById("killBtn").textContent = kill ? "Kill switch on" : "Arm trading";
+  document.getElementById("killBtn").classList.toggle("danger", kill);
+  document.getElementById("kpis").innerHTML = [
+    ["Wallet", num(snap.walletEth, 3) + " ETH", usd(snap.walletUsd)],
+    ["Open", String(s.openCount), "Active books"],
+    ["Total PnL", usd(s.total), "Unreal. " + usd(s.unrealized), s.total >= 0 ? "pos" : "neg"],
+    ["Win rate", s.winRate.toFixed(0) + "%", s.wins + "W / " + s.losses + "L closed"],
+    ["Jobs", String(snap.cronJobs ?? "—"), "Cron scanners"]
+  ].map(([l,v,h,c]) => `<div class="card kpi"><div class="l">${l}</div><div class="v ${c||""}">${v}</div><div class="h">${h}</div></div>`).join("");
+}
+
+function renderMacro() {
+  const m = data.macro;
+  if (!m) { document.getElementById("macro").innerHTML = ""; return; }
+  document.getElementById("macro").innerHTML =
+    `<div class="row"><h2>Macro regime</h2><span class="badge ${toneT(m.regime)}">${cap(m.regime)}</span></div>
+     <div class="stats" style="grid-template-columns:1fr 1fr;margin-top:1rem">
+       <div><dt>Base TVL</dt><dd class="mono">${usd(m.tvlUsd)}</dd><dd class="${(m.tvlChange7d??0)>=0?"pos":"neg"}">${pct(m.tvlChange7d)} 7d</dd></div>
+       <div><dt>ETH yield</dt><dd class="mono">${(m.yieldApy??0).toFixed(2)}%</dd><dd class="${(m.yieldDelta??0)>=0?"pos":"neg"}">${pct(m.yieldDelta)} 7d</dd></div>
+     </div>
+     <p class="note" style="margin-top:1rem">${m.note || ""}</p>`;
+}
+
+function renderPositions() {
+  const holds = data.holdings || [];
+  const rows = [...data.positions].sort((a,b) => Number(a.status==="closed") - Number(b.status==="closed")).map(p => {
+    const n = pnl(p), pc = pnlPct(p);
+    return `<tr>
+      <td><div>${p.symbol}</div><div class="muted">${p.token}</div></td>
+      <td class="mono muted">${num(p.amount, p.amount>=1000?0:2)}</td>
+      <td class="mono">${p.entry ? num(p.entry,4) : "—"}</td>
+      <td class="mono">${p.current ? num(p.current,4) : "—"}</td>
+      <td class="mono ${n>=0?"pos":"neg"}">${usd(n)} <span class="muted">(${pct(pc)})</span></td>
+      <td><span class="badge">${cap(p.setup)}</span></td>
+      <td><span class="badge ${p.status!=="closed"?"acc":""}">${p.status||"open"}</span></td>
+    </tr>`;
+  }).join("");
+  const holdRows = holds.map(h => `<tr>
+      <td><div>${h.symbol}</div><div class="addr">${h.address}</div></td>
+      <td class="mono muted">${h.amount != null ? num(h.amount,4) : '<span class="muted">unreadable</span>'}</td>
+      <td class="mono">${h.entryEth != null ? num(h.entryEth,6) + " ETH in" : "—"}</td>
+      <td class="mono muted">—</td>
+      <td class="mono muted">${h.note || "—"}</td>
+      <td><span class="badge">holding</span></td>
+      <td><span class="badge acc">on-chain</span></td>
+    </tr>`).join("");
+  const walletRow = data.snapshot.walletEth != null ? `<tr>
+      <td><div>ETH</div><div class="addr">${data.snapshot.walletEth.toFixed ? "" : ""}wallet</div></td>
+      <td class="mono pos">${num(data.snapshot.walletEth, 6)}</td>
+      <td class="mono muted">—</td><td class="mono muted">—</td><td class="mono muted">free balance</td>
+      <td><span class="badge">wallet</span></td><td><span class="badge acc">live RPC</span></td>
+    </tr>` : "";
+  document.getElementById("posTable").innerHTML =
+    `<table><thead><tr><th>Token</th><th>Amt</th><th>Entry</th><th>Mark</th><th>PnL</th><th>Type</th><th>Status</th></tr></thead>
+     <tbody>${walletRow}${holdRows}${rows}</tbody></table>`;
+}
+
+function renderFilters() {
+  const TRENDS = ["all","bullish","neutral","bearish"];
+  const SETUPS = ["all","breakout","pullback","reversal","scalp"];
+  document.getElementById("trendF").innerHTML = `<span class="muted">Trend&nbsp;</span>` + TRENDS.map(t =>
+    `<button class="chip ${trend===t?"on":""}" onclick="setFilter('trend','${t}')">${t}</button>`).join("");
+  document.getElementById("setupF").innerHTML = `<span class="muted">Setup&nbsp;</span>` + SETUPS.map(t =>
+    `<button class="chip ${setup===t?"on":""}" onclick="setFilter('setup','${t}')">${t}</button>`).join("");
+}
+
+window.setFilter = (which, v) => { if (which === "trend") trend = v; else setup = v; render(); };
+
+function renderOps() {
+  const all = data.opportunities || [];
+  const shown = all.filter(o =>
+    (trend === "all" || o.trend === trend) && (setup === "all" || o.setup === setup));
+  document.getElementById("opMeta").textContent =
+    `${shown.length} of ${all.length} setups · source: ${src}`;
+  document.getElementById("ops").innerHTML = shown.map(o => `
+    <button class="op" type="button" onclick="openOp('${o.symbol || o.token}')">
+      <span class="head">
+        <span>
+          <strong>${o.symbol || o.token}</strong>
+          <span class="muted" style="margin-left:.4rem">${o.token}</span>
+          <div class="addr">${o.address || ""}</div>
+        </span>
+        <span style="display:flex;gap:.35rem;flex-shrink:0">
+          <span class="badge ${toneT(o.trend)}">${o.trend}</span>
+          <span class="badge">${cap(o.setup)}</span>
+          <span class="badge ${toneR(o.risk)}">${o.risk}</span>
+        </span>
+      </span>
+      <dl class="stats">
+        <div><dt>Entry</dt><dd class="mono">${num(o.entryLow,4)} – ${num(o.entryHigh,4)}</dd></div>
+        <div><dt>Stop / TP</dt><dd class="mono">${o.stopLoss ? num(o.stopLoss,4) : "—"} → ${(o.takeProfits||[]).map(t=>num(t,4)).join(" / ") || "—"}</dd></div>
+        <div><dt>Liquidity</dt><dd class="mono">${usd(o.liquidityUsd)}</dd></div>
+        <div><dt>Size</dt><dd class="mono">${o.positionSizePct ? o.positionSizePct + "% book" : "no trade"}</dd></div>
+      </dl>
+    </button>`).join("") || `<p class="note">No setups match these filters.</p>`;
+}
+
+window.openOp = sym => {
+  const o = (data.opportunities || []).find(x => (x.symbol || x.token) === sym);
+  if (!o) return;
+  selected = o;
+  document.getElementById("panel").innerHTML = `
+    <button class="x" type="button" onclick="closeOp()">✕</button>
+    <h3>${o.symbol || o.token} <span class="muted" style="font-size:.875rem">${o.token}</span></h3>
+    <p class="addr">${o.address || ""}</p>
+    <div style="display:flex;gap:.35rem;margin:.75rem 0">
+      <span class="badge ${toneT(o.trend)}">${o.trend}</span>
+      <span class="badge">${cap(o.setup)}</span>
+      <span class="badge ${toneR(o.risk)}">${o.risk} risk</span>
+    </div>
+    <dl class="stats">
+      <div><dt>Entry band</dt><dd class="mono">${num(o.entryLow,4)} – ${num(o.entryHigh,4)}</dd></div>
+      <div><dt>Stop loss</dt><dd class="mono neg">${o.stopLoss ? num(o.stopLoss,4) : "—"}</dd></div>
+      <div><dt>Take profits</dt><dd class="mono pos">${(o.takeProfits||[]).map(t=>num(t,4)).join(" / ") || "—"}</dd></div>
+      <div><dt>Position size</dt><dd class="mono">${o.positionSizePct ? o.positionSizePct + "% of book" : "no trade"}</dd></div>
+      <div><dt>Liquidity</dt><dd class="mono">${usd(o.liquidityUsd)}</dd></div>
+      <div><dt>Volume 24h</dt><dd class="mono">${usd(o.volume24h)}</dd></div>
+      <div><dt>Holders</dt><dd class="mono">${(o.holders??0).toLocaleString()}</dd></div>
+      <div><dt>Top holder</dt><dd class="mono ${(o.topHolderPct??0)>30?"neg":""}">${o.topHolderPct!=null ? o.topHolderPct + "%" : "—"}</dd></div>
+    </dl>
+    ${o.invalidation ? `<div class="inv mt"><strong style="font-size:.75rem">Invalidation</strong><p class="note" style="margin:.25rem 0 0">${o.invalidation}</p></div>` : ""}
+    <p class="note mt">${o.reasoning || ""}</p>`;
+  document.getElementById("drawer").classList.add("on");
+};
+window.closeOp = () => document.getElementById("drawer").classList.remove("on");
+
+function renderSys() {
+  const snap = data.snapshot;
+  const items = [
+    ["Mode", snap.liveTrading ? "LIVE" : "Paper only", snap.killSwitch ? "neg" : "warn"],
+    ["Latest report", snap.latestReport || "—", ""],
+    ["Discovery feed", `${(data.discoveryCount ?? (data.opportunities||[]).length)} coins scanned`, ""],
+    ["Kill switch", snap.killSwitch ? "ENGAGED — no trades" : "off", snap.killSwitch ? "pos" : "neg"]
+  ];
+  document.getElementById("sys").innerHTML =
+    `<h2>System</h2><ul class="sys">${items.map(([k,v,c]) =>
+      `<li><span class="k">${k}</span><span class="badge ${c}">${v}</span></li>`).join("")}</ul>`;
+}
+
+function render() {
+  const s = stats();
+  renderKpis(s);
+  renderMacro();
+  spark();
+  renderPositions();
+  renderFilters();
+  renderOps();
+  renderSys();
+}
+
+/* ---- live overlay ------------------------------------------------ */
+async function loadLive() {
+  for (const url of ["/api/state", "/api/bot-state"]) {
+  try {
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const st = await r.json();
+    const caps = st.caps || {};
+    const rs = st.risk || {};
+    const w = st.wallet || {};
+    // rough USD mark only if we have no price feed; show ETH prominently regardless
+    data.holdings = Object.entries(st.holdings || {}).map(([addr, h]) => ({
+      token: h.name || addr.slice(0, 10), symbol: (h.name || "?").split(" /")[0].slice(0, 8),
+      address: addr, amount: h.amount_token ?? null, entry: null, current: null,
+      entryEth: h.entry_eth_value ?? null,
+      status: "open", setup: "holding",
+      note: h.amount_token == null ? "balance unreadable (non-standard ERC20 / dust)" : null
+    }));
+    const trades = rs.trades || [];
+    const bt = st.backtest || [];
+    const disc = st.discovery || [];
+
+    // equity curve proxy from backtest basket returns compounding a base
+    let eq = [], base = 8000;
+    if (bt.length) {
+      bt.forEach(b => { base *= 1 + (b.net_return_pct || 0)/200; eq.push([b.name || "?", Math.round(base)]); });
+    }
+
+    data.snapshot = {
+      walletEth: w.balance_eth ?? null,
+      walletAddress: w.address || null,
+      liveTrading: !!caps.live_trading,
+      killSwitch: !!caps.kill_switch,
+      latestReport: st.discovery_ts ? new Date(st.discovery_ts * 1000).toLocaleString() + " — last discovery scan" : null,
+      cronJobs: 3
+    };
+    data.macro = null;
+    data.equity = eq;
+    data.positions = trades.map(t => ({
+      token: t.symbol || t.coin || t.token || "?", symbol: t.symbol || t.coin || t.token || "?",
+      amount: t.amount ?? t.qty ?? 0, entry: t.entry_price ?? 0, current: t.current_price ?? t.entry_price ?? 0,
+      status: t.status || (t.closed ? "closed" : "open"), realizedPnl: t.pnl_usd ?? t.pnl_eth ?? undefined,
+      setup: t.setup || "bot"
+    }));
+    data.opportunities = disc.map(c => ({
+      token: c.name || c.symbol || "?", symbol: c.symbol || c.name || "?",
+      address: c.address || "", trend: (c.score||0) >= 80 ? "bullish" : (c.score||0) >= 55 ? "neutral" : "bearish",
+      setup: "scan", entryLow: 0, entryHigh: 0, stopLoss: 0, takeProfits: [],
+      risk: (c.liquidity||0) > 1e6 ? "low" : (c.liquidity||0) > 2e5 ? "medium" : "high",
+      liquidityUsd: c.liquidity || c.liquidity_usd || 0, volume24h: c.volume_24h || 0,
+      holders: c.holders, topHolderPct: c.top_holder_pct,
+      positionSizePct: (c.score||0) >= 70 ? 1 : 0,
+      invalidation: null,
+      reasoning: `Discovery score ${c.score ?? "?"}. Liquidity ${usd(c.liquidity||0)}.`
+    }));
+    src = url === "/api/state" ? "live · /api/state" : "live · /api/bot-state";
+    document.getElementById("loadNote").innerHTML =
+      `Live bot state loaded ${new Date().toLocaleTimeString()} — refreshes every 30s. Wallet balance hidden by server.`;
+    document.getElementById("srcBadge").textContent = "live feed";
+    document.getElementById("srcBadge").className = "badge acc";
+  } catch (e) {
+    try {
+      const r2 = await fetch("dashboard-data.json", { cache: "no-store" });
+      if (!r2.ok) throw new Error(r2.status);
+      const j = await r2.json();
+      data = Object.assign(structuredClone(DEMO), j);
+      src = "dashboard-data.json";
+      document.getElementById("loadNote").innerHTML = "Overlaid <code>dashboard-data.json</code>.";
+      document.getElementById("srcBadge").textContent = "json overlay";
+    } catch (_) { /* keep demo */ }
+  }
+  }
+  render();
+}
+
+document.getElementById("drawer").addEventListener("click", e => {
+  if (e.target.id === "drawer") window.closeOp();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") window.closeOp(); });
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(document.documentElement.outerHTML);
+    document.getElementById("copyBtn").textContent = "Copied ✓";
+    setTimeout(() => document.getElementById("copyBtn").textContent = "Copy this file", 1500);
+  } catch(_) {}
+});
+
+document.getElementById("killBtn").addEventListener("click", () => {
+  // Paper toggle only — real kill switch lives in caps.json on the host.
+  kill = !kill;
+  data.snapshot.killSwitch = kill;
+  render();
+});
+
+loadLive();
+setInterval(loadLive, 30000);
+</script>
+</body>
+</html>

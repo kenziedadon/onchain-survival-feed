@@ -1,0 +1,210 @@
+{
+  "stage": 2,
+  "pools": [
+    {
+      "pool_id": "0xbc6683f3fed27bbfdfb6d9f342a29c5f2c2f02de9f9d65fb35d77d4f43a7b51e",
+      "name": "umia / USDC 1%",
+      "reserve_usd": 3120019.535,
+      "base_id": "0x56ab53b77f07da3af732150e8aec4783eb5bba7d",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "2.573",
+      "volume_m5": "2154.5204016599",
+      "volume_h1": "364341.415061398"
+    },
+    {
+      "pool_id": "0x215b2146c3164aba3f5b18e8619b737c7f7dd11e5ba693646dcd9a336c5a30ba",
+      "name": "Basecat / ETH",
+      "reserve_usd": 864801.821,
+      "base_id": "0xb2000000000000000000004c27f6523082f41d01",
+      "quote_id": "0x0000000000000000000000000000000000000000",
+      "price_change_h24": "18.097",
+      "volume_m5": "238.3722",
+      "volume_h1": "71410.7596115259"
+    },
+    {
+      "pool_id": "0xaec085e5a5ce8d96a7bdd3eb3a62445d4f6ce703",
+      "name": "BNKR / WETH 1%",
+      "reserve_usd": 1899281.5617,
+      "base_id": "0x22af33fe49fd1fa80c7149773dde5890d3c76f3b",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "10.393",
+      "volume_m5": "0.0",
+      "volume_h1": "5646.8063688724"
+    },
+    {
+      "pool_id": "0x78fa9fb7a76c8ea204754a8d4ff301aa29935e8e",
+      "name": "CP / USDC",
+      "reserve_usd": 964340.8239,
+      "base_id": "0x001aad84c21a5cd4d696c56d44866e9703c43f77",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "-32.399",
+      "volume_m5": "6697.6264062453",
+      "volume_h1": "103078.812430112"
+    },
+    {
+      "pool_id": "0x0c3b466104545efa096b8f944c1e524e1d0d4888",
+      "name": "TIBBIR / VIRTUAL",
+      "reserve_usd": 3217219.8604,
+      "base_id": "0xa4a2e2ca3fbfe21aed83471d28b6f65a233c6e00",
+      "quote_id": "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b",
+      "price_change_h24": "-2.463",
+      "volume_m5": "0.0",
+      "volume_h1": "1939.8333010501"
+    },
+    {
+      "pool_id": "0xafe30319a948f322585fafc1cab1671a47eb3786",
+      "name": "FLOWER / USDC 0.3%",
+      "reserve_usd": 281115.7204,
+      "base_id": "0x3e12b9d6a4d12cd9b4a6d613872d0eb32f68b380",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "5.11",
+      "volume_m5": "114.0587829559",
+      "volume_h1": "736.7114960868"
+    },
+    {
+      "pool_id": "0xf79478d5a6bae4546f7e489e80b2fc690b558944",
+      "name": "Basecat / WETH 1%",
+      "reserve_usd": 267586.4771,
+      "base_id": "0xb2000000000000000000004c27f6523082f41d01",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "19.608",
+      "volume_m5": "2898.5754114586",
+      "volume_h1": "78974.1445446113"
+    },
+    {
+      "pool_id": "0xde66c35e01ed8e619bf092352338ef94f2327337",
+      "name": "Fren Pet / WETH",
+      "reserve_usd": 765343.8483,
+      "base_id": "0xff0c532fdb8cd566ae169c1cb157ff2bdc83e105",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "96.932",
+      "volume_m5": "0.0",
+      "volume_h1": "8686.8969298792"
+    },
+    {
+      "pool_id": "0x41084f2d35b54dc0d070fbf76aa52c46f5d9c7e36c163252064b6b184d9429d9",
+      "name": "BLUECHIP / NVDAc",
+      "reserve_usd": 435863.4694,
+      "base_id": "0xb200000000000000000000cfbdf64a8706a94a01",
+      "quote_id": "0xb20000000000000000000078ee7ce2fe4908108c",
+      "price_change_h24": "1.905",
+      "volume_m5": "903.0012294105",
+      "volume_h1": "51975.8029402593"
+    },
+    {
+      "pool_id": "0x5116773e18a9c7bb03ebb961b38678e45e238923",
+      "name": "DRB / WETH 1%",
+      "reserve_usd": 1296455.4103,
+      "base_id": "0x3ec2156d4c0a9cbdab4a016633b7bcf6a8d68ea2",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "-7.689",
+      "volume_m5": "0.0",
+      "volume_h1": "3633.8987725024"
+    },
+    {
+      "pool_id": "0x69bbadafdb28b6952c2910bed1d49fb1b11a222cbf36143fc1aca3c26b35c28e",
+      "name": "RAWR / GOOGLc",
+      "reserve_usd": 84225.8071,
+      "base_id": "0xb200000000000000000000503d889fdcbe48b801",
+      "quote_id": "0xb2000000000000000000002d0ba3164cc74f58b7",
+      "price_change_h24": "-31.906",
+      "volume_m5": "224.1623835113",
+      "volume_h1": "7702.1959595818"
+    },
+    {
+      "pool_id": "0x6cdcb1c4a4d1c3c6d054b27ac5b77e89eafb971d",
+      "name": "AERO / USDC",
+      "reserve_usd": 28799256.8904,
+      "base_id": "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "3.184",
+      "volume_m5": "1413.8296143754",
+      "volume_h1": "48129.4211807969"
+    },
+    {
+      "pool_id": "0x1131db5977242a03ebead1acd18f80a9a29e5922",
+      "name": "SOL / USDC 0.029%",
+      "reserve_usd": 536290.8156,
+      "base_id": "0x311935cd80b76769bf2ecc9d8ab7635b2139cf82",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "1.798",
+      "volume_m5": "5530.9391883684",
+      "volume_h1": "136622.499531697"
+    },
+    {
+      "pool_id": "0x6c561b446416e1a00e8e93e221854d6ea4171372",
+      "name": "WETH / USDC 0.3%",
+      "reserve_usd": 115995061.8322,
+      "base_id": "0x4200000000000000000000000000000000000006",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "-0.539",
+      "volume_m5": "59683.184288122",
+      "volume_h1": "3802526.21033682"
+    },
+    {
+      "pool_id": "0xb5f0b4ae66c14f7efaa9aa1468e8fc536a3e288c",
+      "name": "MORPHO / WETH 0.3%",
+      "reserve_usd": 1493176.7795,
+      "base_id": "0xbaa5cc21fd487b8fcc2f632f3f4e8d37262a0842",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "-2.601",
+      "volume_m5": "0.0",
+      "volume_h1": "13538.1188141431"
+    },
+    {
+      "pool_id": "0x7692acc1cdd771d09ebcae3663e1843b2911bec7",
+      "name": "STONKEX / WETH 1%",
+      "reserve_usd": 147717.6246,
+      "base_id": "0x5ab000ff9b9ffe0349ce5ffa5fd86f217c3680f5",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "-27.752",
+      "volume_m5": "1011.0446693635",
+      "volume_h1": "15427.4138611704"
+    },
+    {
+      "pool_id": "0x15f351bf1637b43d70631ba95fb9bbb1ff21761c29b034c1b380aecb922464dd",
+      "name": "MOLT / WETH",
+      "reserve_usd": 1287804.5136,
+      "base_id": "0xb695559b26bb2c9703ef1935c37aeae9526bab07",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "1.776",
+      "volume_m5": "0.0",
+      "volume_h1": "0.0"
+    },
+    {
+      "pool_id": "0x07f78058685b75f89288f025a0a154a96021ac45",
+      "name": "VIBES / WETH",
+      "reserve_usd": 87891.1528,
+      "base_id": "0xeffc8815487084a97edfdff968b56ea123421acb",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "45.02",
+      "volume_m5": "0.0",
+      "volume_h1": "6475.2565399312"
+    },
+    {
+      "pool_id": "0xfc25fdd217e288d03a877f0b7d49e0bbe52b2288c88de929125062569fc7eb2a",
+      "name": "Surplus / WETH",
+      "reserve_usd": 1721435.4214,
+      "base_id": "0xc52aedec3374422d7510e294cfaa90799595cba3",
+      "quote_id": "0x4200000000000000000000000000000000000006",
+      "price_change_h24": "13.557",
+      "volume_m5": "1605.8987789725",
+      "volume_h1": "4905.2990108352"
+    },
+    {
+      "pool_id": "0x72ab388e2e2f6facef59e3c3fa2c4e29011c2d38",
+      "name": "WETH / USDC 0.01%",
+      "reserve_usd": 4093332.6036,
+      "base_id": "0x4200000000000000000000000000000000000006",
+      "quote_id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "price_change_h24": "-0.424",
+      "volume_m5": "20225.3012465628",
+      "volume_h1": "799546.050035926"
+    }
+  ],
+  "cands": [],
+  "ohlcv_done": [],
+  "crossovers": [],
+  "scored": [],
+  "errors": []
+}

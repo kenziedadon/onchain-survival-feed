@@ -1,0 +1,34 @@
+# Hermes Vanguard watchlist — one Base token address per line
+# Lines starting with # are ignored.
+# Populated with known-good, high-liquidity Base tokens for hunt-only signal collection.
+# Hunt-only mode NEVER broadcasts — these are scanned/scored/queued only.
+
+# Aerodrome (AERO) — verified buy+sell route in caps.json
+0x940181a94A35A4562675CAFDBD3D4368B3F0A8D6
+
+# Base WETH — deepest liquidity on Base
+0x4200000000000000000000000000000000000006
+
+# Base USDC — largest stablecoin on Base
+0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+# --- X Post Launches (2026-08-29) ---
+# Veildotcash - private tokenized stocks (NVDAc in Veil Multi Asset Pool)
+# bankrbot - agent-managed stock LPs with Aerodrome liquidity
+# KorProtocol - USDC license sales on KORUS, settling on Base
+# --- OG Tier (from BaseHubHB Week 35 Tier List) ---
+- @AerodromeFi — Core DEX liquidity (already in watchlist)
+- @Morpho — Money market protocol
+- @AskVenice — AI agent interface
+- @avantisfi — basedfi protocol
+- @virtuals_io — AI agents protocol (NEW)
+- @o1_exchange — Order book exchange
+- @ribbita2012 — based asset manager
+- @HydrexFi — Hedging/derivatives
+# --- End OG Tier ---
+# --- Based Tier (from BaseHubHB Week 35 Tier List) ---
+- @bankrbot — Agent-managed stock LPs (NEW — cross-post presence)
+- @Uptopia_xyz — based consumer app
+- @Toshi — Base mascot/brand
+- @degentokenbase — Base-native token
+# --- End Based Tier ---
+# --- End X Post Launches ---

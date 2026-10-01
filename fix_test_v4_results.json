@@ -1,0 +1,135 @@
+[
+  {
+    "name": "KTA / WETH",
+    "net_pct": -38.28290459565247,
+    "trades": 1,
+    "wins": 0,
+    "losses": 1,
+    "win_rate": 0.0,
+    "pf": 0.0,
+    "mdd_pct": 38.28290459565247,
+    "trade_eth": 0.05,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 1,
+      "vol": 5,
+      "dmi": 1,
+      "adx": 2,
+      "entry": 1
+    }
+  },
+  {
+    "name": "cbBTC / WETH 0.05%",
+    "net_pct": 1.9727153617943083,
+    "trades": 2,
+    "wins": 2,
+    "losses": 0,
+    "win_rate": 100.0,
+    "pf": 9.99,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.05,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 1,
+      "vol": 0,
+      "dmi": 0,
+      "adx": 0,
+      "entry": 2
+    }
+  },
+  {
+    "name": "VVV / WETH 0.05%",
+    "net_pct": -1.2448396649284654,
+    "trades": 2,
+    "wins": 1,
+    "losses": 1,
+    "win_rate": 50.0,
+    "pf": 21.798945956333842,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.05,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 2,
+      "vol": 1,
+      "dmi": 1,
+      "adx": 0,
+      "entry": 2
+    }
+  },
+  {
+    "name": "Surplus / WETH",
+    "net_pct": -3.60147876612531,
+    "trades": 4,
+    "wins": 1,
+    "losses": 3,
+    "win_rate": 25.0,
+    "pf": 0.04491016168897896,
+    "mdd_pct": 12.788337151297391,
+    "trade_eth": 0.035399999999999994,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 1,
+      "vol": 10,
+      "dmi": 0,
+      "adx": 0,
+      "entry": 4
+    }
+  },
+  {
+    "name": "BNKR / WETH 1%",
+    "net_pct": 3.319079888675147,
+    "trades": 2,
+    "wins": 1,
+    "losses": 1,
+    "win_rate": 50.0,
+    "pf": 0.3272600693918088,
+    "mdd_pct": 11.623564107146755,
+    "trade_eth": 0.0318,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 0,
+      "vol": 0,
+      "dmi": 0,
+      "adx": 0,
+      "entry": 2
+    }
+  },
+  {
+    "name": "KEYCAT / WETH",
+    "net_pct": 15.232361604690015,
+    "trades": 2,
+    "wins": 2,
+    "losses": 0,
+    "win_rate": 100.0,
+    "pf": 9.99,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.0264,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 0,
+      "vol": 0,
+      "dmi": 0,
+      "adx": 0,
+      "entry": 2
+    }
+  },
+  {
+    "name": "DRB / WETH 1%",
+    "net_pct": -5.222901289963378,
+    "trades": 3,
+    "wins": 1,
+    "losses": 2,
+    "win_rate": 33.33333333333333,
+    "pf": 2.759906398913983,
+    "mdd_pct": 9.097573799634917,
+    "trade_eth": 0.0186,
+    "blocked": {
+      "rsi": 0,
+      "roc8": 0,
+      "vol": 2,
+      "dmi": 1,
+      "adx": 0,
+      "entry": 3
+    }
+  }
+]

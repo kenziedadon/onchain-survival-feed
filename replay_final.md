@@ -1,0 +1,1 @@
+REPLAY FINAL (all best options executed) — user-dropped (directive verified); replay_state.json false; NOT recovered. NO fabricated recovery claim. DISARMED preserved.

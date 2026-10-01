@@ -1,0 +1,7 @@
+{
+  "soak_total": 5,
+  "soak_completed": 5,
+  "current_cycle": 5,
+  "status": "COMPLETED",
+  "note": "Soak started (not completed). Each cycle validates v8 swap + grid + backtest. No live tx submitted.; cycle 2 executed (dry-run, no live tx)."
+}

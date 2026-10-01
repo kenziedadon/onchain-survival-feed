@@ -1,0 +1,217 @@
+{
+  "timestamp": "2026-09-01T04:12:19.320350+00:00",
+  "scanned_pools": 12,
+  "crossovers": 0,
+  "results": [
+    {
+      "pool": "Basecat / ETH",
+      "address": "0x215b2146c3164aba3f5b18e8619b737c7f7dd11e5ba693646dcd9a336c5a30ba",
+      "liquidity_usd": 770126,
+      "volume_24h": 1244148,
+      "volume_5m": 12235.991868847259,
+      "volume_1h": 47133.22085925419,
+      "price_change_24h": -17.533,
+      "price_change_1h": -5.8449,
+      "last_close": 0.023735,
+      "ema9": 0.025166,
+      "ema21": 0.024587,
+      "prev_ema9": 0.025523,
+      "prev_ema21": 0.024672,
+      "crossover": false
+    },
+    {
+      "pool": "DRB / WETH 1%",
+      "address": "0x5116773e18a9c7bb03ebb961b38678e45e238923",
+      "liquidity_usd": 1377695,
+      "volume_24h": 528176,
+      "volume_5m": 2066.0985833414848,
+      "volume_1h": 2978.010158489883,
+      "price_change_24h": -14.415,
+      "price_change_1h": -0.747,
+      "last_close": 0.000131,
+      "ema9": 0.000144,
+      "ema21": 0.000159,
+      "prev_ema9": 0.000147,
+      "prev_ema21": 0.000162,
+      "crossover": false
+    },
+    {
+      "pool": "WETH / USDC 0.3%",
+      "address": "0x6c561b446416e1a00e8e93e221854d6ea4171372",
+      "liquidity_usd": 115023949,
+      "volume_24h": 41240260,
+      "volume_5m": 1891381.0928991577,
+      "volume_1h": 1171037.9996074783,
+      "price_change_24h": 2.142,
+      "price_change_1h": 0.047,
+      "last_close": 2493.01,
+      "ema9": 2504.772297,
+      "ema21": 2503.925591,
+      "prev_ema9": 2507.712871,
+      "prev_ema21": 2505.01715,
+      "crossover": false
+    },
+    {
+      "pool": "cbBTC / WETH 0.05%",
+      "address": "0x42d4a22cad0f5a49681a5715ce994af73a43b76b",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "STONKEX / WETH 1%",
+      "address": "0x7692acc1cdd771d09ebcae3663e1843b2911bec7",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "Ratspeak / WETH",
+      "address": "0x5e9782079683037fc8bb57625683359d9efaef80f2b829c4bb5b1896c6bb40b6",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "KTA / WETH",
+      "address": "0xd9edc75a3a797ec92ca370f19051babebfb2edee",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "Surplus / WETH",
+      "address": "0xfc25fdd217e288d03a877f0b7d49e0bbe52b2288c88de929125062569fc7eb2a",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "BNKR / WETH 1%",
+      "address": "0xaec085e5a5ce8d96a7bdd3eb3a62445d4f6ce703",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "cbBTC / WETH 0.05% (2)",
+      "address": "0x7aea2e8a3843516afa07293a10ac8e49906dabd1",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "MORPHO / WETH 0.3%",
+      "address": "0xb5f0b4ae66c14f7efaa9aa1468e8fc536a3e288c",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "VVV / WETH",
+      "address": "0x01784ef301d79e4b2df3a21ad9a536d4cf09a5ce",
+      "error": "fetch_failed"
+    },
+    {
+      "pool": "cbBTC / WETH 0.05%",
+      "address": "0x42d4a22cad0f5a49681a5715ce994af73a43b76b",
+      "liquidity_usd": 11034410,
+      "volume_24h": 50958345,
+      "volume_5m": 265650.41,
+      "volume_1h": 2166174.6,
+      "price_change_24h": 1.271,
+      "price_change_1h": -0.0129,
+      "last_close": 78787.151661,
+      "ema9": 79362.339492,
+      "ema21": 79576.174462,
+      "prev_ema9": 79506.13645,
+      "prev_ema21": 79655.076742,
+      "crossover": false
+    },
+    {
+      "pool": "STONKEX / WETH 1%",
+      "address": "0x7692acc1cdd771d09ebcae3663e1843b2911bec7",
+      "liquidity_usd": 203644,
+      "volume_24h": 849982,
+      "volume_5m": 2366.93,
+      "volume_1h": 27531.82,
+      "price_change_24h": -9.188,
+      "price_change_1h": -12.3339,
+      "last_close": 0.002766,
+      "ema9": 0.002647,
+      "ema21": 0.002507,
+      "prev_ema9": 0.002617,
+      "prev_ema21": 0.002481,
+      "crossover": false
+    },
+    {
+      "pool": "Ratspeak / WETH",
+      "address": "0x5e9782079683037fc8bb57625683359d9efaef80f2b829c4bb5b1896c6bb40b6",
+      "liquidity_usd": 712002,
+      "volume_24h": 443887,
+      "volume_5m": 2870.69,
+      "volume_1h": 24508.32,
+      "price_change_24h": -22.389,
+      "price_change_1h": -9.4333,
+      "last_close": 5.7e-05,
+      "ema9": 6e-05,
+      "ema21": 5.5e-05,
+      "prev_ema9": 6.1e-05,
+      "prev_ema21": 5.5e-05,
+      "crossover": false
+    },
+    {
+      "pool": "KTA / WETH",
+      "address": "0xd9edc75a3a797ec92ca370f19051babebfb2edee",
+      "liquidity_usd": 4424961,
+      "volume_24h": 1573349,
+      "volume_5m": 3237.06,
+      "volume_1h": 3599.92,
+      "price_change_24h": 22.232,
+      "price_change_1h": 0.0334,
+      "last_close": 0.074639,
+      "ema9": 0.075279,
+      "ema21": 0.075005,
+      "prev_ema9": 0.075439,
+      "prev_ema21": 0.075042,
+      "crossover": false
+    },
+    {
+      "pool": "Surplus / WETH",
+      "address": "0xfc25fdd217e288d03a877f0b7d49e0bbe52b2288c88de929125062569fc7eb2a",
+      "liquidity_usd": 2042203,
+      "volume_24h": 420932,
+      "volume_5m": 156.38,
+      "volume_1h": 2558.13,
+      "price_change_24h": 35.079,
+      "price_change_1h": 0.8844,
+      "last_close": 4e-05,
+      "ema9": 4.1e-05,
+      "ema21": 4.1e-05,
+      "prev_ema9": 4.1e-05,
+      "prev_ema21": 4.1e-05,
+      "crossover": false
+    },
+    {
+      "pool": "BNKR / WETH 1%",
+      "address": "0xaec085e5a5ce8d96a7bdd3eb3a62445d4f6ce703",
+      "liquidity_usd": 1819164,
+      "volume_24h": 90113,
+      "volume_5m": 246.23,
+      "volume_1h": 5257.73,
+      "price_change_24h": -5.399,
+      "price_change_1h": -0.1275,
+      "last_close": 0.000262,
+      "ema9": 0.000264,
+      "ema21": 0.000264,
+      "prev_ema9": 0.000265,
+      "prev_ema21": 0.000264,
+      "crossover": false
+    },
+    {
+      "pool": "MORPHO / WETH 0.3%",
+      "address": "0xb5f0b4ae66c14f7efaa9aa1468e8fc536a3e288c",
+      "error": "fetch_failed_after_retry"
+    },
+    {
+      "pool": "VVV / WETH",
+      "address": "0x01784ef301d79e4b2df3a21ad9a536d4cf09a5ce",
+      "liquidity_usd": 12811831,
+      "volume_24h": 609430,
+      "volume_5m": 4124.96,
+      "volume_1h": 28430.83,
+      "price_change_24h": 1.552,
+      "price_change_1h": 1.863,
+      "last_close": 18.312538,
+      "ema9": 18.238027,
+      "ema21": 18.115324,
+      "prev_ema9": 18.2194,
+      "prev_ema21": 18.095603,
+      "crossover": false
+    }
+  ]
+}

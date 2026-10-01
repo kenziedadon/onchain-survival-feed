@@ -1,0 +1,664 @@
+{
+  "seen": {
+    "alrt_1789187183551_9969": {
+      "ts": 1789187183.551,
+      "trader": "iruletrenches",
+      "token": "MarsCoin",
+      "usd": 139000
+    },
+    "alrt_1789434400000_3143": {
+      "ts": 1789434400.0,
+      "trader": "SolSwizzle",
+      "token": "GASOLINU",
+      "usd": 21000
+    },
+    "alrt_1789434070000_3100": {
+      "ts": 1789434070.0,
+      "trader": "smokey0x",
+      "token": "1F916",
+      "usd": 57000
+    },
+    "alrt_1789433930000_3088": {
+      "ts": 1789433930.0,
+      "trader": "smokey0x",
+      "token": "1F916",
+      "usd": 40000
+    },
+    "alrt_1789434560000_3177": {
+      "ts": 1789434560.0,
+      "trader": "smokey0x",
+      "token": "1F916",
+      "usd": 69000
+    },
+    "alrt_1789438085000_4071": {
+      "ts": 1789438085.0,
+      "trader": "harrypauldavies",
+      "token": "BLUECHIP",
+      "usd": 91000
+    },
+    "alrt_1789437955000_4036": {
+      "ts": 1789437955.0,
+      "trader": "cissy",
+      "token": "BLUECHIP",
+      "usd": 68000
+    },
+    "alrt_1789437930000_4029": {
+      "ts": 1789437930.0,
+      "trader": "AvgJoesCrypto",
+      "token": "SHROOM",
+      "usd": 106000
+    },
+    "alrt_1789442375000_4745": {
+      "ts": 1789442375.0,
+      "trader": "loganlim_x",
+      "token": "BLUECHIP",
+      "usd": 108000
+    },
+    "alrt_1789448210000_5622": {
+      "ts": 1789448210.0,
+      "trader": "Distopyian",
+      "token": "STONKEX",
+      "usd": 86000
+    },
+    "alrt_1789448360000_5631": {
+      "ts": 1789448360.0,
+      "trader": "Distopyian",
+      "token": "STONKEX",
+      "usd": 92000
+    },
+    "alrt_1789449830000_5806": {
+      "ts": 1789449830.0,
+      "trader": "harrypauldavies",
+      "token": "BLUECHIP",
+      "usd": 99000
+    },
+    "alrt_1789452605000_6008": {
+      "ts": 1789452605.0,
+      "trader": "kv100x",
+      "token": "Basecat",
+      "usd": 36000
+    },
+    "alrt_1789476360000_113": {
+      "ts": 1789476360.0,
+      "trader": "DGMD22",
+      "token": "1F916",
+      "usd": 54000
+    },
+    "alrt_1789477980000_3": {
+      "ts": 1789477980.0,
+      "trader": "DGMD22",
+      "token": "1F916",
+      "usd": 70000
+    },
+    "alrt_1789480870000_292": {
+      "ts": 1789480870.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 207000
+    },
+    "alrt_1789480870000_291": {
+      "ts": 1789480870.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 195000
+    },
+    "alrt_1789486985000_965": {
+      "ts": 1789486985.0,
+      "trader": "FartmanSacks",
+      "token": "AI",
+      "usd": 2800000
+    },
+    "alrt_1789505995000_46": {
+      "ts": 1789505995.0,
+      "trader": "chunibro",
+      "token": "STANDARD",
+      "usd": 5000
+    },
+    "alrt_1789507400000_216": {
+      "ts": 1789507400.0,
+      "trader": "chunibro",
+      "token": "STANDARD",
+      "usd": 10000
+    },
+    "alrt_1789511220000_1031": {
+      "ts": 1789511220.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 203000
+    },
+    "alrt_1789512790000_1306": {
+      "ts": 1789512790.0,
+      "trader": "brkevncap",
+      "token": "LAPTOP",
+      "usd": 32000
+    },
+    "alrt_1789515170000_1608": {
+      "ts": 1789515170.0,
+      "trader": "OmakaseOnly",
+      "token": "PEG",
+      "usd": 5000
+    },
+    "alrt_1789519370000_2895": {
+      "ts": 1789519370.0,
+      "trader": "pedrigavifrenki",
+      "token": "ARGUS",
+      "usd": 23000
+    },
+    "alrt_1789519355000_2889": {
+      "ts": 1789519355.0,
+      "trader": "pedrigavifrenki",
+      "token": "ARGUS",
+      "usd": 20000
+    },
+    "alrt_1789519350000_2884": {
+      "ts": 1789519350.0,
+      "trader": "pedrigavifrenki",
+      "token": "ARGUS",
+      "usd": 14000
+    },
+    "alrt_1789520675000_3353": {
+      "ts": 1789520675.0,
+      "trader": "smol_intern",
+      "token": "ICOIN",
+      "usd": 11000
+    },
+    "alrt_1789521645000_3793": {
+      "ts": 1789521645.0,
+      "trader": "sebdegen",
+      "token": "BLUECHIP",
+      "usd": 55000
+    },
+    "alrt_1789534185000_1438": {
+      "ts": 1789534185.0,
+      "trader": "RugDalio",
+      "token": "GG",
+      "usd": 7000
+    },
+    "alrt_1789538220000_1952": {
+      "ts": 1789538220.0,
+      "trader": "asswipe",
+      "token": "NOCK",
+      "usd": 69000
+    },
+    "alrt_1789546230000_2991": {
+      "ts": 1789546230.0,
+      "trader": "GenerationalFumbler",
+      "token": "BNKR",
+      "usd": 61000
+    },
+    "alrt_1789546000000_2960": {
+      "ts": 1789546000.0,
+      "trader": "GenerationalFumbler",
+      "token": "BNKR",
+      "usd": 50000
+    },
+    "alrt_1789545980000_2957": {
+      "ts": 1789545980.0,
+      "trader": "GenerationalFumbler",
+      "token": "BNKR",
+      "usd": 25000
+    },
+    "alrt_1789546905000_3085": {
+      "ts": 1789546905.0,
+      "trader": "GenerationalFumbler",
+      "token": "BNKR",
+      "usd": 72000
+    },
+    "alrt_1789547350000_3166": {
+      "ts": 1789547350.0,
+      "trader": "onchainrebirth",
+      "token": "musebook",
+      "usd": 7000
+    },
+    "alrt_1789548415000_3294": {
+      "ts": 1789548415.0,
+      "trader": "starcatcher444",
+      "token": "\u3046\u3055\u304e",
+      "usd": 29000
+    },
+    "alrt_1789548630000_3313": {
+      "ts": 1789548630.0,
+      "trader": "unipcs",
+      "token": "INU",
+      "usd": 113000
+    },
+    "alrt_1789552100000_3833": {
+      "ts": 1789552100.0,
+      "trader": "onchainrebirth",
+      "token": "musebook",
+      "usd": 9000
+    },
+    "alrt_1789555140000_4153": {
+      "ts": 1789555140.0,
+      "trader": "MoneyLord",
+      "token": "USDC",
+      "usd": 26000
+    },
+    "alrt_1789554970000_4137": {
+      "ts": 1789554970.0,
+      "trader": "MoneyLord",
+      "token": "USDC",
+      "usd": 18000
+    },
+    "alrt_1789554885000_4128": {
+      "ts": 1789554885.0,
+      "trader": "MoneyLord",
+      "token": "USDC",
+      "usd": 13000
+    },
+    "alrt_1789554850000_4121": {
+      "ts": 1789554850.0,
+      "trader": "MoneyLord",
+      "token": "USDC",
+      "usd": 10000
+    },
+    "alrt_1789555855000_4241": {
+      "ts": 1789555855.0,
+      "trader": "MoneyLord",
+      "token": "USDC",
+      "usd": 67000
+    },
+    "alrt_1789557500000_4412": {
+      "ts": 1789557500.0,
+      "trader": "MoneyLord",
+      "token": "USDC",
+      "usd": 82000
+    },
+    "alrt_1789564455000_21": {
+      "ts": 1789564455.0,
+      "trader": "Y0u_andme",
+      "token": "BLUECHIP",
+      "usd": 44000
+    },
+    "alrt_1789564975000_159": {
+      "ts": 1789564975.0,
+      "trader": "Y0u_andme",
+      "token": "BLUECHIP",
+      "usd": 40000
+    },
+    "alrt_1789564795000_123": {
+      "ts": 1789564795.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 76000
+    },
+    "alrt_1789564795000_122": {
+      "ts": 1789564795.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 72000
+    },
+    "alrt_1789564795000_120": {
+      "ts": 1789564795.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 70000
+    },
+    "alrt_1789564785000_118": {
+      "ts": 1789564785.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 67000
+    },
+    "alrt_1789564780000_117": {
+      "ts": 1789564780.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 64000
+    },
+    "alrt_1789564780000_116": {
+      "ts": 1789564780.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 61000
+    },
+    "alrt_1789564775000_115": {
+      "ts": 1789564775.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 58000
+    },
+    "alrt_1789564770000_113": {
+      "ts": 1789564770.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 54000
+    },
+    "alrt_1789564765000_112": {
+      "ts": 1789564765.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 52000
+    },
+    "alrt_1789564760000_111": {
+      "ts": 1789564760.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 49000
+    },
+    "alrt_1789564760000_110": {
+      "ts": 1789564760.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 45000
+    },
+    "alrt_1789564755000_108": {
+      "ts": 1789564755.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 43000
+    },
+    "alrt_1789564750000_107": {
+      "ts": 1789564750.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 39000
+    },
+    "alrt_1789564740000_105": {
+      "ts": 1789564740.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 36000
+    },
+    "alrt_1789564740000_104": {
+      "ts": 1789564740.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 34000
+    },
+    "alrt_1789564740000_103": {
+      "ts": 1789564740.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 30000
+    },
+    "alrt_1789564740000_102": {
+      "ts": 1789564740.0,
+      "trader": "btc_xhxh",
+      "token": "BLUECHIP",
+      "usd": 27000
+    },
+    "alrt_1789564655000_79": {
+      "ts": 1789564655.0,
+      "trader": "KUDOU_archive",
+      "token": "Basecat",
+      "usd": 30000
+    },
+    "alrt_1789564595000_55": {
+      "ts": 1789564595.0,
+      "trader": "KUDOU_archive",
+      "token": "Basecat",
+      "usd": 26000
+    },
+    "alrt_1789566485000_209": {
+      "ts": 1789566485.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 226000
+    },
+    "alrt_1789566345000_184": {
+      "ts": 1789566345.0,
+      "trader": "Chase100x",
+      "token": "BLUECHIP",
+      "usd": 103000
+    },
+    "alrt_1789568005000_467": {
+      "ts": 1789568005.0,
+      "trader": "MingusCapital",
+      "token": "BLUECHIP",
+      "usd": 32000
+    },
+    "alrt_1789567445000_364": {
+      "ts": 1789567445.0,
+      "trader": "DongBnb",
+      "token": "BLUECHIP",
+      "usd": 34000
+    },
+    "alrt_1789567355000_350": {
+      "ts": 1789567355.0,
+      "trader": "KUDOU_archive",
+      "token": "Basecat",
+      "usd": 25000
+    },
+    "alrt_1789569615000_706": {
+      "ts": 1789569615.0,
+      "trader": "kv4rl",
+      "token": "WPRL",
+      "usd": 6000
+    },
+    "alrt_1789569535000_697": {
+      "ts": 1789569535.0,
+      "trader": "DongBnb",
+      "token": "BLUECHIP",
+      "usd": 36000
+    },
+    "alrt_1789570350000_810": {
+      "ts": 1789570350.0,
+      "trader": "EthLouise",
+      "token": "Basecat",
+      "usd": 29000
+    },
+    "alrt_1789572650000_18": {
+      "ts": 1789572650.0,
+      "trader": "KUDOU_archive",
+      "token": "BLUECHIP",
+      "usd": 30000
+    },
+    "alrt_1789574080000_111": {
+      "ts": 1789574080.0,
+      "trader": "FullNosyCobra",
+      "token": "BLUECHIP",
+      "usd": 161000
+    },
+    "alrt_1789574075000_109": {
+      "ts": 1789574075.0,
+      "trader": "FullNosyCobra",
+      "token": "BLUECHIP",
+      "usd": 102000
+    },
+    "alrt_1789574070000_102": {
+      "ts": 1789574070.0,
+      "trader": "FullNosyCobra",
+      "token": "BLUECHIP",
+      "usd": 50000
+    },
+    "alrt_1789574360000_187": {
+      "ts": 1789574360.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 256000
+    },
+    "alrt_1789574235000_168": {
+      "ts": 1789574235.0,
+      "trader": "onchainrebirth",
+      "token": "BLUECHIP",
+      "usd": 7000
+    },
+    "alrt_1789574225000_165": {
+      "ts": 1789574225.0,
+      "trader": "koy",
+      "token": "BLUECHIP",
+      "usd": 44000
+    },
+    "alrt_1789574220000_164": {
+      "ts": 1789574220.0,
+      "trader": "koy",
+      "token": "BLUECHIP",
+      "usd": 34000
+    },
+    "alrt_1789574200000_159": {
+      "ts": 1789574200.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 237000
+    },
+    "alrt_1789574195000_158": {
+      "ts": 1789574195.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 231000
+    },
+    "alrt_1789574190000_156": {
+      "ts": 1789574190.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 230000
+    },
+    "alrt_1789574760000_247": {
+      "ts": 1789574760.0,
+      "trader": "dragonslayer67x",
+      "token": "BLUECHIP",
+      "usd": 28000
+    },
+    "alrt_1789575560000_354": {
+      "ts": 1789575560.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 257000
+    },
+    "alrt_1789575445000_345": {
+      "ts": 1789575445.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 240000
+    },
+    "alrt_1789576085000_425": {
+      "ts": 1789576085.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 94000
+    },
+    "alrt_1789576065000_423": {
+      "ts": 1789576065.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 64000
+    },
+    "alrt_1789576040000_418": {
+      "ts": 1789576040.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 64000
+    },
+    "alrt_1789576030000_416": {
+      "ts": 1789576030.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 51000
+    },
+    "alrt_1789576005000_414": {
+      "ts": 1789576005.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 45000
+    },
+    "alrt_1789575995000_413": {
+      "ts": 1789575995.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 40000
+    },
+    "alrt_1789575980000_406": {
+      "ts": 1789575980.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 34000
+    },
+    "alrt_1789575945000_401": {
+      "ts": 1789575945.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 29000
+    },
+    "alrt_1789575945000_400": {
+      "ts": 1789575945.0,
+      "trader": "0x66",
+      "token": "BLUECHIP",
+      "usd": 25000
+    },
+    "alrt_1789576355000_460": {
+      "ts": 1789576355.0,
+      "trader": "maru_49940",
+      "token": "BLUECHIP",
+      "usd": 29000
+    },
+    "alrt_1789576260000_448": {
+      "ts": 1789576260.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 317000
+    },
+    "alrt_1789576240000_447": {
+      "ts": 1789576240.0,
+      "trader": "Alexandar",
+      "token": "BLUECHIP",
+      "usd": 310000
+    },
+    "alrt_1789576745000_518": {
+      "ts": 1789576745.0,
+      "trader": "maru_49940",
+      "token": "BLUECHIP",
+      "usd": 33000
+    },
+    "alrt_1790369100000_39": {
+      "ts": 1790369100.0,
+      "trader": "DumbCrayonEater",
+      "token": "MEME",
+      "usd": 9990
+    },
+    "alrt_1790369075000_34": {
+      "ts": 1790369075.0,
+      "trader": "DumbCrayonEater",
+      "token": "BONER",
+      "usd": 9990
+    },
+    "alrt_1790667925000_190": {
+      "ts": 1790667925.0,
+      "trader": "FartmanSacks",
+      "token": "ZC",
+      "usd": 221036.09
+    },
+    "alrt_1790667660000_183": {
+      "ts": 1790667660.0,
+      "trader": "FartmanSacks",
+      "token": "ZC",
+      "usd": 216207.16
+    },
+    "alrt_1790666795000_127": {
+      "ts": 1790666795.0,
+      "trader": "FartmanSacks",
+      "token": "ZC",
+      "usd": 253110.91
+    },
+    "alrt_1790666775000_122": {
+      "ts": 1790666775.0,
+      "trader": "FartmanSacks",
+      "token": "ZC",
+      "usd": 239357.9
+    },
+    "alrt_1790666630000_111": {
+      "ts": 1790666630.0,
+      "trader": "FartmanSacks",
+      "token": "ZC",
+      "usd": 211416.94
+    }
+  },
+  "leaderboard_handles": [
+    "unipcs",
+    "malk",
+    "himgajria",
+    "peace_",
+    "bystevenr",
+    "0xstanczyk",
+    "CeruleanRange",
+    "AvgJoesCrypto",
+    "lordarbiter",
+    "0xiamfake",
+    "RugDalio",
+    "PoorGoat_",
+    "ogle",
+    "Altcoinist",
+    "econoar"
+  ],
+  "last_run": 1790669867
+}

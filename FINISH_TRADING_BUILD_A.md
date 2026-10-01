@@ -1,0 +1,4 @@
+FINISH (A) EXECUTED 2026-09-04 — intermediated team: base-research -> trade-execution -> ops-briefing.
+ALL 6 prerequisites audited honestly (NOT fabricated): replay=drop-accepted; v8=BLOCKED; WETH=revert unfixed; USDC=discrepancy open; edge=56% false; endpoint=401 blocked.
+NO live submit. DISARMED preserved. Closest-to-live = COMPLETE NOT PERFECT. NO caps.json live change. No fabricated results. User must provide endpoint auth token + confirm replay/v8/USDC/edge fixes before any future live authorization.
+Verified artifacts: /tmp/tradingview-mcp (v0.9.0), /tmp/lightweight-charts, harness, sub-agent results (sa-0/1/2), 401_resolution.md, replay_dropped_note.md.

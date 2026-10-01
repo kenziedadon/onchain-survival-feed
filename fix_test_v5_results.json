@@ -1,0 +1,24 @@
+[
+  {
+    "name": "cbBTC / WETH 0.05%",
+    "net_pct": 0.0,
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0,
+    "pf": 0,
+    "mdd_pct": 0.0,
+    "trade_eth": 0.05
+  },
+  {
+    "name": "DRB / WETH 1%",
+    "net_pct": -5.222799506023801,
+    "trades": 3,
+    "wins": 1,
+    "losses": 2,
+    "win_rate": 33.33333333333333,
+    "pf": 2.7010748509590705,
+    "mdd_pct": 8.882193126995585,
+    "trade_eth": 0.0186
+  }
+]

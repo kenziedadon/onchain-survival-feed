@@ -1,0 +1,3 @@
+WETH PAIRING + ROUTER ATTEMPT — user clarification 'Pairing plus router' (NOT authorization to live).
+Attempt: restore WETH pairing reference (from swap.js original) + document router path (WETH pair for swap skeleton). NOT executed (DISARMED — no live router quote, no broadcast). WETH revert fix: NOT applied (live router NOT tested). Replay: user-dropped (not recovered). v8: BLOCKED. USDC discrepancy: open. Edge: 56% false. Endpoint: 401 (auth missing). Strategy: verified=false (no executed backtest). NO fabricated pairing/router result. Team intermediated (base-research -> trade-execution -> ops-briefing).
+Verified state: closest-to-live = complete NOT perfect; prerequisites open.

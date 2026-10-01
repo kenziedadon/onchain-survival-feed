@@ -1,0 +1,125 @@
+{
+  "ts": "2026-08-20T08:53:14.056337+00:00",
+  "coins": [
+    {
+      "name": "KTA / WETH",
+      "score": 95,
+      "vol_24h": 1184610.452712,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0
+      },
+      "fixed": {
+        "net_pct": -3.556619092898594,
+        "trades": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 38.084187224284726,
+        "trade_eth": 0.05
+      }
+    },
+    {
+      "name": "WETH / USDC 0.3%",
+      "score": 95,
+      "vol_24h": 138825108.737354,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0
+      },
+      "fixed": {
+        "net_pct": 9.913100723176749,
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 0.0,
+        "trade_eth": 0.05
+      }
+    },
+    {
+      "name": "cbBTC / WETH 0.05%",
+      "score": 95,
+      "vol_24h": 108439065.684942,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0
+      },
+      "fixed": {
+        "net_pct": 7.930097009194825,
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 0.0,
+        "trade_eth": 0.05
+      }
+    },
+    {
+      "name": "WETH / USDC 0.01%",
+      "score": 94,
+      "vol_24h": 100743384.721522,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0
+      },
+      "fixed": {
+        "net_pct": 9.913100723176749,
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 0.0,
+        "trade_eth": 0.05
+      }
+    },
+    {
+      "name": "Surplus / WETH",
+      "score": 44,
+      "vol_24h": 238964.898536227,
+      "baseline": {
+        "net_pct": -9.00530219165665,
+        "trades": 3,
+        "wins": 3,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 9.00530219165665
+      },
+      "fixed": {
+        "net_pct": -0.751892290137568,
+        "trades": 5,
+        "wins": 5,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 18.099608415340697,
+        "trade_eth": 0.0264
+      }
+    }
+  ]
+}

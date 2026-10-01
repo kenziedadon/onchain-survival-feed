@@ -1,0 +1,1 @@
+ENDPOINT/AUTH FINAL (all best options executed) — 401 verified blocked (curl real); auth token NOT available (user has not provided; I have none). Free clones verified (tradingview-mcp v0.9.0; lightweight-charts). Hosted endpoint requires token — NOT resolved. NO fabricated endpoint verification / backtest / profit claim. Strategy verified=false remains. DISARMED preserved.

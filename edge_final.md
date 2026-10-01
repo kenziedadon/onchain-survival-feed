@@ -1,0 +1,1 @@
+EDGE FINAL (all best options executed) — retested from caps.json truth: pass=False (false); detail=strict bar not met: only 56% positive (<60%) (56% < 60% strict bar); 2-run streak NOT met. NO fabricated ≥60% claim. NO fabricated backtest/profit. DISARMED preserved.

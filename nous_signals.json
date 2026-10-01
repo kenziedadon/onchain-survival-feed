@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-09-29T15:29:47.172897+00:00",
+  "pools_qualified": [
+    {
+      "address": "0x01784ef301d79e4b2df3a21ad9a536d4cf09a5ce",
+      "name": "VVV / WETH",
+      "liquidity_usd": 17732245.51
+    },
+    {
+      "address": "0xd9edc75a3a797ec92ca370f19051babebfb2edee",
+      "name": "KTA / WETH",
+      "liquidity_usd": 4293389.6
+    },
+    {
+      "address": "0xaec085e5a5ce8d96a7bdd3eb3a62445d4f6ce703",
+      "name": "BNKR / WETH 1%",
+      "liquidity_usd": 2785686.93
+    },
+    {
+      "address": "0xec33256bf1ded407a57fd3c1965e7556e42ac14db09bc4e6fef57d5e2eb0b0b9",
+      "name": "GITLAWB / WETH",
+      "liquidity_usd": 1987558.67
+    },
+    {
+      "address": "0x5116773e18a9c7bb03ebb961b38678e45e238923",
+      "name": "DRB / WETH 1%",
+      "liquidity_usd": 1623023.08
+    },
+    {
+      "address": "0x566bee7ef7b39f29d150ab3be6b6242c17cc5a31",
+      "name": "EDEL / WETH",
+      "liquidity_usd": 1082599.97
+    },
+    {
+      "address": "0xef256e214c45aab706ca54d6e2c5d0ca42b87895a43e97b382ea012d13e78e49",
+      "name": "boar / WETH",
+      "liquidity_usd": 489045.51
+    },
+    {
+      "address": "0x0e4409f7a8eba3213f336daf608985302e79328c",
+      "name": "TIBBIR / WETH 0.25%",
+      "liquidity_usd": 290440.54
+    }
+  ],
+  "crossovers_found": 0,
+  "signals": []
+}

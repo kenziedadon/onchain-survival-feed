@@ -1,0 +1,15 @@
+{
+  "name": "base-trend-bot",
+  "version": "1.0.0",
+  "description": "Built 2026-08-18. Replaces the old `onchain-survival/` pegged-arbitrage bots which were mathematically unprofitable (cbBTC/WETH mean-reversion = -22% net) and the trending-token buys which reverted through dead Uniswap pools.",
+  "main": "signer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "viem": "^2.55.13"
+  }
+}

@@ -1,0 +1,1 @@
+{"stage": 0, "pools_all": [], "candidates": [], "ohlcv_done": [], "crossovers": [], "scored": [], "errors": [{"stage": "fetch_trending", "error": "HTTP Error 429: Too Many Requests"}]}

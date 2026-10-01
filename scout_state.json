@@ -1,0 +1,127 @@
+{
+  "0x4ed4e862860bed51a9570b96d89af5e1b0efefed": {
+    "volume_24h": 66330.99,
+    "liquidity_usd": 126502.08,
+    "price_usd": 0.001074
+  },
+  "0x8b67f2e56139ca052a7ec49cbcd1aa9c83f2752a": {
+    "volume_24h": 137.97,
+    "liquidity_usd": 15205.48,
+    "price_usd": 0.1177
+  },
+  "0x9b5e262cf9bb04869ab40b19af91d2dc85761722": {
+    "volume_24h": 195904.85,
+    "liquidity_usd": 1189992.27,
+    "price_usd": 0.02249
+  },
+  "0xb095274743941e953c746f9c228da9c18bb6ec29": {
+    "volume_24h": 126400.29,
+    "liquidity_usd": 1211928.23,
+    "price_usd": 0.07906
+  },
+  "0xb2000000000000000000004884b426556b92883d": {
+    "volume_24h": 182.56,
+    "liquidity_usd": 2983.57,
+    "price_usd": 157.076
+  },
+  "0xb9a1e52f3ed678b01ff5e256fde43f26f9c01ba3": {
+    "volume_24h": 6514.91,
+    "liquidity_usd": 523970.9,
+    "price_usd": 3.862e-05
+  },
+  "0xa6af0cea8fbc93e1eccc00f1fdd9a0bba251fee1": {
+    "volume_24h": 25674.87,
+    "liquidity_usd": 324664.37,
+    "price_usd": 0.0009562
+  },
+  "0x9e00fc92493451eba1c63dd3880d68b622037ba3": {
+    "volume_24h": 31122.15,
+    "liquidity_usd": 269862.55,
+    "price_usd": 8.022e-06
+  },
+  "0xc52aedec3374422d7510e294cfaa90799595cba3": {
+    "volume_24h": 142750.0,
+    "liquidity_usd": 835673.2,
+    "price_usd": 6.794e-05
+  },
+  "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b": {
+    "volume_24h": 384688.76,
+    "liquidity_usd": 716476.28,
+    "price_usd": 83644.19
+  },
+  "0x04c0599ae5a44757c0af6f9ec3b93da8976c150a": {
+    "volume_24h": 158.75,
+    "liquidity_usd": 167427.74,
+    "price_usd": 2970.71
+  },
+  "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3": {
+    "volume_24h": 264386.14,
+    "liquidity_usd": 498652.98,
+    "price_usd": 2.311e-05
+  },
+  "0x020eaeee24bcad37cb9a01aa1f8c591c47341ba3": {
+    "volume_24h": 11552.06,
+    "liquidity_usd": 88235.44,
+    "price_usd": 1.591e-06
+  },
+  "0xcfa3ef56d303ae4faaba0592388f19d7c3399fb4": {
+    "volume_24h": 1297.01,
+    "liquidity_usd": 473215.94,
+    "price_usd": 0.9975
+  },
+  "0xfdcc845c048ad96b5c80b6a55d65c20a98d37777": {
+    "volume_24h": 30809.96,
+    "liquidity_usd": 96560.66,
+    "price_usd": 0.0009397
+  },
+  "0x26e6e2e7a9289b6485c53cd498de510d3a8c8ba3": {
+    "volume_24h": 1239.81,
+    "liquidity_usd": 138197.95,
+    "price_usd": 2.499e-06
+  },
+  "0xf1e9baa65d418a9025e1851dd2d37f1ad208bba3": {
+    "volume_24h": 24252.16,
+    "liquidity_usd": 307562.46,
+    "price_usd": 1.058e-05
+  },
+  "0x4dcdf3451dfc114991283c2e5b72823d69882ba3": {
+    "volume_24h": 29285.82,
+    "liquidity_usd": 180366.87,
+    "price_usd": 4.878e-06
+  },
+  "0xbf8e8f0e8866a7052f948c16508644347c57aba3": {
+    "volume_24h": 45471.72,
+    "liquidity_usd": 419038.58,
+    "price_usd": 1.771e-05
+  },
+  "0x10c56f005a379f8eafc88ff5c3f40d30f0031ac9": {
+    "volume_24h": 5644.35,
+    "liquidity_usd": 106163.62,
+    "price_usd": 0.0009562
+  },
+  "0xf1070fd43cd11af8da18ff4edfb1a18279cd6f67": {
+    "volume_24h": 38991.29,
+    "liquidity_usd": 174807.18,
+    "price_usd": 0.004931
+  },
+  "0xb462a5039a540883508ee37b5cf3999647557ba3": {
+    "volume_24h": 1837907.09,
+    "liquidity_usd": 145252.82,
+    "price_usd": 4.058e-06
+  },
+  "0xa99b8a231a1ea9b9e636eaec679de85a0378aba3": {
+    "volume_24h": 26593.96,
+    "liquidity_usd": 45290.39,
+    "price_usd": 6.672e-07
+  },
+  "0x940181a94a35a4569e4529a3cdfb74e38fd98631": {
+    "volume_24h": 4256103.52,
+    "liquidity_usd": 41975251.6,
+    "price_usd": 0.813
+  },
+  "0x07e61d8a4e197dfc269e90d7ece1df0d26702ba3": {
+    "volume_24h": 18765.35,
+    "liquidity_usd": 114993.09,
+    "price_usd": 1.898e-06
+  }
+}

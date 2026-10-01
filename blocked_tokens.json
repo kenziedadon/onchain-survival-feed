@@ -1,0 +1,14 @@
+{
+  "tokens": [
+    {
+      "address": "0xc52aedec3374422d7510e294cfaa90799595cba3",
+      "reason": "v4 hook dust \u2014 unsellable; dropped from watchlists per audit",
+      "added": "20260824010518"
+    },
+    {
+      "address": "0xed664536023d8e4b1640c394777d34abaff1df8f",
+      "reason": "nonstandard ERC20 \u2014 approve() silent no-op; fail-closed #2 class",
+      "added": "20260824010518"
+    }
+  ]
+}

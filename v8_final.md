@@ -1,0 +1,1 @@
+v8 FINAL (all best options executed) — BLOCKED (verified); scp unrecovered; rebuild skeleton complete; NOT unblocked. NO fabricated unblock claim. DISARMED preserved.

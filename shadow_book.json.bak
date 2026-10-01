@@ -1,0 +1,33 @@
+{
+ "open": {
+  "0x6cdcb1c4a4d1c3c6d054b27ac5b77e89eafb971d": {
+   "name": "AERO",
+   "entry_price_usd": 0.47253775498491,
+   "reason": "skip_entry_timing",
+   "amount_eth": 0.0005,
+   "ts": "2026-08-23T12:21:30.178512+00:00"
+  },
+  "0x01784ef301d79e4b2df3a21ad9a536d4cf09a5ce": {
+   "name": "VVV",
+   "entry_price_usd": 17.0306734267314,
+   "reason": "skip_entry_timing",
+   "amount_eth": 0.0005,
+   "ts": "2026-08-23T12:21:30.523024+00:00"
+  },
+  "0x4a9b9e13975d26f4e3e17c655593bb82145dd4452aedafb826d856b817c9cfd4": {
+   "name": "aeon",
+   "entry_price_usd": 3.14738811327403e-05,
+   "reason": "skip_entry_timing",
+   "amount_eth": 0.0005,
+   "ts": "2026-08-23T12:21:30.824919+00:00"
+  },
+  "0x5116773e18a9c7bb03ebb961b38678e45e238923": {
+   "name": "DRB",
+   "entry_price_usd": 0.000158066596016132,
+   "reason": "skip_entry_timing",
+   "amount_eth": 0.0005,
+   "ts": "2026-08-23T12:21:31.131284+00:00"
+  }
+ },
+ "closed": []
+}

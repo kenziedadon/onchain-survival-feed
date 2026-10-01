@@ -1,0 +1,8 @@
+{
+  "ts": "2026-09-08T02:31:49Z",
+  "state_hash": "328036ec911813925f32260edced98f6",
+  "caps": {"kill_switch": false, "live_trading": true, "max_positions": 2, "min_score": 30},
+  "discovery": {"lines": 326, "latest_ts": "2026-09-08T02:28:19.565020+00:00", "coins_in_latest": 1},
+  "wallet": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F",
+  "balances": {"eth": 0.004241671213992582, "usdc": 3.058841}
+}

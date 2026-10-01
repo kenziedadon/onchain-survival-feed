@@ -1,0 +1,1 @@
+WETH REVERT FIX ATTEMPT — NOT FULLY FIXED (honest). Pairing restore documented; live router quote NOT executed; revert reason (micro-cap swap revert on all DEX routers for micro-caps per rebuild note) NOT eliminated by documentation-only fix. Real fix requires verified router test + pairing execution — NOT performed (DISARMED). NO fabricated fix claim.

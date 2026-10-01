@@ -1,0 +1,15 @@
+{
+  "current_step": 1,
+  "trades_at_step": 0,
+  "wins_at_step": 0,
+  "losses_at_step": 0,
+  "consecutive_losses": 0,
+  "peak_balance_eth": 0.0001,
+  "total_trades": 0,
+  "total_wins": 0,
+  "total_losses": 0,
+  "total_pnl_eth": 0.0,
+  "last_promoted_at": null,
+  "last_demoted_at": null,
+  "created_at": "2026-09-10T21:50:00.251417+00:00"
+}

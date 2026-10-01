@@ -1,0 +1,128 @@
+{
+  "fetched_at": "2026-09-09T06:42:17.730676+00:00",
+  "total_pools": 20,
+  "analyzed": 10,
+  "crossovers": 0,
+  "signals": [
+    {
+      "pool_address": "0x5116773e18a9c7bb03ebb961b38678e45e238923",
+      "base_symbol": "DRB",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 1303890.5499,
+      "ema9": 0.000156,
+      "ema21": 0.000155,
+      "prev_ema9": 0.000156,
+      "prev_ema21": 0.000155,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0xf96cae3fbdf1231b5e891ad884bf28805c96c182a3d21a7dab5419e5b34f8e0f",
+      "base_symbol": "BASELINE",
+      "quote_symbol": "ETH",
+      "liquidity_usd": 215933.9565,
+      "ema9": 0.000273,
+      "ema21": 0.000278,
+      "prev_ema9": 0.000267,
+      "prev_ema21": 0.000276,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0x377feeed4820b3b28d1ab429509e7a0789824fca",
+      "base_symbol": "KEYCAT",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 880671.3984,
+      "ema9": 0.000782,
+      "ema21": 0.000772,
+      "prev_ema9": 0.000776,
+      "prev_ema21": 0.000768,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0x42d4a22cad0f5a49681a5715ce994af73a43b76b",
+      "base_symbol": "cbBTC",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 10157446.4593,
+      "ema9": 80490.645383,
+      "ema21": 80116.592996,
+      "prev_ema9": 80456.393203,
+      "prev_ema21": 80065.486886,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0x5e9782079683037fc8bb57625683359d9efaef80f2b829c4bb5b1896c6bb40b6",
+      "base_symbol": "Ratspeak",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 1144381.9168,
+      "ema9": 1.5e-05,
+      "ema21": 1.5e-05,
+      "prev_ema9": 1.5e-05,
+      "prev_ema21": 1.5e-05,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0x7692acc1cdd771d09ebcae3663e1843b2911bec7",
+      "base_symbol": "STONKEX",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 155568.5281,
+      "ema9": 0.002042,
+      "ema21": 0.002454,
+      "prev_ema9": 0.002013,
+      "prev_ema21": 0.002484,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0x7cfc830448484cdf830625373820241e61ef4acf",
+      "base_symbol": "FRIEND",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 211042.0056,
+      "ema9": 0.008958,
+      "ema21": 0.008241,
+      "prev_ema9": 0.008812,
+      "prev_ema21": 0.008111,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0x4e829f8a5213c42535ab84aa40bd4adcce9cba02",
+      "base_symbol": "BRETT",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 767256.5595,
+      "ema9": 0.004987,
+      "ema21": 0.005,
+      "prev_ema9": 0.004993,
+      "prev_ema21": 0.005004,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0xfc25fdd217e288d03a877f0b7d49e0bbe52b2288c88de929125062569fc7eb2a",
+      "base_symbol": "Surplus",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 1583546.4597,
+      "ema9": 3.8e-05,
+      "ema21": 3.8e-05,
+      "prev_ema9": 3.7e-05,
+      "prev_ema21": 3.7e-05,
+      "crossover": false,
+      "candles_count": 120
+    },
+    {
+      "pool_address": "0xd9edc75a3a797ec92ca370f19051babebfb2edee",
+      "base_symbol": "KTA",
+      "quote_symbol": "WETH",
+      "liquidity_usd": 3992662.4675,
+      "ema9": 0.070049,
+      "ema21": 0.069807,
+      "prev_ema9": 0.069856,
+      "prev_ema21": 0.069705,
+      "crossover": false,
+      "candles_count": 120
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "ts": "2026-08-20T08:51:01.487771+00:00",
+  "note": "Single-coin comparison only \u2014 basket is illustrative",
+  "coins": [
+    {
+      "name": "KTA / WETH",
+      "score": 45,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0,
+        "cost_bps_rtrip": 69.03881994110722
+      },
+      "fixed": {
+        "net_pct": -3.614638431677397,
+        "trades": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 38.121435135788985,
+        "cost_bps_rtrip": 75.03485174279115,
+        "trade_eth": 0.027
+      }
+    },
+    {
+      "name": "WETH / USDC 0.3%",
+      "score": 45,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0,
+        "cost_bps_rtrip": 69.03881994110722
+      },
+      "fixed": {
+        "net_pct": 0.20226497512261243,
+        "trades": 7,
+        "wins": 7,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 9.579015003962255,
+        "cost_bps_rtrip": 75.03485174279115,
+        "trade_eth": 0.027
+      }
+    },
+    {
+      "name": "cbBTC / WETH 0.05%",
+      "score": 45,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0,
+        "cost_bps_rtrip": 69.03881994110722
+      },
+      "fixed": {
+        "net_pct": 0.993900790432467,
+        "trades": 3,
+        "wins": 3,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 7.964908553492878,
+        "cost_bps_rtrip": 75.03485174279115,
+        "trade_eth": 0.027
+      }
+    },
+    {
+      "name": "WETH / USDC 0.01%",
+      "score": 44,
+      "baseline": {
+        "net_pct": 0.0,
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0,
+        "pf": 0,
+        "mdd_pct": 0.0,
+        "cost_bps_rtrip": 69.03881994110722
+      },
+      "fixed": {
+        "net_pct": 0.19928536010482834,
+        "trades": 7,
+        "wins": 7,
+        "losses": 0,
+        "win_rate": 100.0,
+        "pf": 9.99,
+        "mdd_pct": 9.574225186055152,
+        "cost_bps_rtrip": 75.33109837330913,
+        "trade_eth": 0.0264
+      }
+    }
+  ]
+}

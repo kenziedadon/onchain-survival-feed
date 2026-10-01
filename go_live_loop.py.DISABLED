@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+go_live_loop.py — autonomous go-live orchestrator (option 2: no per-tx tap).
+
+One tick does:
+  1. Fresh discovery of live Base momentum coins.
+  2. Fresh grid search + fresh pullback methodology eval (regenerates edge artifacts).
+  3. arm_check.py: records edge_evidence + strict-edge streak (NEED_RUNS=2).
+  4. IF strict edge confirmed on >=2 consecutive runs AND edge_evidence.pass:
+       - arm via risk.arm_signal(auto_confirm=True)  (autonomous, no human tap)
+       - run executor.py LIVE  (broadcasts real ETH when a veto-clear signal exists)
+  5. Watchdog (inside arm_check) auto-disarms on daily-loss cap.
+
+SAFETY: never fabricates edge. If grid n<5 or methodology 0/x or fresh eval fails,
+the strict gates stay closed and the bot remains disarmed. No real funds move.
+
+Run as a cron/daemon. Each tick is independent; stdout is the audit trail.
+"""
+import json, os, sys, subprocess, datetime
+
+# Always operate from the bot repo, regardless of where the script is launched
+# (e.g. from ~/.hermes/scripts/ by a cron daemon).
+HERE = "/home/kenzodadon/base-trend-bot"
+sys.path.insert(0, HERE)
+os.chdir(HERE)
+
+from risk import arm_signal, load_caps, kill, unkill
+
+CHASE_FILE = os.path.join(HERE, "arm_chase.json")
+NEED_RUNS = 2
+
+
+def _run(module, label, timeout=600):
+    print(f"\n--- [{label}] {module} ---")
+    try:
+        out = subprocess.run([sys.executable, module], cwd=HERE,
+                             capture_output=True, text=True, timeout=timeout)
+    except Exception as e:
+        print(f"  [ERROR] {module} crashed: {e}")
+        return False
+    print(out.stdout[-1500:] if out.stdout else "(no stdout)")
+    if out.stderr:
+        print("  STDERR:", out.stderr[-600:])
+    return out.returncode == 0
+
+
+def _load_chase():
+    try:
+        return json.load(open(CHASE_FILE))
+    except Exception:
+        return {"consecutive": 0, "last_pass_at": None}
+
+
+def main():
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    print(f"\n===== GO-LIVE TICK {now} =====")
+
+    # 1. Fresh edge artifacts
+    disc_ok = _run("trend_discovery.py", "fresh discovery", timeout=300)
+    grid_ok = _run("grid_search.py", "fresh grid", timeout=540)
+    # Kinetic methodology eval is what arm_check trusts for the armed kinetic_v2
+    # strategy (BH benchmark + walk-forward + PF/DD gating). Output: methodology_eval.json
+    meth_ok = _run("evaluate_methodology.py", "fresh kinetic methodology", timeout=540)
+
+    # 2. arm_check records edge_evidence + streak
+    print("\n--- [arm_check] evaluate strict edge + streak ---")
+    try:
+        out = subprocess.run([sys.executable, "arm_check.py"], cwd=HERE,
+                             capture_output=True, text=True, timeout=300)
+        print(out.stdout[-1500:])
+    except Exception as e:
+        print(f"  [ERROR] arm_check crashed: {e}")
+        return 1
+
+    # 3. Read resulting state
+    c = load_caps()
+    ev = c.get("edge_evidence") or {}
+    chase = _load_chase()
+    streak = chase.get("consecutive", 0)
+    edge_pass = bool(ev.get("pass"))
+    print(f"\n  edge_evidence.pass = {edge_pass}")
+    print(f"  streak            = {streak}/{NEED_RUNS}")
+    print(f"  grid_pass         = {ev.get('grid_pass')}")
+    print(f"  early_edge_pass   = {ev.get('early_edge_pass')}")
+    print(f"  methodology_pass  = {ev.get('methodology_pass')}")
+
+    # 4. Strict edge confirmed on >=2 consecutive runs? -> arm + broadcast
+    if edge_pass and streak >= NEED_RUNS:
+        print("\n  STRICT EDGE CONFIRMED x2 -> ARM (autonomous, auto_confirm=True)")
+        unkill()
+        arm_signal(
+            grid_pass=bool(ev.get("grid_pass")),
+            early_edge_pass=bool(ev.get("early_edge_pass")),
+            methodology_pass=bool(ev.get("methodology_pass")),
+            detail=f"go_live_loop auto-arm: streak {streak}/{NEED_RUNS}, {ev.get('detail')}",
+            auto_confirm=True,
+        )
+        c = load_caps()
+        print(f"  live_trading={c.get('live_trading')} kill_switch={c.get('kill_switch')} "
+              f"require_conf={c.get('require_confirmation')}")
+        # 5. Broadcast live (option 2: no tap). Risk-officer veto still protects
+        #    against stale/illiquid signals; only veto-clear signals trade.
+        print("\n--- [executor] LIVE broadcast ---")
+        try:
+            out = subprocess.run([sys.executable, "executor.py"], cwd=HERE,
+                                 capture_output=True, text=True, timeout=600)
+            print(out.stdout[-2000:])
+        except Exception as e:
+            print(f"  [ERROR] executor crashed: {e}")
+    else:
+        print("\n  No confirmed edge -> DISARM (kill_switch on, live_trading off). No real funds move.")
+        print(f"  (gates: grid={ev.get('grid_pass')} early={ev.get('early_edge_pass')} "
+              f"meth={ev.get('methodology_pass')}; streak={streak}/{NEED_RUNS})")
+        # Guarantee safe disarmed state every no-edge tick.
+        kill()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

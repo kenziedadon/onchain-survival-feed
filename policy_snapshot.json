@@ -1,0 +1,27 @@
+{
+  "ts": "2026-09-15T01:42:56.289039+00:00",
+  "policy_hash": "584bab624f14c4b7",
+  "policy": {
+    "max_daily_spend_eth": 0.005,
+    "max_weekly_spend_eth": 0.02,
+    "max_single_trade_eth": 0.001,
+    "max_open_positions": 2,
+    "max_buys_per_hour": 3,
+    "max_sells_per_hour": 6,
+    "max_slippage_bps": 100,
+    "min_edge_freshness_hours": 24,
+    "require_edge_for_live": true,
+    "grace_period_hours": 2,
+    "grace_size_multiplier": 0.5,
+    "emergency_stop_daily_loss_eth": 0.003,
+    "allow_stables_as_output": false,
+    "allow_unverified_tokens": false,
+    "min_token_liquidity_usd": 50000,
+    "min_token_vol_24h_usd": 25000,
+    "blocked_token_categories": [
+      "spam",
+      "scam",
+      "honeypot"
+    ]
+  }
+}

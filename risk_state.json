@@ -1,0 +1,268 @@
+{
+  "day": "2026-09-29",
+  "spent_eth": 0.0,
+  "pnl_eth": 0.0,
+  "trades": [],
+  "blocked": [],
+  "note": "Reset after watchdog caught daily loss 0.00225 >= 0.001869 threshold. All previous trades were failed/wrong. Idempotency gap allowed duplicate buys for TOKEN_3ec2... Fixed in executor.py v4.5: clearer lockout, drained before broadcast check.",
+  "officer_vetoes": [
+    {
+      "ts": "2026-08-25T19:23:29.391678+00:00",
+      "token_out": "0xdeadbeef0xdeadbeef0xdeadbeef0xdeadbeef0xdeadbeefaa",
+      "reasons": [
+        "on-chain verify failed: no code",
+        "liquidity $10,000 < $250,000",
+        "5m vol $0 < $250 (stale tape)"
+      ]
+    },
+    {
+      "ts": "2026-08-25T19:26:53.233695+00:00",
+      "token_out": "0x3ec2156d4c0a9cbdab4a016633b7bcf6a8d68ea2",
+      "reasons": [
+        "5m vol $0 < $250 (stale tape)",
+        "signal 146301s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-25T19:27:44.495623+00:00",
+      "token_out": "0xf1e9baa65d418a9025e1851dd2d37f1ad208bba3",
+      "reasons": [
+        "on-chain verify unreachable: all 5 RPCs failed: {'code': -32602, 'message': 'Invalid params', 'data': 'invalid string length at line 1 column 68'}",
+        "5m vol $0 < $250 (stale tape)",
+        "signal 146352s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-25T19:28:29.399522+00:00",
+      "token_out": "0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf",
+      "reasons": [
+        "5m vol $0 < $250 (stale tape)",
+        "signal 146397s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-25T19:29:14.302532+00:00",
+      "token_out": "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+      "reasons": [
+        "on-chain verify failed: pair mismatch",
+        "5m vol $0 < $250 (stale tape)",
+        "signal 146442s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:20:56.945578+00:00",
+      "token_out": "0x3ec2156d4c0a9cbdab4a016633b7bcf6a8d68ea2",
+      "reasons": [
+        "5m vol $0 < $250 (stale tape)",
+        "signal 397944s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:21:29.102337+00:00",
+      "token_out": "0xf1e9baa65d418a9025e1851dd2d37f1ad208bba3",
+      "reasons": [
+        "on-chain verify unreachable: all 5 RPCs failed: {'code': -32602, 'message': 'Invalid params', 'data': 'invalid string length at line 1 column 68'}",
+        "5m vol $0 < $250 (stale tape)",
+        "signal 397977s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:21:51.683332+00:00",
+      "token_out": "0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf",
+      "reasons": [
+        "5m vol $0 < $250 (stale tape)",
+        "signal 397999s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:22:14.443365+00:00",
+      "token_out": "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+      "reasons": [
+        "on-chain verify failed: pair mismatch",
+        "5m vol $0 < $250 (stale tape)",
+        "signal 398022s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:24:09.031119+00:00",
+      "token_out": "0x3ec2156d4c0a9cbdab4a016633b7bcf6a8d68ea2",
+      "reasons": [
+        "5m vol $0 < $250 (stale tape)",
+        "signal 398137s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:24:38.541176+00:00",
+      "token_out": "0xf1e9baa65d418a9025e1851dd2d37f1ad208bba3",
+      "reasons": [
+        "on-chain verify unreachable: all 5 RPCs failed: {'code': -32602, 'message': 'Invalid params', 'data': 'invalid string length at line 1 column 68'}",
+        "5m vol $0 < $250 (stale tape)",
+        "signal 398166s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:25:00.753664+00:00",
+      "token_out": "0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf",
+      "reasons": [
+        "5m vol $0 < $250 (stale tape)",
+        "signal 398188s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:25:23.453876+00:00",
+      "token_out": "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+      "reasons": [
+        "on-chain verify failed: pair mismatch",
+        "5m vol $0 < $250 (stale tape)",
+        "signal 398211s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-08-28T17:27:11.632742+00:00",
+      "token_out": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",
+      "reasons": [
+        "on-chain verify failed: pair mismatch"
+      ]
+    },
+    {
+      "ts": "2026-08-28T18:25:10.609661+00:00",
+      "token_out": "0x4ed4e862860bed51a9570b96d89af5e1b0efefed",
+      "reasons": [
+        "on-chain verify failed: no code"
+      ]
+    },
+    {
+      "ts": "2026-08-29T00:03:23.050655+00:00",
+      "token_out": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+      "reasons": [
+        "on-chain verify failed: token0/token1 read failed: all RPC endpoints failed: {'code': -32000, 'message': 'Unauthorized: You must authenticate your request with an API key. Create an account on https://www.ankr.com/rpc/ and generate your personal API key for free.'}"
+      ]
+    },
+    {
+      "ts": "2026-08-29T00:22:16.699978+00:00",
+      "token_out": "0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf",
+      "reasons": [
+        "on-chain verify failed: token0/token1 read failed: all RPC endpoints failed: {'code': -32000, 'message': 'Unauthorized: You must authenticate your request with an API key. Create an account on https://www.ankr.com/rpc/ and generate your personal API key for free.'}"
+      ]
+    },
+    {
+      "ts": "2026-08-29T00:22:18.414188+00:00",
+      "token_out": "0xaa6cccdce193698d33deb9ffd4be74eaa74c4898",
+      "reasons": [
+        "on-chain verify failed: token0/token1 read failed: all RPC endpoints failed: {'code': -32000, 'message': 'Unauthorized: You must authenticate your request with an API key. Create an account on https://www.ankr.com/rpc/ and generate your personal API key for free.'}"
+      ]
+    },
+    {
+      "ts": "2026-08-29T00:23:46.910221+00:00",
+      "token_out": "0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf",
+      "reasons": [
+        "on-chain verify failed: token0/token1 read failed: all RPC endpoints failed: {'code': -32000, 'message': 'Unauthorized: You must authenticate your request with an API key. Create an account on https://www.ankr.com/rpc/ and generate your personal API key for free.'}"
+      ]
+    },
+    {
+      "ts": "2026-08-29T00:23:48.558808+00:00",
+      "token_out": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+      "reasons": [
+        "on-chain verify failed: token0/token1 read failed: all RPC endpoints failed: {'code': -32000, 'message': 'Unauthorized: You must authenticate your request with an API key. Create an account on https://www.ankr.com/rpc/ and generate your personal API key for free.'}"
+      ]
+    },
+    {
+      "ts": "2026-08-31T09:22:54.135946+00:00",
+      "token_out": "0x3ec2156d4c0a9cbdab4a016633b7bcf6a8d68ea2",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: data fetch failed (The read operation timed out)) and score 75 < 80"
+      ]
+    },
+    {
+      "ts": "2026-09-07T05:08:02.357061+00:00",
+      "token_out": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",
+      "reasons": [
+        "on-chain verify failed: pair mismatch: expected ['0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b', '0x4200000000000000000000000000000000000006'] got ['0x4200000000000000000000000000000000000006', '0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf']",
+        "signal 813622s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-09-07T05:11:24.927793+00:00",
+      "token_out": "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",
+      "reasons": [
+        "on-chain verify failed: pair mismatch: expected ['0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b', '0x4200000000000000000000000000000000000006'] got ['0x4200000000000000000000000000000000000006', '0xacfe6019ed1a7dc6f7b508c02d1b04ec88cc21bf']",
+        "signal 813824s old > 600s"
+      ]
+    },
+    {
+      "ts": "2026-09-11T03:29:45.074526+00:00",
+      "token_out": null,
+      "reasons": [
+        "no pool/token to verify on-chain",
+        "liquidity $143,999 < $250,000"
+      ]
+    },
+    {
+      "ts": "2026-09-11T03:40:17.643326+00:00",
+      "token_out": "0x9b83c2f3c1975bf4b6cc04f8d3f6bc1e98e38ba3",
+      "reasons": [
+        "on-chain verify failed: token0/token1 read failed: all RPC endpoints failed: {'code': -32000, 'message': 'The method eth_call is not supported.'}",
+        "liquidity $146,433 < $250,000"
+      ]
+    },
+    {
+      "ts": "2026-09-11T03:44:18.247504+00:00",
+      "token_out": "0x9b83c2f3c1975bf4b6cc04f8d3f6bc1e98e38ba3",
+      "reasons": [
+        "5m vol $229 < $250 (stale tape)"
+      ]
+    },
+    {
+      "ts": "2026-09-11T03:45:40.699975+00:00",
+      "token_out": "0x9b83c2f3c1975bf4b6cc04f8d3f6bc1e98e38ba3",
+      "reasons": [
+        "5m vol $199 < $200 (stale tape)"
+      ]
+    },
+    {
+      "ts": "2026-09-18T16:46:39.979089+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: data fetch failed (<urlopen error [Errno -3] Temporary failure in name resolution>)) and score 31 < 80"
+      ]
+    },
+    {
+      "ts": "2026-09-21T00:59:18.983079+00:00",
+      "token_out": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "reasons": [
+        "on-chain verify failed: pool contract has no code (eth_getCode empty)"
+      ]
+    },
+    {
+      "ts": "2026-09-29T20:20:46.648417+00:00",
+      "token_out": "0xb2000000000000000000008bc878",
+      "reasons": [
+        "no pool/token to verify on-chain",
+        "liquidity $0 < $100,000"
+      ]
+    },
+    {
+      "ts": "2026-09-29T20:20:47.363248+00:00",
+      "token_out": "0xc0634090f2fe6c6d75e61be2b949",
+      "reasons": [
+        "no pool/token to verify on-chain",
+        "liquidity $0 < $250,000",
+        "5m vol $0 < $250 (stale tape)"
+      ]
+    },
+    {
+      "ts": "2026-09-29T20:27:11.317799+00:00",
+      "token_out": "0xc0634090f2fe6c6d75e61be2b949",
+      "reasons": [
+        "on-chain verify failed: eth_getCode failed: all RPC endpoints failed: {'code': -32602, 'message': 'Invalid params', 'data': 'invalid string length at line 1 column 26'}"
+      ]
+    },
+    {
+      "ts": "2026-09-29T20:27:15.546742+00:00",
+      "token_out": "0x7d3cc30b30dc0645aacdff6372d2",
+      "reasons": [
+        "on-chain verify failed: eth_getCode failed: all RPC endpoints failed: {'code': -32602, 'message': 'Invalid params', 'data': 'invalid string length at line 1 column 26'}"
+      ]
+    }
+  ]
+}

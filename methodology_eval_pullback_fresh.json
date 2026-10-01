@@ -1,0 +1,34 @@
+{
+  "ts": "2026-08-27T21:27:45.079047+00:00",
+  "script": "fresh_pullback_methodology_eval.py",
+  "strategy": "pullback_v2_rsi20-55_roc-10%-0%",
+  "total": 3,
+  "passed": 0,
+  "any_passed": false,
+  "rows": [
+    {
+      "name": "cbBTC / WETH 0.05%",
+      "test_net": 0.0,
+      "bh_test": 1.4454112628754734,
+      "pf_test": 0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS benchmark: BH +1.4% beat strategy +0.0%; FAILS live: negative on unseen data (+0.0%); FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "DRB / WETH 1%",
+      "test_net": 12.27542665052399,
+      "bh_test": 53.75592086506409,
+      "pf_test": 9.9,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS benchmark: BH +53.8% beat strategy +12.3%"
+    },
+    {
+      "name": "KEYCAT / WETH",
+      "test_net": 0.03890884049084775,
+      "bh_test": 9.87219501176526,
+      "pf_test": 9.9,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS benchmark: BH +9.9% beat strategy +0.0%"
+    }
+  ]
+}

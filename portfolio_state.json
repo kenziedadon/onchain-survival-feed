@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-09-12T06:53:37.977383+00:00",
+  "wallet": "0xe7a16be2af1ece8922d9d3ad55c03e29004e540f",
+  "tokens": {
+    "native": {
+      "symbol": "ETH",
+      "name": "Ether",
+      "balance": 0.005317478023001108,
+      "raw": 0,
+      "decimals": 18,
+      "address": "native",
+      "classification": "unknown",
+      "action": "review"
+    },
+    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": {
+      "symbol": "USDC",
+      "name": "USDC",
+      "balance": 2.058841,
+      "raw": 2058841,
+      "decimals": 6,
+      "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "classification": "stable",
+      "action": "hold"
+    },
+    "0x46fee5e7a02b374700fde31d82a9a157d8915f46": {
+      "symbol": "kenzodadon84",
+      "name": "kenzodadon84",
+      "balance": 58244466.48242039,
+      "raw": 58244466482420394625076126,
+      "decimals": 18,
+      "address": "0x46fee5e7a02b374700fde31d82a9a157d8915f46",
+      "classification": "bluechip",
+      "action": "track"
+    },
+    "0xbaa5cc21fd487b8fcc2f632f3f4e8d37262a0842": {
+      "symbol": "MORPHO",
+      "name": "MORPHO",
+      "balance": 0.06053569471146519,
+      "raw": 60535694711465196,
+      "decimals": 18,
+      "address": "0xbaa5cc21fd487b8fcc2f632f3f4e8d37262a0842",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0x9a26f5433671751c3276a065f57e5a02d2817973": {
+      "symbol": "KEYCAT",
+      "name": "KEYCAT",
+      "balance": 24.634520041764127,
+      "raw": 24634520041764126574,
+      "decimals": 18,
+      "address": "0x9a26f5433671751c3276a065f57e5a02d2817973",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0x16171b069184a1998c8ecda99f1d941d86ccdc19": {
+      "symbol": "ABTC",
+      "name": "ABTC",
+      "balance": 250.0,
+      "raw": 250000000000000000000,
+      "decimals": 18,
+      "address": "0x16171b069184a1998c8ecda99f1d941d86ccdc19",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0xb2000000000000000000006b96e07b49964fc43a": {
+      "symbol": "HOUSE",
+      "name": "HOUSE",
+      "balance": 10.543,
+      "raw": 10543000000000000000,
+      "decimals": 18,
+      "address": "0xb2000000000000000000006b96e07b49964fc43a",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0x538dbc33787c9f12aa824b6597e29a41d644ca41": {
+      "symbol": "GrokBot",
+      "name": "GrokBot",
+      "balance": 3.0,
+      "raw": 3000000000000000000,
+      "decimals": 18,
+      "address": "0x538dbc33787c9f12aa824b6597e29a41d644ca41",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0x54176867114ada4e961fc74e677e21ccc771c677": {
+      "symbol": "LILPEPE",
+      "name": "LILPEPE",
+      "balance": 9e-09,
+      "raw": 9000000000,
+      "decimals": 18,
+      "address": "0x54176867114ada4e961fc74e677e21ccc771c677",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0x27740c050e3764a2cee00317b7ac68a52d11ab5f": {
+      "symbol": "PEPETO",
+      "name": "PEPETO",
+      "balance": 9e-09,
+      "raw": 9000000000,
+      "decimals": 18,
+      "address": "0x27740c050e3764a2cee00317b7ac68a52d11ab5f",
+      "classification": "spam",
+      "action": "sell"
+    },
+    "0x53815022135f3c66799c8393eafe1038ae92ebcb": {
+      "symbol": "CNPY",
+      "name": "CNPY",
+      "balance": 9e-09,
+      "raw": 9000000000,
+      "decimals": 18,
+      "address": "0x53815022135f3c66799c8393eafe1038ae92ebcb",
+      "classification": "spam",
+      "action": "sell"
+    }
+  },
+  "summary": {
+    "total_tokens": 11,
+    "bluechip_value": 0,
+    "spam_count": 8,
+    "native_value": 0
+  }
+}

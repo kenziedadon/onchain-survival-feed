@@ -1,0 +1,1 @@
+WETH ROUTER REFERENCE (honest documentation, NOT executed live) — rebuilt skeleton reference (swap_usdc rebuilt for USDC; WETH pairing restored in doc reference only). Real router execution (getAmountsOut / relay quote) NOT performed (DISARMED). WETH revert NOT tested. Auth token NOT available. NO fabricated quote/result.

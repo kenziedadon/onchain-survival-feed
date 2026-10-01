@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+"""
+TREND DISCOVERY — find tradeable, trending Base coins (the "discover" half).
+
+Proves requirement: "we can discover trending coins." Uses TWO independent,
+keyless, Base-native sources and merges them:
+  1. GeckoTerminal  /networks/base/trending_pools  (ranked by real volume)
+  2. GeckoTerminal  /networks/base/new_pools       (early, pre-trend)
+  3. DEXScreener    /token-boosts/top/v1           (filtered to chainId=='base')
+
+Every result is Base-chain filtered, de-duplicated, scored by a transparent
+momentum/liquidity heuristic, and written to discovered.jsonl for the strategy
+engine. Pure stdlib. Respects 429 with backoff.
+
+Usage:
+  python3 trend_discovery.py            # one scan, print + cache
+  python3 trend_discovery.py --watch    # print current watchlist
+"""
+import json, sys, time, urllib.request
+from datetime import datetime, timezone
+
+UA = {"User-Agent": "Mozilla/5.0", "Accept": "application/json;version=20230302"}
+CACHE = "discovered.jsonl"
+MIN_LIQUIDITY = 1_000_000     # USD; V3 pool depth needed for clean swaps
+MIN_5M_VOL = 2_000          # USD; need real flow
+
+# Known Base bluechip addresses (skip — they don't trend-trade well)
+BLUECHIPS = {
+    "0x4200000000000000000000000000000000000006",  # WETH
+    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",  # USDC
+    "0xd9aaab39e305cd1f0c6defd5aad6bb2c0e0d3b5e",  # USDbC
+    "0x50c5725949a6f0c72e6c4a641f67700984d05e59",  # DAI
+    "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",  # cbETH
+    "0x940181a94a35a4564970412c1dfe761a6299d7a8",  # AERO
+    "0x4ed4e862860bed51a9570b96d61a52e8910248e4",  # cbBTC
+}
+
+def get(url, timeout=25, retries=6):
+    for i in range(retries):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode()
+        except Exception as e:
+            wait = 3 + i*2 if "429" in str(e) else 1.5
+            if i < retries - 1:
+                time.sleep(wait); continue
+            raise
+
+# ---- pool-address -> token-address resolution (fixes the 66-char pool-ID bug) ----
+def _pool_to_token_addr(pool_addr: str, retries=4) -> str:
+    """Given a GeckoTerminal pool address, resolve the underlying token address via
+    DexScreener keyless API. Returns the token address (lowercased) or None."""
+    if not pool_addr:
+        return None
+    tries = 0
+    while tries < retries:
+        try:
+            url = f"https://api.dexscreener.com/latest/dex/pairs/base/{pool_addr}"
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=25) as r:
+                data = json.loads(r.read())
+            pairs = data.get("pairs") or []
+            if pairs:
+                bt = pairs[0].get("baseToken", {})
+                addr = bt.get("address")
+                if addr and len(addr) == 42:
+                    return addr.lower()
+                # Fallback: pair address itself (single-token pools)
+                pair_addr = pairs[0].get("pairAddress", "")
+                if pair_addr and len(pair_addr) == 42:
+                    return pair_addr.lower()
+            return None  # no match => cannot trust a token here
+        except Exception as e:
+            tries += 1
+            time.sleep(min(3 + tries * 2, 15))
+    return None
+
+
+def _fee_from_name(name):
+    fee = 30.0
+    for tok in name.upper().replace("%", " %").split():
+        if "%" in tok:
+            try: fee = float(tok.replace("%", "")) * 100
+            except: pass
+    return fee
+
+def gecko_trending():
+    out = {}
+    try:
+        data = json.loads(get("https://api.geckoterminal.com/api/v2/networks/base/trending_pools?page=1")).get("data", [])
+    except Exception as e:
+        print(f"  [warn] gecko trending: {e}", file=sys.stderr); return out
+    for p in data:
+        a = p.get("attributes", {}); name = a.get("name", "?")
+        addr = p["id"].split("_")[-1]
+        liq = float(a.get("reserve_in_usd") or 0)
+        v5m = float(a.get("volume_usd", {}).get("m5") or 0)
+        v1h = float(a.get("volume_usd", {}).get("h1") or 0)
+        v24h = float(a.get("volume_usd", {}).get("h24") or 0)
+        # Filter out falling knives: require positive 24h price change
+        price_change = a.get("price_change_percentage", {})
+        h24_change = float(price_change.get("h24", 0))
+        if h24_change <= 0:
+            continue
+        # Filter out over-pumped coins (already up >200% — those are sells, not buys)
+        if h24_change > 200:
+            continue
+        if "ETH" not in name.upper() and "WETH" not in name.upper():
+            continue
+        if addr.lower() in BLUECHIPS:
+            continue
+        out[addr] = {
+            "address": addr, "token_addr": _pool_to_token_addr(addr),
+            "name": name, "source": "gecko_trending",
+            "liquidity": liq, "vol_5m": v5m, "vol_1h": v1h, "vol_24h": v24h,
+            "fee_bps": _fee_from_name(name),
+            "price_usd": float(a.get("base_token_price_usd") or 0),
+            "change_24h": h24_change,
+        }
+    return out
+
+def gecko_new():
+    out = {}
+    try:
+        data = json.loads(get("https://api.geckoterminal.com/api/v2/networks/base/new_pools?page=1")).get("data", [])
+    except Exception as e:
+        print(f"  [warn] gecko new_pools: {e}", file=sys.stderr); return out
+    for p in data:
+        a = p.get("attributes", {}); name = a.get("name", "?")
+        addr = p["id"].split("_")[-1]
+        liq = float(a.get("reserve_in_usd") or 0)
+        v5m = float(a.get("volume_usd", {}).get("m5") or 0)
+        if "ETH" not in name.upper() and "WETH" not in name.upper():
+            continue
+        if addr.lower() in BLUECHIPS:
+            continue
+        out[addr] = {
+            "address": addr, "token_addr": _pool_to_token_addr(addr),
+            "name": name, "source": "gecko_new",
+            "liquidity": liq, "vol_5m": v5m, "vol_1h": 0.0,
+            "fee_bps": _fee_from_name(name),
+            "price_usd": float(a.get("base_token_price_usd") or 0),
+        }
+    return out
+
+def dexscreener_boosts():
+    out = {}
+    try:
+        data = json.loads(get("https://api.dexscreener.com/token-boosts/top/v1"))
+    except Exception as e:
+        print(f"  [warn] dexscreener boosts: {e}", file=sys.stderr); return out
+    for b in data:
+        if b.get("chainId") != "base":
+            continue
+        addr = b.get("tokenAddress", "")
+        if addr.lower() in BLUECHIPS:
+            continue
+        out[addr] = {
+            "address": addr, "name": (b.get("tokenAddress", "")[:10] + "…"),
+            "source": "dexscreener_boost",
+            "liquidity": 0.0, "vol_5m": 0.0, "vol_1h": 0.0,
+            "fee_bps": 30.0, "price_usd": 0.0,
+        }
+    return out
+
+def score(coin):
+    """Transparent momentum+liquidity score. Higher = more interesting."""
+    s = 0; reasons = []
+    if coin["liquidity"] >= MIN_LIQUIDITY:
+        s += min(coin["liquidity"] / MIN_LIQUIDITY, 8) * 5  # up to 40
+        reasons.append("liquid")
+    # 24h volume breakout (momentum regime) — most important signal
+    if coin.get("vol_24h", 0) >= 50000:
+        s += min(coin["vol_24h"] / 50000, 10) * 5  # up to 50
+        reasons.append("vol_breakout")
+    elif coin.get("vol_5m", 0) >= MIN_5M_VOL:
+        s += min(coin["vol_5m"] / MIN_5M_VOL, 5) * 6
+        reasons.append("flow")
+    if coin["source"] == "gecko_new":
+        s += 15; reasons.append("early")
+    if coin["source"] == "dexscreener_boost":
+        s += 10; reasons.append("boosted")
+    if coin["fee_bps"] <= 30:
+        s += 5; reasons.append("lowfee")
+    coin["score"] = int(s); coin["reasons"] = reasons
+    return coin
+
+def main():
+    print("=== DISCOVER TRENDING BASE COINS (v2 — FIXED) ===")
+    print("Filters: stable pairs excluded, momentum regime\n")
+    g_trend = gecko_trending();  time.sleep(1.0)
+    g_new = gecko_new();         time.sleep(1.0)
+    dx = dexscreener_boosts()
+
+    merged = {}
+    for src in (g_trend, g_new, dx):
+        for addr, c in src.items():
+            if addr in merged:
+                merged[addr]["reasons"] = list(set(merged[addr]["reasons"] + c["reasons"]))
+                merged[addr]["liquidity"] = max(merged[addr]["liquidity"], c["liquidity"])
+                merged[addr]["vol_5m"] = max(merged[addr]["vol_5m"], c["vol_5m"])
+                merged[addr]["source"] = "multi:" + merged[addr]["source"] + "+" + c["source"]
+            else:
+                merged[addr] = c
+
+    coins = [score(c) for c in merged.values()]
+    # v2 filters: exclude stable pairs, require vol > $5k or liq > $500k
+    coins = [c for c in coins if c["liquidity"] >= 250_000
+             and "USDC" not in c["name"].upper()
+             and "USDT" not in c["name"].upper()
+             and "DAI" not in c["name"].upper()]
+    # Resolve the underlying token address for each pool (GeckoTerminal gives pool
+    # addresses; swap.js needs the token). DexScreener keyless API resolves pool->token.
+    for c in coins:
+        pool_addr = c.get("address")
+        if pool_addr and len(pool_addr) == 42 and c.get("token_addr") is None:
+            resolved = _pool_to_token_addr(pool_addr)
+            if resolved:
+                c["token_addr"] = resolved
+    coins.sort(key=lambda x: x["score"], reverse=True)
+
+    print(f"Discovered {len(coins)} Base coins meeting v2 filters:\n")
+    for i, c in enumerate(coins[:20]):
+        print(f"  {i+1:2}. {c['name'][:26]:26} score={c['score']:>3} "
+              f"liq=${c['liquidity']:>10,.0f} v5m=${c['vol_5m']:>8,.0f} "
+              f"[{c['source']}]")
+    if not coins:
+        print("  (none met the liquidity filter — try lowering MIN_LIQUIDITY)")
+
+    with open(CACHE, "a") as f:
+        rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": coins}
+        f.write(json.dumps(rec) + "\n")
+    print(f"\nWrote {len(coins)} discovered coins to {CACHE}")
+    return coins
+
+if __name__ == "__main__":
+    main()

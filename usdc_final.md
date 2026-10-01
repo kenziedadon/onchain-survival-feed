@@ -1,0 +1,1 @@
+USDC FINAL (all best options executed) — discrepancy OPEN (verified: contract 0x8335... verified; on-chain balance 0 verified; screenshot 6.61 NOT verified). NO fabricated resolution. DISARMED preserved.

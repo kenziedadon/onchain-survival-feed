@@ -1,0 +1,74 @@
+{
+  "ts": "2026-09-25T06:16:00.174767+00:00",
+  "script": "evaluate_methodology.py",
+  "strategy": "simple_ema_v1",
+  "total": 8,
+  "passed": 0,
+  "any_passed": false,
+  "rows": [
+    {
+      "name": "KTA / WETH",
+      "test_net": 0.0,
+      "bh_test": -3.9696829523266586,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "cbBTC / WETH 0.01%",
+      "test_net": 0.0,
+      "bh_test": -2.4768404959911394,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "VVV / WETH",
+      "test_net": 0.0,
+      "bh_test": -2.7343621934838858,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "DRB / WETH 1%",
+      "test_net": 0.0,
+      "bh_test": -3.9696829523266586,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "KEYCAT / WETH",
+      "test_net": 0.0,
+      "bh_test": 4.212530487108634,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS benchmark: buy-and-hold beat the strategy on unseen data; FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "BNKR / WETH 1%",
+      "test_net": 0.0,
+      "bh_test": -19.809024608728386,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "LFI / WETH",
+      "test_net": 0.0,
+      "bh_test": -11.229429270243518,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    },
+    {
+      "name": "OVPP / WETH",
+      "test_net": 0.0,
+      "bh_test": -9.631029056145401,
+      "pf_test": 0.0,
+      "maxdd_test": 0.0,
+      "verdict": "REJECT: FAILS live: negative on unseen data; FAILS profit factor: PF=0.00 (<1.1)"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+ENDPOINT AUTH RETRY — 401 verified blocked (curl real). No auth token available (user has not provided; I have none). FREE clone verified (tradingview-mcp v0.9.0, lightweight-charts). Hosted service endpoint (mcp.cryptosieve.com/mcp) requires token — NOT resolved. NO fabricated endpoint verification claim. NO fabricated backtest/profit. Strategy verified=false remains.
