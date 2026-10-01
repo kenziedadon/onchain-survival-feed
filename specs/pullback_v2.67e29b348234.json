@@ -1,0 +1,39 @@
+{
+  "analysis": {
+    "alpha": 0.05,
+    "min_trades": 10,
+    "test": "welch_t_one_sided"
+  },
+  "costs": {
+    "constants_version": "pessimistic_v1",
+    "model": "pessimistic",
+    "slippage_multiplier": 2.0
+  },
+  "data": {
+    "interval": "hour",
+    "limit": 1000,
+    "source": "geckoterminal",
+    "universe": "base_weth_pools_largest_first",
+    "window_note": "deepened 300->1000 hourly bars on the 3 already-pinned pools; universe unchanged"
+  },
+  "gates": {
+    "maxdd_max": 40.0,
+    "min_trades_test": 10,
+    "pf_min": 1.1
+  },
+  "params": {
+    "fast": 8,
+    "roc_24_min": 0.0,
+    "roc_hi": 0.0,
+    "roc_lo": -0.1,
+    "rsi_hi": 55.0,
+    "rsi_lo": 20.0,
+    "slow": 32
+  },
+  "split": {
+    "scheme": "positional",
+    "train_frac": 0.6
+  },
+  "strategy_id": "pullback_v2",
+  "strategy_version": "2.0.0-legacy"
+}
