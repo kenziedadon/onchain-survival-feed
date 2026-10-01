@@ -14,12 +14,22 @@ READ THIS BEFORE CITING ANY NUMBER FROM THIS SCRIPT.
   * If a regime-conditional edge appears here, it is a HYPOTHESIS for a fresh
     preregistration on fresh data. It is not a result, and the 0/6 stands.
 
-Why it exists at all: `pullback_v2` reported +19.30% mean net with train trade
-counts of 2, 2, 1. A strategy that is flat ~99% of the time and still returns
-+19% is not demonstrating skill -- it is demonstrating what happens when cash
-meets a rally. Separately, `pullback_v2` fires so rarely on hourly bars that
-its numbers cannot be trusted in EITHER direction. Both are defects worth
-understanding.
+Why it exists at all: `pullback_v2` reported +19.30% mean net with test-split
+trade counts of 3, 1, 3 while the train split showed 2, 2, 1. The first guess
+was that the strategy was flat ~99% of the time and merely caught a rally.
+THAT WAS WRONG, and this script disproved it: exposure is 50-88%, not ~1%,
+because the 8-10% stop holds positions for hundreds of bars. The low trade
+COUNT reflects very long holding periods, not inactivity. The corrected
+reading is that the return is exposure, and the same-exposure random control
+below does at least as well. See FINDING section 6.1.
+
+Note also that this script does NOT replay the pinned bars -- it re-fetches
+live OHLCV and calls run_segment directly, bypassing
+prereg.require_pinned_data. That is deliberate (a post-hoc diagnostic must not
+be blocked by the refusal gate), but it means its figures can differ slightly
+from the sealed artifacts, whose bars were pinned hours earlier and have since
+been superseded by a newly closed hourly bar. Compare same-split net_pct
+before quoting either number.
 
 What this measures, per pool and split:
   1. entries / exits / signal-candidate counts, and WHY entries were rejected
@@ -60,7 +70,7 @@ def pool_meta(addr: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# 1. Signal-candidate accounting — why does pullback_v2 almost never fire?
+# 1. Signal-candidate accounting — which conjunct is actually binding?
 # ---------------------------------------------------------------------------
 
 def signal_audit(candles, strat_mod, params) -> dict:
@@ -166,9 +176,14 @@ def exposure(candles, trades) -> dict:
 def bench_decomposition(candles, trades) -> dict:
     """Full-window B&H, plus B&H restricted to the bars the strategy was FLAT.
 
-    The second number is the whole point. If the strategy's +19% came from the
-    flat windows, then it beat nothing -- it just avoided the parts that lost,
-    and its edge is a function of being absent, not of its entries.
+    The second number answers a question that the full-window figure hides:
+    what did the asset do during the stretches this strategy sat out? If most
+    of the move happened there, the strategy avoided it rather than earned it.
+
+    Note the corrected reading (FINDING section 6.1): for `pullback_v2` the
+    flat windows are a MINORITY of bars (exposure 50-88%), so this is not the
+    "cash caught the rally" story. It is a diagnostic of where the asset's
+    return came from, nothing more.
     """
     n = len(candles)
     if n < 2:

@@ -88,11 +88,20 @@ strategy captured that regime.
 
 ## 6. A positive-looking number that is NOT evidence of edge
 
+> **AMENDED 2026-10-01 (post-hoc correction).** The original text of this
+> section explained `pullback_v2`'s `+19.30%` mean as a **low-exposure
+> artifact** — the claim that the strategy sat in cash through the rally. **That
+> mechanism was factually wrong.** Exposure was 50–88%, not low. The corrected
+> explanation is in §6.1: the return is **exposure**, and a random entry rule
+> matched on that same exposure does better. The conclusion of this section is
+> unchanged — `+19.30%` is still not edge — but the original reasoning was not.
+>
+> This amendment is a **post-hoc correction, not new evidence**. It does not
+> add a row, does not change any measurement, and does not alter the sealed
+> ledger, which remains **0/6**. The numbers below come from a diagnostic
+> stamped `POST_HOC / NOT_EVIDENCE`; no p-value may be derived from them.
+
 `pullback_v2` reports `positive: 3/3, mean net +19.30%`. **This is not edge.**
-The train-window trade counts were 2, 2, 1 — the strategy is flat most of the
-time. With 1–3 test trades, holding cash through a rally produces a large
-positive mean return while carrying none of the risk that produced it. Being
-selective and being flat are indistinguishable at n=1.
 
 The harness behaved correctly and refused to report a p-value:
 
@@ -102,12 +111,90 @@ t-test: NOT REPORTED (below min_trades — a p-value from a tiny sample is noise
 
 Any future reader must not cite `+19.30%` as a result.
 
+### 6.1 Corrected mechanism — exposure, not absence
+
+The train-window trade counts (2, 2, 1) were read as "the strategy is flat
+most of the time." That inference was wrong. The low trade *count* reflects
+very long holding periods, not inactivity:
+
+| Pool | Split | n trades | Exposure | Avg hold (bars) |
+|---|---|---|---|---|
+| cbBTC / WETH | train | 2 | **78.6%** | 235.5 |
+| cbBTC / WETH | test | 3 | **50.2%** | 67.0 |
+| VIRTUAL / WETH | train | 2 | **72.0%** | 215.5 |
+| VIRTUAL / WETH | test | 1 | **82.8%** | 331.0 |
+| AERO / WETH | train | 1 | **88.1%** | 528.0 |
+| AERO / WETH | test | 3 | **65.2%** | 87.0 |
+
+Signal *entries* fire at 5.5–6.9% of eligible bars. Trades are few because the
+8–10% stop and `rsi>85` exit hold positions for hundreds of bars. The strategy
+is in-market most of the window and is barely distinguishable from simply
+holding — while paying ~68 bps per round trip to do it.
+
+**Same-exposure control.** Random entries matched on trade count and holding
+period, 500 draws per split (`run_regime_postmortem.py`):
+
+| Strategy | Pool | Split | Strategy | Random (mean) | Random p05–p95 |
+|---|---|---|---|---|---|
+| `pullback_v2` | cbBTC / WETH | test | +11.87% | +4.76% | −3.80 .. +13.32 |
+| `pullback_v2` | VIRTUAL / WETH | test | **+29.42%** | **+33.41%** | +29.79 .. +37.75 |
+| `pullback_v2` | AERO / WETH | test | **+15.32%** | **+37.82%** | +10.35 .. +62.88 |
+| `pullback_v2` | cbBTC / WETH | train | +2.46% | −0.57% | −4.86 .. +2.71 |
+| `pullback_v2` | VIRTUAL / WETH | train | −9.99% | −9.14% | −22.34 .. +7.46 |
+| `pullback_v2` | AERO / WETH | train | +19.84% | +19.97% | +14.23 .. +27.04 |
+| `simple_ema_v1` | cbBTC / WETH | test | +10.64% | +4.65% | −3.06 .. +12.65 |
+| `simple_ema_v1` | VIRTUAL / WETH | test | **−6.54%** | **+6.29%** | −8.60 .. +21.35 |
+| `simple_ema_v1` | AERO / WETH | test | **−8.65%** | **+7.69%** | −10.40 .. +28.82 |
+| `simple_ema_v1` | cbBTC / WETH | train | −2.98% | −0.00% | −5.13 .. +4.70 |
+| `simple_ema_v1` | VIRTUAL / WETH | train | **−18.32%** | **−5.70%** | −22.29 .. +12.99 |
+| `simple_ema_v1` | AERO / WETH | train | +19.53% | +1.56% | −16.84 .. +25.96 |
+
+Counted across all 12 rows: the random control's mean exceeds the strategy's
+return in **8 of 12** (`pullback_v2` 4 of 6, `simple_ema_v1` 4 of 6). On
+`pullback_v2` VIRTUAL test the strategy lands **below the 5th percentile** of
+the random distribution. **11 of 12 rows fall inside the random p05–p95 band**
+— i.e. indistinguishable from random at matched exposure, not merely beaten.
+
+The +19.30% mean is therefore **not skill**. It is what holding the asset
+through that window produced, minus costs, and a random entry rule holding for
+the same spans does at least as well.
+
+### 6.1a Reconciling these figures against the sealed artifacts
+
+The returns above are **not** identical to the published §3 rows
+(`pullback_v2` test: +11.92 / +29.89 / +16.09 vs +11.87 / +29.42 / +15.32
+here). Cause: `run_regime_postmortem.py` re-fetches live OHLCV and calls
+`run_segment` directly, bypassing `prereg.require_pinned_data`, so it evaluates
+a window one closed hourly bar newer than the pin taken at 14:01. Same
+pools, same strategies, same gates — a one-bar shift in the evaluation window.
+Trade counts are identical (3, 1, 3). The `+19.30%` mean in the header belongs
+to the **pinned** set; these figures belong to the live re-fetch. Both are
+correct for their own window; they are not interchangeable.
+
+### 6.2 Regime structure — the conditional question cannot be asked
+
+Entry rate is **0.0% in every down-trend bucket**, on every pool, for both
+strategies. `px > slow_sma` is a hard conjunct: these strategies are
+structurally long-only-uptrend, so there is no down-market behaviour to
+condition on. On up-trend buckets where entries do fire (2.6–16.7% entry
+rate), the strategies still fail to beat the random control at matched
+exposure. No regime bucket reaches n≥10 out-of-sample.
+
+Artifacts (post-hoc, non-evidence):
+`research_runs/POSTHOC_regime_pullback_v2_20261001T142528.json`
+sha256 `1ed7b13bbc7612ed0ebdfdbe5ef6f2adde3e4cacfde46b230267c898ea56c1a8`
+`research_runs/POSTHOC_regime_simple_ema_v1_20261001T142653.json`
+sha256 `4761d3eda0a5fadc243003bc93c2586c9fda570915cf2eedd16371a7528daff8`
+
 ## 7. Caveats on the record
 
-1. **`pullback_v2` train counts are degenerate** (2, 2, 1 against a ~600-bar
-   train window). The strategy almost never fires on hourly bars. This
-   undermines confidence in all of its numbers, favourable or not, and is
-   unexplained.
+1. **`pullback_v2` train counts are low** (2, 2, 1 against a ~600-bar
+   train window). *Corrected 2026-10-01:* the original wording here said
+   "almost never fires," which was wrong — signal entries fire on 5.5–6.9% of
+   eligible bars. The low trade count reflects **very long holding periods**
+   (avg 215–528 bars), not inactivity; exposure was 50–88%. See §6.1. The
+   consequence stands: with 1–3 trades per split, no row can clear
+   `min_trades: 10`, and all of its numbers are unreliable in both directions.
 2. **GeckoTerminal returned HTTP 429 twice mid-run.** Handled with backoff and
    page-skip; no pool was silently dropped from any reported result. Two
    follow-on invocations refused to evaluate rather than evaluate partially,
