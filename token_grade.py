@@ -53,10 +53,17 @@ GOPLUS_BASE = "https://api.gopluslabs.io/api/v1"
 DEXSCREENER_BASE = "https://api.dexscreener.com/latest/dex"
 
 # Superchain token list — UNCONFIGURED (WO #1 follow-up).
-# Left empty deliberately: the previous value was the literal string " ",
-# which built a bogus URL and silently ate -10 points on the promotion
-# path via the broad market-check handler. Empty fails closed to False
-# with no network call until a real URL is set.
+# No real list URL has been supplied yet, so this stays empty until one is.
+# NOTE: changing the previous value (" ", a single space) to "" is a
+# BEHAVIORAL NO-OP. Both raise ValueError: unknown url type inside
+# urllib.request.Request, both are swallowed by the
+# `except Exception: pass` in _is_superchain(), and both return False.
+# Neither value results in a network call. There is no -10 point deduction
+# on the promotion path and no "broad market-check handler" involved; a
+# False return simply makes the `and self._is_superchain(addr)` condition
+# false and skips the block.
+# Recorded here so the next reader does not look for a penalty that this
+# change does not implement.
 SUPERCHAIN_LIST_URL = ""
 
 # --- Grading thresholds ---
