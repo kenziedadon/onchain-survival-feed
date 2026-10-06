@@ -37,6 +37,7 @@ SEAL_DIGESTS = {
     "caps.json": "0bb3c9a36f42e0f6ab2c6c37671c5b5baf56cf4e6f0b0da5182cd8419b5cca55",
     "strategy.py": "1cb789bc8633d41bc71359e745f0a4a39a9a003c3cc49ec9e494767e978c7e57",
     "executor.py": "1fdfce7b82c75f300a4230d08dddf2d54550c601f13b2cac1a461de65209aa36",
+    "research_harness/strategies/simple_ema_v1.py": "ddf90adc20cc117bb17af47ce3f5e191205dae9b93700168d8867755d40c99c9",
 }
 
 # Pinned universe (sha256 of sorted list of 28 token addresses)
@@ -136,7 +137,12 @@ def get_ohlc(coin: dict, source: str = "random_walk") -> list[dict]:
 
 
 def score_trade(entry_bar: int, exit_bar: int, bars: list[dict]) -> dict:
-    """Score a single trade with SEAL2 cost + latency rules."""
+    """Score a single trade with SEAL2 cost + latency rules.
+
+    Entry fills at signal_bar + LATENCY_BLOCKS (line 205).
+    Exit fills one bar after SL/TP is touched (harness rule), PLUS the same
+    N=12 latency floor — the stop is triggered but filling takes time.
+    """
     entry_price = bars[entry_bar]["o"]
     exit_price = bars[exit_bar]["c"]
 
@@ -144,17 +150,22 @@ def score_trade(entry_bar: int, exit_bar: int, bars: list[dict]) -> dict:
     stop_loss = entry_price * (1 - 0.02)  # stop_loss_pct = 0.02
     take_profit = entry_price * (1 + 0.05)  # take_profit_pct = 0.05
 
-    # Check if we hit SL or TP first, then use the exit bar
+    # Check if we hit SL or TP, with +12 latency on exit fill
+    # Harness rule: "fills one bar later" (line 75) + N=12 latency floor
     exit_price_actual = exit_price
     exit_reason = "time_based"
     for bar in range(entry_bar + 1, exit_bar + 1):
         bar_price = bars[bar]["c"]
         if bar_price <= stop_loss:
-            exit_price_actual = stop_loss
+            # Exit fills at bar + LATENCY_BLOCKS (harness +1 latency, same N=12 floor)
+            exit_fill_bar = min(bar + LATENCY_BLOCKS, exit_bar)
+            exit_price_actual = bars[exit_fill_bar]["o"]
             exit_reason = "stop_loss"
             break
         if bar_price >= take_profit:
-            exit_price_actual = take_profit
+            # Exit fills at bar + LATENCY_BLOCKS (harness +1 latency, same N=12 floor)
+            exit_fill_bar = min(bar + LATENCY_BLOCKS, exit_bar)
+            exit_price_actual = bars[exit_fill_bar]["o"]
             exit_reason = "take_profit"
             break
 
