@@ -58,7 +58,9 @@ All values are **as on disk** after the unit-normalization fix applied on 2026-1
   - *55% bar authorized by McKenzie on 2026-10-06 ("Yes i did").*
   - *Pre-fix n=9 (56%) recorded as historical context, excluded from the 100-trade count.*
 - **Safety:** kill_switch=true and live_trading=false are frozen for the entire 100-trade run. No real transactions are broadcast.
-- **Validation harness:** research_harness/strategies/simple_ema_v1.py (the WO4 harness engine), NOT simple_ema.py. The executor's `_check_entry_timing()` (executor.py:590-591) returns True immediately for simple_ema_v1 — the EMA crossover IS the entry gate.
+| **Locked Protocol (continued):**
+|- **Max hold:** 24 bars per trade (scorer-side, seal2_scorer.py:221 — `exit_bar = min(entry_bar + 24, n_bars - 1)`). Clamped to available data.
+|- **Validation harness:** research_harness/strategies/simple_ema_v1.py (the WO4 harness engine), NOT simple_ema.py. The executor's `_check_entry_timing()` (executor.py:590-591) returns True immediately for simple_ema_v1 — the EMA crossover IS the entry gate.
 
 ## 4. Effective Exit Logic (paper-trade path)
 
