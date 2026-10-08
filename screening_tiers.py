@@ -342,12 +342,17 @@ def screen_token(bundle: dict) -> dict[str, Any]:
     mcap_raw = dex.get("mcap")
     mcap = _safe_float(mcap_raw)
     liq = _safe_float(dex.get("liquidity_usd"))
-    txns = dex.get("txns_24h") or {}
-    vol_24h = int(_safe_float(txns.get("buys")) + _safe_float(txns.get("sells")))
-    # txns_24h is a COUNT (buys + sells), not USD volume. The WO calls
-    # this "volume_24h" in the metrics, so we keep the key name but the
-    # value is txn count (documented here to avoid the mislabel).
-    txn_count = vol_24h
+
+    # Txn gate: distinguish absent key vs present-zero (defect #2 + #3)
+    txns = dex.get("txns_24h")
+    txns_present_in_source = "txns_24h" in (dex or {})
+    if txns_present_in_source:
+        txn_count = int(_safe_float(txns.get("buys")) + _safe_float(txns.get("sells")))
+    else:
+        txn_count = 0  # placeholder; gate marks unknown below
+
+    # txns_24h is a COUNT (buys + sells). The WO calls this key
+    # "volume_24h" in metrics (kept for WO-compat naming).
 
     holders = block.get("holders") or []
     # Two supplies, deliberately distinct (live unit mismatch, BOAR):
@@ -360,6 +365,10 @@ def screen_token(bundle: dict) -> dict[str, Any]:
     # holds tokens is the PoolManager (BOAR's top holder).
     pool_addresses = pool_exclusion_set(goplus.get("dex"))
     account_ages: dict[str, int] = bundle.get("_account_ages") or {}
+    # NOTE (WO deferred, 2026-10-07): _account_ages is NOT populated
+    # in the production fetch layer yet — wiring requires ~20 Blockscout
+    # per-address oldest-transaction lookups per token.  The gate stays
+    #  / pass-through until wired; see WO addendum.
 
     # --- Determine stage ---
     stage = classify_stage(pair_created)
@@ -373,7 +382,7 @@ def screen_token(bundle: dict) -> dict[str, Any]:
             "pair_age_hours": None,
             "mcap": mcap,
             "liquidity_usd": liq,
-            "volume_24h": vol_24h,  # txn count per WO naming (key kept for WO compat)
+            "volume_24h": txn_count,  # txn count per WO naming (key kept for compat)
             "concentration_top10": None,
             "new_wallet_ratio": None,
         },
@@ -423,6 +432,9 @@ def screen_token(bundle: dict) -> dict[str, Any]:
         # checks below may still resolve from other sources.
 
     # --- FRESH gates (apply to every stage) ---
+    # When stage is UNKNOWN, skip stage-specific mcap floors (defect #1:
+    # a $60K token with unknown stage must not REJECT on the $100K floor).
+    # Non-stage gates (txn count, concentration, socials) still apply.
     # WO addendum (2026-10-07): missing mcap is a DATA gap, not a bad signal.
     # Fail-open: if DexScreener returned no mcap (rate limit, new pair not
     # yet indexed), mark it `unknown` rather than REJECT. This matches the
@@ -431,12 +443,17 @@ def screen_token(bundle: dict) -> dict[str, Any]:
     if not mcap_known:
         result["unknown"].append("mcap: no marketCap from DexScreener")
     else:
-        if mcap < MCAP_FLOOR_FRESH:
+        if mcap_known and stage != "UNKNOWN" and mcap < MCAP_FLOOR_FRESH:
             _reject(f"mcap ${mcap:,.0f} < ${MCAP_FLOOR_FRESH:,} floor")
-    if vol_24h < TXN_MIN_FRESH and txn_count > 0:
-        # Only apply if we got a real count; a zero may mean DexScreener
-        # didn't index txns yet, not that there are none.
-        _reject(f"txns 24h {vol_24h} < {TXN_MIN_FRESH} min")
+
+        # Txn gate: present-zero REJECTs (genuine), absent key marks unknown
+        if txns_present_in_source:
+            # Key was present — present-zero or present-but-low fires the floor
+            if txn_count < TXN_MIN_FRESH:
+                _reject(f"txns 24h {txn_count} < {TXN_MIN_FRESH} min")
+        else:
+            # Key absent — data gap, mark unknown, no floor
+            result["unknown"].append("txns_24h: absent from DexScreener")
 
     socials = len((dex.get("info") or {}).get("socials") or [])
     websites = len((dex.get("info") or {}).get("websites") or [])
@@ -447,7 +464,7 @@ def screen_token(bundle: dict) -> dict[str, Any]:
         return result
 
     # --- ESTABLISHING gates (apply to ESTABLISHING and ESTABLISHED) ---
-    if mcap_known and mcap < MCAP_FLOOR_EST:
+    if mcap_known and stage != "UNKNOWN" and mcap < MCAP_FLOOR_EST:
         _reject(f"mcap ${mcap:,.0f} < ${MCAP_FLOOR_EST:,} floor")
 
     conc = concentration_top10(holders, total_supply, pool_addresses,
@@ -472,7 +489,7 @@ def screen_token(bundle: dict) -> dict[str, Any]:
         return result
 
     # --- ESTABLISHED gates (apply to ESTABLISHED only) ---
-    if mcap_known and mcap < MCAP_FLOOR_ESTABLISHED:
+    if mcap_known and stage != "UNKNOWN" and mcap < MCAP_FLOOR_ESTABLISHED:
         _reject(f"mcap ${mcap:,.0f} < ${MCAP_FLOOR_ESTABLISHED:,} floor")
 
     new_ratio = estimate_new_wallet_ratio(holders, account_ages,
@@ -555,7 +572,7 @@ if __name__ == "__main__":
             },
             "blockscout": {
                 "holders": [],  # CLI live test doesn't fetch Blockscout holders
-                "total_supply_raw": gp_rec.get("total_supply"),  # raw for concentration
+                "total_supply_raw": bs_tok.get("total_supply"),  # raw from Blockscout
             },
             "goplus": {
                 "dex": gp_rec.get("dex", []),

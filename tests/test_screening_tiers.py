@@ -639,6 +639,7 @@ def test_unknown_stage_fails_open():
     result = screen_token(bundle)
     assert result["stage"] == "UNKNOWN"
     # Fail-open: no positive bad signal, stage gate is marked unknown.
+    # Stage mcap floors are SKIPPED (defect #1 fix).
     assert result["verdict"] != "REJECT"
     assert any("stage" in u for u in result["unknown"])
 
@@ -666,26 +667,50 @@ def test_missing_mcap_fails_open():
     assert any("mcap" in u for u in result["unknown"])
 
 
-def test_zero_txn_count_does_not_reject():
-    """Zero txn count = no data indexed yet, not a thin-txn REJECT.
+def test_present_zero_txns_rejects():
+    """Present {buys:0, sells:0} is GENUINE zero-activity -> REJECT.
 
-    The txn gate only fires when txn_count > 0 to avoid misreading a
-    metadata gap as "no activity."
+    A present-but-zero txn count is an observation, not a data gap.
+    The 100-txn floor fires (fail-closed on positive bad signal).
     """
     bundle = {
         "dexscreener": {
             "pairCreatedAt": _fresh_pair_created(),
             "mcap": 100_000,
             "liquidity_usd": 100_000,
-            "txns_24h": {"buys": 0, "sells": 0},
+            "txns_24h": {"buys": 0, "sells": 0},  # present-zero
             "info": {"socials": [{"url": "x"}], "websites": ["w"]},
         },
         "blockscout": {"holders": [], "total_supply": "0"},
         "goplus": {},
     }
     result = screen_token(bundle)
-    # No REJECT: mcap passes $20K, txn gate doesn't fire at zero.
+    # Present-zero triggers the txn floor -> REJECT
+    assert result["verdict"] == "REJECT"
+    assert any("txns" in r for r in result["reasons"])
+
+
+def test_absent_txns_key_marks_unknown():
+    """Missing txns_24h key = data gap -> unknown, no REJECT.
+
+    The txn gate only fires when the key is present. Absent key
+    means DexScreener didn't index txns yet, not that there are none.
+    """
+    bundle = {
+        "dexscreener": {
+            "pairCreatedAt": _fresh_pair_created(),
+            "mcap": 100_000,
+            "liquidity_usd": 100_000,
+            # txns_24h key absent — data gap
+            "info": {"socials": [{"url": "x"}], "websites": ["w"]},
+        },
+        "blockscout": {"holders": [], "total_supply": "0"},
+        "goplus": {},
+    }
+    result = screen_token(bundle)
+    # Absent key -> unknown, no txn REJECT
     assert result["verdict"] in ("PASS", "FLAG")
+    assert any("txns_24h" in u for u in result["unknown"])
 
 
 # ============================================================
