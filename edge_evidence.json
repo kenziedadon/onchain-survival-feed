@@ -1,8 +1,9 @@
 {
-  "ts": "2026-10-01T00:19:24.382481+00:00",
-  "pass": true,
-  "grid_pass": true,
-  "detail": "strict pass: 56% positive, avg +9.7% (n=9)",
-  "early_edge_pass": true,
-  "methodology_pass": true
+  "ts": "2026-10-07T19:13:55.367901+00:00",
+  "pass": false,
+  "grid_pass": false,
+  "early_edge_pass": false,
+  "detail": "GUARD force-disarm: live_trading=true without arm provenance (got=None, expected=arm_signal_v1)",
+  "auto_confirm": false,
+  "_guard_disarmed": true
 }

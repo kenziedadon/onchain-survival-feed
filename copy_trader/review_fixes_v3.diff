@@ -1,0 +1,199 @@
+# Reviewed baseline -> fixed delta (v3: USDS address + per-token decimals map)
+# Baseline: copy_trader/review_diff.patch (as reviewed)
+# Generated: 2026-10-07T08:46:12Z
+
+diff --git a/copy_trader/poller.py b/copy_trader/poller.py
+--- a/copy_trader/poller.py
++++ b/copy_trader/poller.py
+@@ -41,14 +41,28 @@
+     "0xd8ba9d1a99fc21f0eca24e9b85737c28a194a4e2",  # GMGN Fee Adapter Proxy
+ }
+ 
+-# Stablecoins — stable-to-stable moves are ignored
++# Stablecoins — stable-to-stable moves are ignored.
++# Addresses verified on-chain (eth_getCode non-empty, symbol() matches).
+ STABLECOINS = {
+     "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",  # USDC
+-    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",  # USDC (duplicate for safety)
+     "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",  # DAI
+-    "0x2e277401a470f2038d4c619c31c0379e25c8582",  # USDS
++    "0x820c137fa70c8691f0e44dc420a5e53c168921dc",  # USDS
++    "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",  # USDbC
++    "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2",  # USDT
+ }
+ 
++# Per-token decimals, read from chain (decimals() on Base mainnet).
++# Do NOT infer these from set membership: DAI and USDS are 18, the other
++# three are 6. A single assumed default misprices the odd ones out by 1e12.
++TOKEN_DECIMALS = {
++    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 6,   # USDC
++    "0x50c5725949a6f0c72e6c4a641f24049a917db0cb": 18,  # DAI
++    "0x820c137fa70c8691f0e44dc420a5e53c168921dc": 18,  # USDS
++    "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 6,   # USDbC
++    "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2": 6,   # USDT
++}
++DEFAULT_TOKEN_DECIMALS = 18  # non-stable ERC20 default
++
+ # WETH on Base
+ WETH = "0x4200000000000000000000000000000000000006"
+ 
+@@ -159,6 +173,19 @@
+         state.last_poll_timestamp = d.get("last_poll_timestamp", 0)
+         return state
+ 
++
++def _parse_timestamp(ts: Any) -> int:
++    """Safely parse a timestamp string into unix seconds, returning 0 on failure."""
++    if not ts:
++        return 0
++    try:
++        return int(datetime.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp())
++    except (ValueError, TypeError):
++        try:
++            return int(float(ts))
++        except (ValueError, TypeError):
++            return 0
++
+ # ---------------------------------------------------------------------------
+ # Chain data fetchers
+ # ---------------------------------------------------------------------------
+@@ -337,16 +364,13 @@
+         # For now, return the swap with what we have
+         pass
+ 
+-    # Convert amounts (assume 18 decimals for simplicity — could be enhanced)
+-    # In production, you'd check token decimals
+-    decimals = 18
+-    if token_in in STABLECOINS:
+-        decimals = 6
+-    if target_token in STABLECOINS:
+-        decimals = 6
++    # Convert amounts using each token's own decimals (from TOKEN_DECIMALS,
++    # which was read from chain). Independent in/out — never one shared value.
++    decimals_in = TOKEN_DECIMALS.get(token_in, DEFAULT_TOKEN_DECIMALS)
++    decimals_out = TOKEN_DECIMALS.get(target_token, DEFAULT_TOKEN_DECIMALS)
+ 
+-    amount_in_human = amount_in / (10 ** decimals) if amount_in > 0 else 0.0
+-    amount_out_human = amount_out / (10 ** decimals)
++    amount_in_human = amount_in / (10 ** decimals_in) if amount_in > 0 else 0.0
++    amount_out_human = amount_out / (10 ** decimals_out)
+ 
+     return SwapEvent(
+         tx_hash=receipt.get("transactionHash", ""),
+@@ -511,7 +535,7 @@
+             swap = extract_swap_from_receipt(receipt, address)
+             if swap:
+                 swap.wallet_label = label
+-                swap.timestamp = int(tx.get("timestamp", "0").replace("T", " ").replace("Z", "").split(".")[0] and datetime.fromisoformat(tx.get("timestamp", "1970-01-01T00:00:00Z").replace("Z", "+00:00")).timestamp() or 0)
++                swap.timestamp = _parse_timestamp(tx.get("timestamp"))
+                 swaps.append(swap)
+                 self.logger.info(f"  Detected {'BUY' if swap.is_buy else 'SELL'}: {swap.amount_in:.4f} {swap.token_in} -> {swap.amount_out:.4f} {swap.token_out}")
+ 
+
+diff --git a/copy_trader/test_acceptance.py b/copy_trader/test_acceptance.py
+--- a/copy_trader/test_acceptance.py
++++ b/copy_trader/test_acceptance.py
+@@ -43,6 +43,7 @@
+     KNOWN_ROUTERS,
+     STABLECOINS,
+     WETH,
++    TRANSFER_TOPIC,
+     ROUNDTRIP_COST_BPS,
+     DEFAULT_PAPER_NOTIONAL_USD,
+     MAX_HOLD_DAYS,
+@@ -196,36 +197,74 @@
+ 
+ 
+ def test_dedup_proof(config_path: str) -> bool:
+-    """Test 4: Dedup proof — same tx twice = one paper position."""
++    """Test 4: Dedup proof — same tx twice via poll_wallet = one paper position."""
+     print("\n=== TEST 4: Dedup proof (same tx twice = one position) ===")
+     try:
++        # Mock a single swap tx that appears in every poll_wallet call
++        fake_tx = {
++            "hash": "0xdedup_tx_test",
++            "to": {"hash": "0xcf77a3ba9a5ca396e57b271c5c0b26f421741e481", "is_contract": True},
++            "transaction_types": ["token_transfer"],
++            "timestamp": "2026-08-20T12:00:00Z",
++        }
++        fake_receipt = {
++            "status": "0x1",
++            "transactionHash": "0xdedup_tx_test",
++            "logs": [
++                {
++                    "address": "0x4200000000000000000000000000000000000006",  # WETH
++                    "topics": [
++                        TRANSFER_TOPIC,
++                        "0x000000000000000000000000d569e570b94265e5ebc7df1990f99ee68d3f60a1",  # from = wallet
++                        "0x000000000000000000000000cf77a3ba9a5ca396e57b271c5c0b26f421741e481",  # to = router
++                    ],
++                    "data": hex(int(0.1 * 10**18)),
++                },
++                {
++                    "address": "0x1234567890123456789012345678901234567890",  # target token
++                    "topics": [
++                        TRANSFER_TOPIC,
++                        "0x000000000000000000000000cf77a3ba9a5ca396e57b271c5c0b26f421741e481",  # from = router
++                        "0x000000000000000000000000d569e570b94265e5ebc7df1990f99ee68d3f60a1",  # to = wallet
++                    ],
++                    "data": hex(int(100 * 10**18)),
++                },
++            ],
++        }
++
+         state = PollerState()
+-        buy_swap = SwapEvent(
+-            tx_hash="0xsame_tx_hash",
+-            wallet_address="0xd569e570b94265e5ebc7df1990f99ee68d3f60a1",
+-            wallet_label="WindowB64532",
+-            token_in=WETH,
+-            token_out="0x1234567890123456789012345678901234567890",
+-            amount_in=0.1,
+-            amount_out=100.0,
+-            timestamp=int(time.time()),
+-            is_buy=True,
+-        )
++        poller = CopyTraderPoller(config_path, "/tmp/test_state.json", "/tmp/test_closes.jsonl")
++        poller.state = state
+ 
+-        # First time — should open
+-        pick_id = f"{buy_swap.wallet_address}:{buy_swap.tx_hash}"
+-        assert pick_id not in state.seen_tx_hashes, "Tx already seen (shouldn't be)"
+-        state.seen_tx_hashes.add(pick_id)
+-        print(f"  ✓ First time: tx added to seen set")
+-
+-        # Second time — should skip
+-        assert pick_id in state.seen_tx_hashes, "Tx not seen (should be)"
+-        print(f"  ✓ Second time: tx already in seen set — skipped")
++        # Mock all network calls
++        with patch("copy_trader.poller.fetch_wallet_transactions", return_value=[fake_tx]), \
++             patch("copy_trader.poller.fetch_tx_receipt", return_value=fake_receipt), \
++             patch("copy_trader.poller.is_dex_swap", return_value=True), \
++             patch("copy_trader.poller.fetch_token_price", return_value=2500.0):
++
++            # First poll: tx not seen → should detect swap, open position, add to seen
++            swaps1 = poller.poll_wallet({"address": "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1", "label": "TestWallet"})
++            assert len(swaps1) == 1, f"Expected 1 swap on first poll, got {len(swaps1)}"
++            assert fake_tx["hash"] in state.seen_tx_hashes, "Tx hash not in seen set after first poll"
++
++            # Process swaps (opens position)
++            poller.process_swaps(swaps1)
++            opened = len(state.open_positions)
++            assert opened == 1, f"Expected 1 position after first cycle, got {opened}"
++
++            # Second poll: same tx now in seen_tx_hashes → should be skipped
++            swaps2 = poller.poll_wallet({"address": "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1", "label": "TestWallet"})
++            assert len(swaps2) == 0, f"Expected 0 swaps on second poll (dedup), got {len(swaps2)}"
++            assert len(state.open_positions) == 1, "Position count should still be 1 after dedup"
+ 
++        print(f"  ✓ First poll: detected 1 swap, opened 1 position, tx added to seen set")
++        print(f"  ✓ Second poll: same tx skipped by dedup — 0 new swaps, still 1 position")
+         print(f"  ✓ Dedup proof: same tx only opens one paper position")
+         return True
+     except Exception as e:
+         print(f"  ✗ FAILED: {e}")
++        import traceback
++        traceback.print_exc()
+         return False
+ 
+ 

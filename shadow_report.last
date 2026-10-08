@@ -1,0 +1,71 @@
+============================================================
+  SHADOW MODE REPORT
+  Generated: 2026-10-02 11:43 UTC
+============================================================
+
+GATE STATE:
+  kill_switch:   ARMED (safe)
+  live_trading:  off
+  edge_pass:     True
+  mode:          DISARMED
+
+SHADOW BOOK (2 open, 66 closed):
+
+  Open positions:
+    AERO / WETH 0.3%          $    0.000000  2026-10-02T06:59  skip_no_signal
+    eUSD                      $    0.000000  2026-10-02T06:59  skip_no_signal
+
+  Closed: 66 total | 3W / 24L / 39BE
+  Avg PnL: -0.08%
+  Win rate: 5%
+
+  Last 5 closed:
+    Surplus                   -0.10%  skip_no_signal
+    GITLAWB                   -0.59%  skip_no_signal
+    Surplus                   -0.14%  skip_no_signal
+    VCAT                      -0.10%  skip_no_signal
+    ATLAS                     -0.65%  skip_no_signal
+
+TELEMETRY (last 7 days, 427 records):
+  By type:
+    shadow_entry                     194
+    skip_no_signal                   188
+    shadow_exit                       33
+    skip_not_on_sale                   6
+    risk_gate_blocked                  6
+
+  Shadow entries: 194 total
+  By skip reason:
+    skip_no_signal                             188
+    skip_not_on_sale:BB%B=0.86                   1
+    skip_not_on_sale:BB%B=0.80                   1
+    skip_not_on_sale:BB%B=0.78                   1
+    skip_not_on_sale:BB%B=0.71                   1
+    skip_not_on_sale:BB%B=0.83                   1
+    skip_not_on_sale:BB%B=0.76                   1
+
+  Activity by day:
+    2026-09-28   137 events
+    2026-09-29   121 events
+    2026-09-30   105 events
+    2026-10-01    30 events
+    2026-10-02    34 events
+
+  EMA crossover: 0 skips (no signal)
+
+  Most scanned tokens (last 7d):
+    Surplus                      91 scans
+    VCAT                         88 scans
+    GITLAWB                      82 scans
+    NOCK (manual)                70 scans
+    AERO / WETH 0.3%             68 scans
+    ATLAS                        15 scans
+    LAPTOP (manual)               7 scans
+    eUSD                          6 scans
+
+============================================================
+SUMMARY:
+  🟢 Bot is DISARMED — shadow mode only
+  🔴 Shadow PnL negative (-0.1%, 5% win)
+  Shadow book: 2 open / 66 closed
+===========================================================

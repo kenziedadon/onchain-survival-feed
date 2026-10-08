@@ -1,5 +1,5 @@
 {
-  "day": "2026-09-29",
+  "day": "2026-10-05",
   "spent_eth": 0.0,
   "pnl_eth": 0.0,
   "trades": [],
@@ -262,6 +262,132 @@
       "token_out": "0x7d3cc30b30dc0645aacdff6372d2",
       "reasons": [
         "on-chain verify failed: eth_getCode failed: all RPC endpoints failed: {'code': -32602, 'message': 'Invalid params', 'data': 'invalid string length at line 1 column 26'}"
+      ]
+    },
+    {
+      "ts": "2026-10-01T17:05:30.419844+00:00",
+      "token_out": "0xc52aedec3374422d7510e294cfaa90799595cba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: data fetch failed (<urlopen error [Errno -3] Temporary failure in name resolution>)) and score 32 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T19:41:53.168185+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (18.6h > 8h, written 2026-10-04T20:03:00)) and score 35 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T19:41:54.002707+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (18.6h > 8h, written 2026-10-04T20:03:00)) and score 35 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T19:55:24.409231+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (18.9h > 8h, written 2026-10-04T20:03:00)) and score 34 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T19:55:24.414707+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (18.9h > 8h, written 2026-10-04T20:03:00)) and score 30 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:04:11.935253+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.0h > 8h, written 2026-10-04T20:03:00)) and score 33 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:04:11.944754+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.0h > 8h, written 2026-10-04T20:03:00)) and score 31 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:08:32.729567+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.1h > 8h, written 2026-10-04T20:03:00)) and score 33 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:08:32.735378+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.1h > 8h, written 2026-10-04T20:03:00)) and score 32 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:21:19.082089+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.3h > 8h, written 2026-10-04T20:03:00)) and score 32 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:21:19.088256+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.3h > 8h, written 2026-10-04T20:03:00)) and score 28 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:24:17.489328+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.4h > 8h, written 2026-10-04T20:03:00)) and score 32 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:24:17.496154+00:00",
+      "token_out": "0xbf8e8f0e8866a7052f948c16508644347c57aba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.4h > 8h, written 2026-10-04T20:03:00)) and score 27 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:34:10.924217+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.5h > 8h, written 2026-10-04T20:03:00)) and score 32 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:42:24.201890+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.7h > 8h, written 2026-10-04T20:03:00)) and score 36 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T20:47:13.191331+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (19.7h > 8h, written 2026-10-04T20:03:00)) and score 36 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T21:00:06.746556+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (20.0h > 8h, written 2026-10-04T20:03:00)) and score 32 < 80"
+      ]
+    },
+    {
+      "ts": "2026-10-05T21:02:18.331560+00:00",
+      "token_out": "0x9e00fc92493451eba1c63dd3880d68b622037ba3",
+      "reasons": [
+        "macro risk-off (MACRO BLOCK: regime snapshot stale (20.0h > 8h, written 2026-10-04T20:03:00)) and score 33 < 80"
       ]
     }
   ]

@@ -12,8 +12,8 @@
   "strategy_params": {
     "fast_period": 9,
     "slow_period": 21,
-    "stop_loss_pct": 2.0,
-    "take_profit_pct": 5.0,
+    "stop_loss_pct": 0.02,
+    "take_profit_pct": 0.05,
     "use_momentum_confirm": true,
     "use_macd_filter": true,
     "use_stochrsi_filter": true,
@@ -21,9 +21,9 @@
     "min_vol_24h_usd": 50000,
     "min_liquidity_usd": 50000,
     "use_dip_buy": true,
-    "dip_buy_pct": 2.0,
-    "sell_high_pct": 4.0,
-    "trailing_stop_pct": 1.5
+    "dip_buy_pct": 0.02,
+    "sell_high_pct": 0.04,
+    "trailing_stop_pct": 0.015
   },
   "kill_switch": true,
   "live_trading": false,
@@ -61,7 +61,7 @@
     "AERO": "buy+sell getAmountsOut quotes OK 2026-08-23 (0x940181a94A35A4569E4529A3CDfB74e38FD98631)",
     "note": "swap.js now checksum-normalizes token addresses and falls back to Relay aggregator for v4/hook pools"
   },
-  "_arm_ts": "2026-09-30T19:34:27.849585+00:00",
+  "_arm_ts": "2026-10-02T19:35:35.798432+00:00",
   "arm_provenance": "arm_signal_v1",
   "arm_applied_at": null,
   "arm_authorized_by": null,
@@ -127,7 +127,53 @@
     ]
   },
   "currency_pair_note": "Native ETH/WETH trading (reverted 2026-09-09) \u2014 WETH quote preferred; USDC path available as fallback; DRY_RUN guard off; ready for live broadcast",
-  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated to 0x7702cb554e6bfb442cb743a7df23154544a7176c) \u2014 on-chain verified 2026-10-01: 0.00295266739727199 ETH @ block 52044143. Prior 0.007833 ETH record INVALID \u2014 on-chain Sep 24-25 was 0.0026732912741; +0.01072941 top-up Sep 26 02:25. All movements operator-confirmed: -0.003720240 (Sep 26 -> secondary), -0.003722250 (Sep 29 -> 0x4A030aCb61e14447f0262bee1b191B329e1c2a56), +0.003096010 (Sep 29 secondary -> main), -0.003265197493276063 net (Sep 29 bundle, received 8,311 GITLAWB), -0.003722200 (Sep 30 -> 0x4A030aCb61e14447f0262bee1b191B329e1c2a56), -0.000037074612 gas (Oct 01 LiFi route, no ETH moved). No unattributed movement. DISARMED (kill_switch=true, live_trading=false, require_confirmation=true). No live edge: harness walkforward 2026-10-01 rejects both simple_ema_v1 and pullback_v2; sealed ledger 0/6.",
+  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated to 0x7702cb554e6bfb442cb743a7df23154544a) \u2014 on-chain verified 2026-10-03T00:36:32Z across mainnet.base.org: 0.004537572855142536 ETH. Prior caps field claimed 0.002609 ETH (stale). Balance delta +0.001929 ETH is OPERATOR-ADDED CAPITAL (McKenzie). Bot disarmed (kill_switch=true, live_trading=false); holdings.json empty; risk_state trades []; no fills attributable to executor.",
   "_arm_provenance": "arm_signal_v1",
-  "auto_confirm": false
+  "auto_confirm": false,
+  "manual_positions": {
+    "note": "OPERATOR manual positions, on-chain verified (not bot holdings). Bot must NOT treat these as its own positions or attempt to sell/exit them. Recorded for NAV + sell-path awareness only.",
+    "verified_at": "2026-10-02T03:56:42.603206+00:00",
+    "wallet": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F",
+    "eth": 0.004537572855142536,
+    "eth_usd_approx": 16.65,
+    "nav_usd_approx": 21.78,
+    "tokens": [
+      {
+        "symbol": "VIRTUAL",
+        "addr": "0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b",
+        "amount": 3.7279171851870916,
+        "usd": 2.9663
+      },
+      {
+        "symbol": "DRB",
+        "addr": "0x3ec2156d4c0a9cbdab4a016633b7bcf6a8d68ea2",
+        "amount": 3381.2801996571025,
+        "usd": 0.9218
+      },
+      {
+        "symbol": "Basecat",
+        "addr": "0xb2000000000000000000004c27f6523082f41d01",
+        "amount": 47.512874713364816,
+        "usd": 0.5604
+      },
+      {
+        "symbol": "MIGGLES",
+        "addr": "0xb1a03eda10342529bbf8eb700a06c60441fef25d",
+        "amount": 272.57992013079075,
+        "usd": 0.5039
+      },
+      {
+        "symbol": "MORPHO",
+        "addr": "0xbaa5cc21fd487b8fcc2f632f3f4e8d37262a0842",
+        "amount": 0.06053569471146519,
+        "usd": 0.1561
+      },
+      {
+        "symbol": "KEYCAT",
+        "addr": "0x9a26f5433671751c3276a065f57e5a02d2817973",
+        "amount": 24.634520041764127,
+        "usd": 0.0151
+      }
+    ]
+  }
 }

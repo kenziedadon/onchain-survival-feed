@@ -4,9 +4,10 @@
 Runs once per day via cron. Re-arms with the same passing evidence that was
 originally used (grid_pass + early_edge_pass + methodology_pass).
 
-Does NOT change live_trading state, kill_switch, or any trading parameters.
-Only refreshes the edge_evidence.timestamp so the HARD-LOCK freshness check
-in risk.py doesn't block trades.
+WARNING: this DOES touch trading posture. arm_signal() sets live_trading=true,
+stamps _arm_ts, and writes the arm provenance marker. It no longer lowers
+require_confirmation (risk.py hard-wires that to true) — but it can still flip
+live_trading. Do not schedule this without an explicit operator decision.
 """
 import sys, json, os
 from pathlib import Path
@@ -24,7 +25,7 @@ arm_signal(
     early_edge_pass=ev.get("early_edge_pass", False),
     methodology_pass=ev.get("methodology_pass", False),
     detail=ev.get("detail", ""),
-    auto_confirm=True,
+    auto_confirm=False,  # audit-only; no longer lowers the confirmation gate
 )
 print(f"[rearm] Edge evidence refreshed at {ev.get('ts','?')} → now")
 print(f"  pass={ev.get('pass')} grid={ev.get('grid_pass')} early={ev.get('early_edge_pass')} method={ev.get('methodology_pass')}")

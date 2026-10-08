@@ -1,0 +1,133 @@
+{
+  "active_strategy": "simple_ema_v1",
+  "strategy": {
+    "name": "simple_ema_v1",
+    "source": "simple_ema.py",
+    "discovery": "GeckoTerminal trending ETH/WETH pools, stables excluded, vol_24h>$50k, 24h change>+2%",
+    "entry": "Fast EMA(9) crosses above Slow EMA(21) on hourly candles (buy the dip in uptrend)",
+    "exit": "Fast EMA(9) crosses below Slow EMA(21); fallback fixed stop (sell high / cut losers)",
+    "sizing": "ATR-based band clamp via existing capital band logic",
+    "costs": "real DEX fee + slippage-from-liquidity + Base gas"
+  },
+  "strategy_params": {
+    "fast_period": 9,
+    "slow_period": 21,
+    "stop_loss_pct": 2.0,
+    "take_profit_pct": 5.0,
+    "use_momentum_confirm": true,
+    "use_macd_filter": true,
+    "use_stochrsi_filter": true,
+    "stochrsi_hi": 80,
+    "min_vol_24h_usd": 50000,
+    "min_liquidity_usd": 50000,
+    "use_dip_buy": true,
+    "dip_buy_pct": 2.0,
+    "sell_high_pct": 4.0,
+    "trailing_stop_pct": 1.5
+  },
+  "kill_switch": true,
+  "live_trading": false,
+  "require_confirmation": true,
+  "max_trade_eth": 0.0003,
+  "max_daily_loss_eth": 0.0004,
+  "max_slippage_bps": 100,
+  "min_score": 25,
+  "max_positions": 2,
+  "max_buys_per_cycle": 1,
+  "liquidity_floor_usd": 50000,
+  "volume_to_liquidity_min": 0.15,
+  "portfolio_context": true,
+  "max_position_allocation_pct": 40.0,
+  "max_open_positions_portfolio": 2,
+  "exit_cooldown_hours": 0.5,
+  "max_position_age_hours": 6.0,
+  "allowed_actions": [
+    "swap"
+  ],
+  "blocked_tokens": [],
+  "wallet": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F",
+  "nonstandard_sell_tokens": [],
+  "macro_regime": {
+    "enabled": true,
+    "lookback_days": 30,
+    "yield_drop_pct": -0.05,
+    "yield_rise_pct": 0.05,
+    "tvl_rise_pct": 0.02,
+    "tvl_drop_pct": -0.02
+  },
+  "sell_path_verified": {
+    "VIRTUAL": "aerodrome getAmountsOut quote OK 2026-08-22",
+    "KTA": "aerodrome getAmountsOut quote OK 2026-08-22",
+    "AERO": "buy+sell getAmountsOut quotes OK 2026-08-23 (0x940181a94A35A4569E4529A3CDfB74e38FD98631)",
+    "note": "swap.js now checksum-normalizes token addresses and falls back to Relay aggregator for v4/hook pools"
+  },
+  "_arm_ts": "2026-09-30T19:34:27.849585+00:00",
+  "arm_provenance": "arm_signal_v1",
+  "arm_applied_at": null,
+  "arm_authorized_by": null,
+  "arm_note": "KILL SWITCH re-engaged 2026-09-14T21:30 UTC \u2014 auto-arm triggered at .32 balance with auto_confirm=true. Re-disarmed to preserve capital. Arm authorization (arm_signal_v1) preserved for audit.",
+  "_override_applied_at": "2026-08-30T18:52:19.210694",
+  "_user_override": {
+    "applied_at": "2026-08-30T18:52:19.210694",
+    "confirmed_by": "explicit clarification: 'automate trading' + 'lets go live'",
+    "re_applied_at": "2026-08-30",
+    "rationale": "Trading automation enabled. go_live_loop.py runs every 30m. Base MCP removed. Gateway: OmniRoute 20128. Trading: LIVE (override)."
+  },
+  "size_ladder": {
+    "schema": 1,
+    "enabled": true,
+    "auto_apply": false,
+    "current_step": 1,
+    "backtest_gross_edge_bps": null,
+    "steps": [
+      {
+        "size_eth": 0.0005,
+        "min_trades": 30,
+        "max_slippage_bps": 150,
+        "edge_tolerance_bps": 200
+      },
+      {
+        "size_eth": 0.001,
+        "min_trades": 30,
+        "max_slippage_bps": 150,
+        "edge_tolerance_bps": 200
+      },
+      {
+        "size_eth": 0.0025,
+        "min_trades": 30,
+        "max_slippage_bps": 200,
+        "edge_tolerance_bps": 250
+      }
+    ],
+    "demote": {
+      "max_consecutive_losses": 5,
+      "max_drawdown_usd": 1.0,
+      "min_trades": 10
+    },
+    "history": [
+      {
+        "ts": "2026-08-31T05:33:17.621237+00:00",
+        "action": "evaluate",
+        "previous_step": 0,
+        "new_step": 1,
+        "allowed": true,
+        "reason": "step holds | PROMOTED (manual apply)",
+        "metrics_snapshot": {
+          "n_trades": 30,
+          "win_rate_pct": 58,
+          "gross_edge_bps": 76,
+          "p90_slippage_bps": 58,
+          "net_pnl_usd": 0.15,
+          "max_drawdown_usd": 0.2,
+          "consecutive_losses": 1
+        },
+        "applied_by": "manual",
+        "new_size_eth": 0.001
+      }
+    ]
+  },
+  "currency_pair_note": "Native ETH/WETH trading (reverted 2026-09-09) \u2014 WETH quote preferred; USDC path available as fallback; DRY_RUN guard off; ready for live broadcast",
+  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated) \u2014 on-chain verified 2026-10-02: 0.004053 ETH. Prior 0.002952 ETH (Oct 1). Change +0.001101 ETH since Oct 1 \u2014 operator-confirmed, no unattributed movement. DISARMED (kill_switch=true, live_trading=false). No live edge: harness walkforward 2026-10-01 rejects both strategies; sealed ledger 0/6.",
+  "_arm_provenance": "arm_signal_v1",
+  "auto_confirm": false
+}

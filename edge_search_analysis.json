@@ -1,0 +1,136 @@
+{
+  "total_configs": 6528,
+  "traded_configs": 1700,
+  "no_trade_configs": 4828,
+  "no_trade_pct": 74.0,
+  "positive_test_configs": 0,
+  "best_traded": {
+    "strategy": "pullback_v2",
+    "params": {
+      "fast": 12,
+      "slow": 24,
+      "rsi_lo": 15.0,
+      "rsi_hi": 55.0,
+      "roc_lo": -0.15,
+      "roc_hi": 0.0,
+      "roc_24_min": 0.0
+    },
+    "n_pools": 6,
+    "avg_train_net": -7.2122,
+    "avg_test_net": -0.9898,
+    "total_test_trades": 1,
+    "prof_test": 0,
+    "prof_pct": 0.0,
+    "pool_detail": [
+      {
+        "pool": "cbBTC / WETH 0.05%",
+        "train_net": 0.0,
+        "test_net": 0.0,
+        "train_trades": 0,
+        "test_trades": 0
+      },
+      {
+        "pool": "cbBTC / WETH 0.01%",
+        "train_net": 0.0,
+        "test_net": 0.0,
+        "train_trades": 0,
+        "test_trades": 0
+      },
+      {
+        "pool": "DRB / WETH 1%",
+        "train_net": 0.0,
+        "test_net": 0.0,
+        "train_trades": 0,
+        "test_trades": 0
+      },
+      {
+        "pool": "BRETT / WETH 1%",
+        "train_net": -4.601774096962896,
+        "test_net": 0.0,
+        "train_trades": 1,
+        "test_trades": 0
+      },
+      {
+        "pool": "LFI / WETH",
+        "train_net": -28.72720355391676,
+        "test_net": 0.0,
+        "train_trades": 1,
+        "test_trades": 0
+      },
+      {
+        "pool": "OVPP / WETH",
+        "train_net": -9.944492041429132,
+        "test_net": -5.938605937338193,
+        "train_trades": 1,
+        "test_trades": 1
+      }
+    ]
+  },
+  "worst_traded": {
+    "strategy": "simple_ema_v1",
+    "params": {
+      "fast": 5,
+      "slow": 15,
+      "stop_loss_pct": 0.015,
+      "take_profit_pct": 0.12,
+      "rsi_max": 85.0
+    },
+    "n_pools": 6,
+    "avg_train_net": -9.256,
+    "avg_test_net": -5.565,
+    "total_test_trades": 5,
+    "prof_test": 0,
+    "prof_pct": 0.0,
+    "pool_detail": [
+      {
+        "pool": "cbBTC / WETH 0.05%",
+        "train_net": 0.0,
+        "test_net": 0.0,
+        "train_trades": 0,
+        "test_trades": 0
+      },
+      {
+        "pool": "cbBTC / WETH 0.01%",
+        "train_net": 0.0,
+        "test_net": -6.937243355511513,
+        "train_trades": 0,
+        "test_trades": 1
+      },
+      {
+        "pool": "DRB / WETH 1%",
+        "train_net": -6.741614556776776,
+        "test_net": -6.75697867658942,
+        "train_trades": 1,
+        "test_trades": 1
+      },
+      {
+        "pool": "BRETT / WETH 1%",
+        "train_net": -5.816084844187142,
+        "test_net": -5.824544359198747,
+        "train_trades": 1,
+        "test_trades": 1
+      },
+      {
+        "pool": "LFI / WETH",
+        "train_net": -34.266894226270175,
+        "test_net": -4.798554337843175,
+        "train_trades": 2,
+        "test_trades": 1
+      },
+      {
+        "pool": "OVPP / WETH",
+        "train_net": -8.711308003008234,
+        "test_net": -9.07270992561704,
+        "train_trades": 1,
+        "test_trades": 1
+      }
+    ]
+  },
+  "test_net_stats": {
+    "n": 1700,
+    "mean": -2.0282,
+    "min": -5.565,
+    "max": -0.9898,
+    "std": 1.1569
+  }
+}

@@ -22,8 +22,7 @@ import sys
 import time
 import urllib.request
 
-from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreenableError,
-                         UnscreenableField, parse_fields)
+from safe_parse import UnscreenableError, UnscreenableField
 from base_data import BaseData, WETH, USDC
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -122,6 +121,62 @@ class TokenGrader:
         # so a token is never rejected without saying which field broke.
         self.journal_path = journal_path or os.path.join(
             HERE, "state", "unscreenable.jsonl")
+        # Defect #4: source failures must be logged, not silently graded.
+        # Kept in a separate file so a screening outage never looks like a
+        # run of unscreenable tokens.
+        self.miss_path = os.path.join(HERE, "state", "screening_misses.jsonl")
+
+    @staticmethod
+    def _extract_security(record: dict) -> dict:
+        """Pull the boolean/flag safety fields out of a GoPlus record.
+
+        Key names verified against live GoPlus token_security/8453
+        payloads (2026-10-07). `cannot_buy`, `is_blacklisted` and
+        `transfer_pausable` are the real keys; the previously-read
+        `cannot_sell`, `is_blacklist` and `is_pausable` do not exist in
+        any live response, so those gates could never fire.
+
+        Tax fields: GoPlus emits empty string ("") when it does not
+        support tax-detection for a token's DEX — this is NOT the same
+        as "?". Empty string is treated as UNKNOWN (logged, not a
+        verdict-killer). Only "?" is a parse failure.
+        """
+        return {
+            "is_honeypot": record.get("is_honeypot") == "1",
+            "cannot_buy": record.get("cannot_buy") == "1",
+            "is_blacklisted": record.get("is_blacklisted") == "1",
+            "hidden_owner": record.get("hidden_owner") == "1",
+            "is_mintable": record.get("is_mintable") == "1",
+            "transfer_pausable": record.get("transfer_pausable") == "1",
+            "selfdestruct": record.get("selfdestruct") == "1",
+            "is_verified": record.get("is_open_source") == "1",
+        }
+
+    @staticmethod
+    def _safe_tax(v, name="tax"):
+        """Parse a GoPlus tax field for the >10 / >5 gates.
+
+        Returns a float, or None when the value is unsupported/unknown
+        (empty string or None). None means the gate does not apply — it
+        is NOT a failure. A genuine parse failure ("?", "abc") raises
+        UnscreenableError via parse_num, per the WO's fail-closed rule.
+        """
+        from safe_parse import parse_num
+        if v is None or (isinstance(v, str) and v.strip() == ""):
+            return None  # unsupported — not a gate violation
+        return parse_num(v, name)  # raises UnscreenableError on "?"/"abc"
+
+    def _log_security_miss(self, addr: str, reason: str) -> None:
+        """Record a screening-source failure. Never raises (defect #4)."""
+        try:
+            os.makedirs(os.path.dirname(self.miss_path), exist_ok=True)
+            line = {"ts": self._now(), "token": addr, "check": "goplus",
+                    "verdict": GRADE_UNSCREENABLE, "reason": reason,
+                    "source_error": True}
+            with open(self.miss_path, "a") as fh:
+                fh.write(json.dumps(line) + "\n")
+        except Exception:
+            pass
 
     def _journal_rejection(self, addr: str, result: dict) -> None:
         """Append one self-describing rejection line.
@@ -197,14 +252,16 @@ class TokenGrader:
             security = self._check_security(addr)
             result["security"] = security
             
-            # Hard gates
+            # Hard gates. Key names verified against live GoPlus 8453
+            # payloads (defect #1) — the old names were not real keys, so
+            # these three gates could never fire.
             if security.get("is_honeypot"):
                 reasons.append(GATE_HONEYPOT)
                 score = 0
-            if security.get("cannot_sell"):
+            if security.get("cannot_buy"):
                 reasons.append(GATE_CANT_SELL)
                 score = 0
-            if security.get("is_blacklist"):
+            if security.get("is_blacklisted"):
                 reasons.append(GATE_BLACKLIST)
                 score = 0
             if security.get("hidden_owner"):
@@ -213,16 +270,42 @@ class TokenGrader:
             if security.get("is_mintable"):
                 reasons.append(GATE_MINTABLE)
                 score -= 30
-            if security.get("is_pausable"):
+            if security.get("transfer_pausable"):
                 reasons.append(GATE_PAUSABLE)
                 score -= 20
             if security.get("selfdestruct"):
                 reasons.append(GATE_SELFDESTRUCT)
                 score = 0
-            if security.get("buy_tax", 0) > 10 or security.get("sell_tax", 0) > 10:
+            # Defect #3 ordering: an affirmative bad signal outranks a
+            # tax-parse miss. Only when NO positive bad signal fired does
+            # an unparseable tax field make the token UNSCREENABLE.
+            hard_bad = (security.get("is_honeypot") or security.get("cannot_buy")
+                        or security.get("is_blacklisted") or security.get("selfdestruct"))
+
+            if not security.get("parse_tax_ok") and not hard_bad:
+                # Genuine parse failure ("?"/"abc") and nothing worse
+                # found: fail closed with the offending fields named.
+                raise UnscreenableError(
+                    [UnscreenableField(f["field"], f["raw_value"], f["reason"])
+                     for f in security["_tax_unscreenable"]["fields"]],
+                    check="goplus")
+
+            if security.get("tax_unsupported") and not hard_bad:
+                # GoPlus does not evaluate tax for this DEX (empty
+                # string). Unknown, not bad: log the miss and proceed
+                # without the tax gates.
+                self._log_security_miss(addr,
+                    "goplus: tax fields unsupported (empty string) — "
+                    "proceeding without tax gates")
+
+            # Tax threshold gates (only apply if GoPlus evaluated the field)
+            bt, st = security.get("buy_tax"), security.get("sell_tax")
+            bt_hi = bt is not None and bt > 10
+            st_hi = st is not None and st > 10
+            if bt_hi or st_hi:
                 reasons.append(GATE_TAX_TOO_HIGH)
                 score = 0
-            elif security.get("buy_tax", 0) > 5 or security.get("sell_tax", 0) > 5:
+            elif (bt is not None and bt > 5) or (st is not None and st > 5):
                 reasons.append("high_tax")
                 score -= PENALTY_HIGH_TAX
             
@@ -230,13 +313,12 @@ class TokenGrader:
                 reasons.append("unverified_contract")
                 score -= PENALTY_UNVERIFIED
             
-            if security.get("no_lock"):
-                reasons.append("liquidity_unlocked")
-                score -= PENALTY_NO_LOCK
-            
-            if security.get("top10_holder_concentration", 0) > 80:
-                reasons.append("concentrated_holders")
-                score -= PENALTY_CONCENTRATED
+            # NOTE: liquidity-lock status has no GoPlus key on Base.
+            # `trust_list` was the old (non-existent) key; it is not
+            # replaced by a guess. Lock/unlock assessment moves to the
+            # intake layer against lp_holders[] — see defect list #1.
+            # Concentration likewise: no GoPlus key. Derived from
+            # holders[] in the intake layer, not graded here.
         except UnscreenableError as e:
             # WO #1 scope 3: a crashed or unparseable check FAILS CLOSED.
             # The previous handler docked 20 points and let the token
@@ -339,38 +421,70 @@ class TokenGrader:
         try:
             with urllib.request.urlopen(req, timeout=15) as r:
                 data = json.loads(r.read())
-        except Exception:
-            return {}
-        
-        result = data.get("result", {}).get(addr, {})
-        if not result:
+        except Exception as e:
+            # Per WO spec §5: fail-open WITH logging. An unreachable API
+            # must not grade a token as SAFE/BLUECHIP silently — record the
+            # miss so it is distinguishable from a clean pass.
+            self._log_security_miss(addr, f"goplus_api_error: {str(e)[:80]}")
+            raise UnscreenableError(
+                [UnscreenableField("goplus_api", None,
+                                  f"api_error: {str(e)[:80]}")],
+                check="goplus")
+
+        # GoPlus returns {"code":5000,"result":null} on internal errors.
+        # Guard every hop — result may be None, and addr lookup may miss.
+        result_wrap = data.get("result")
+        if not result_wrap or not isinstance(result_wrap, dict):
+            raise UnscreenableError(
+                [UnscreenableField("goplus_result", None,
+                                  f"invalid result wrapper (code={data.get('code')}, "
+                                  f"msg={data.get('message')}, type={type(result_wrap).__name__})")],
+                check="goplus")
+        record = result_wrap.get(addr, {})
+        if not record:
             # No data at all is not a pass. An empty result means the
             # safety fields are unknown, and unknown fails closed.
             raise UnscreenableError(
                 [UnscreenableField("goplus_result", None,
-                                  "empty security payload")],
+                                  f"empty security payload (code={data.get('code')}, msg={data.get('message')})")],
                 check="goplus")
 
-        # Parse FIRST, before any field is compared against a threshold.
-        # WO #1 scope 1: no bare float()/int() on unvalidated input. A
-        # parse failure raises here, so no verdict can be derived from
-        # a partially-parsed record.
-        nums = parse_fields(result, GOPLUS_NUMERIC_FIELDS, check="goplus")
+        # Defect #3: extract positive bad-signal flags FIRST, so a honeypot
+        # is reported as a honeypot even when the tax fields are
+        # unparseable. The parse failure is carried alongside (not raised)
+        # so the caller can prefer the affirmative bad signal over the
+        # parse miss. A raise here would discard the honeypot evidence.
+        security = self._extract_security(record)
 
-        return {
-            "is_honeypot": result.get("is_honeypot") == "1",
-            "cannot_sell": result.get("cannot_sell") == "1",
-            "is_blacklist": result.get("is_blacklist") == "1",
-            "hidden_owner": result.get("hidden_owner") == "1",
-            "is_mintable": result.get("is_mintable") == "1",
-            "is_pausable": result.get("is_pausable") == "1",
-            "selfdestruct": result.get("selfdestruct") == "1",
-            "buy_tax": nums["buy_tax"],
-            "sell_tax": nums["sell_tax"],
-            "is_verified": result.get("is_open_source") == "1",
-            "no_lock": result.get("trust_list") != "1",
-            "top10_holder_concentration": nums["top10_holder_concentration"],
-        }
+        # Tax gates: parse BOTH fields, collecting every failure rather
+        # than raising. Defect #3: the caller must be able to run the
+        # positive bad-signal gates first, so a honeypot with an
+        # unparseable tax is reported as a honeypot — not as
+        # UNSCREENABLE, which would bury the affirmative evidence.
+        tax_failures = []
+        buy_tax = sell_tax = None
+        for fname in ("buy_tax", "sell_tax"):
+            try:
+                val = self._safe_tax(record.get(fname), fname)
+            except UnscreenableError as exc:
+                tax_failures.extend(exc.fields)
+                continue
+            if fname == "buy_tax":
+                buy_tax = val
+            else:
+                sell_tax = val
+
+        security["buy_tax"] = buy_tax
+        security["sell_tax"] = sell_tax
+        security["parse_tax_ok"] = not tax_failures
+        security["tax_unsupported"] = (
+            buy_tax is None and sell_tax is None and not tax_failures)
+        if tax_failures:
+            security["_tax_unscreenable"] = {
+                "verdict": "UNSCREENABLE", "check": "goplus",
+                "fields": [f.as_dict() for f in tax_failures],
+            }
+        return security
     
     def _check_market(self, addr: str) -> dict:
         """Check market quality via DexScreener."""
@@ -401,16 +515,16 @@ class TokenGrader:
         if not best:
             best = pairs[0]  # fallback
         
-        # Calculate age
+        # Calculate age — DexScreener pairCreatedAt is epoch ms, not ISO.
         created_at = best.get("pairCreatedAt")
         age_days = 0
         if created_at:
             try:
-                # Parse ISO format
-                from datetime import datetime
-                dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                from datetime import datetime, timezone
+                ts = float(created_at) / 1000.0
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
                 age_days = (self._now_dt() - dt).days
-            except Exception:
+            except (ValueError, OSError, OverflowError):
                 pass
         
         return {

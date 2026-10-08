@@ -1,0 +1,65 @@
+============================================================
+  SHADOW MODE REPORT
+  Generated: 2026-10-07 21:10 UTC
+============================================================
+
+GATE STATE:
+  kill_switch:   ARMED (safe)
+  live_trading:  off
+  edge_pass:     False
+  mode:          DISARMED
+
+SHADOW BOOK (2 open, 71 closed):
+
+  Open positions:
+    Surplus                   $    0.000000  2026-10-07T10:41  skip_no_signal
+    AERO / WETH 0.3%          $    0.000000  2026-10-07T10:41  skip_no_signal
+
+  Closed: 71 total | 3W / 29L / 39BE
+  Avg PnL: -0.10%
+  Win rate: 4%
+
+  Last 5 closed:
+    AERO / WETH 0.3%          -0.06%  skip_no_signal
+    eUSD                      -0.00%  skip_no_signal
+    VCAT                      -0.37%  skip_no_signal
+    ATLAS                     -0.73%  skip_no_signal
+    BLOHARD                   -0.77%  skip_no_signal
+
+TELEMETRY (last 7 days, 99 records):
+  By type:
+    shadow_entry                      39
+    skip_no_signal                    38
+    shadow_exit                       20
+    skip_not_on_sale                   1
+    risk_gate_blocked                  1
+
+  Shadow entries: 39 total
+  By skip reason:
+    skip_no_signal                              38
+    skip_not_on_sale:BB%B=0.76                   1
+
+  Activity by day:
+    2026-09-30    10 events
+    2026-10-01    30 events
+    2026-10-02    36 events
+    2026-10-07    23 events
+
+  EMA crossover: 0 skips (no signal)
+
+  Most scanned tokens (last 7d):
+    VCAT                         21 scans
+    ATLAS                        20 scans
+    Surplus                      20 scans
+    AERO / WETH 0.3%             16 scans
+    GITLAWB                       8 scans
+    eUSD                          7 scans
+    BLOHARD                       5 scans
+    NOCK (manual)                 2 scans
+
+============================================================
+SUMMARY:
+  🟢 Bot is DISARMED — shadow mode only
+  🔴 Shadow PnL negative (-0.1%, 4% win)
+  Shadow book: 2 open / 71 closed
+============================================================

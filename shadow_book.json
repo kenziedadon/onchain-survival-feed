@@ -1,46 +1,18 @@
 {
  "open": {
-  "0x9b5e262cf9bb04869ab40b19af91d2dc85761722": {
-   "name": "NOCK (manual)",
-   "entry_price_usd": 0.0,
+  "0xc52aedec3374422d7510e294cfaa90799595cba3": {
+   "name": "Surplus",
+   "entry_price_usd": 0.000114343,
    "reason": "skip_no_signal",
    "amount_eth": 0.0005,
-   "ts": "2026-09-30T19:34:22.106784+00:00"
+   "ts": "2026-10-07T10:41:01.720368+00:00"
   },
   "0x940181a94a35a4569e4529a3cdfb74e38fd98631": {
    "name": "AERO / WETH 0.3%",
    "entry_price_usd": 0.818234423574543,
-   "reason": "skip_not_on_sale:BB%B=0.76",
-   "amount_eth": 0.0005,
-   "ts": "2026-09-30T23:12:03.045703+00:00"
-  },
-  "0xb462a5039a540883508ee37b5cf3999647557ba3": {
-   "name": "ATLAS",
-   "entry_price_usd": 7.20043e-06,
    "reason": "skip_no_signal",
    "amount_eth": 0.0005,
-   "ts": "2026-10-01T02:49:35.044114+00:00"
-  },
-  "0xfdcc845c048ad96b5c80b6a55d65c20a98d37777": {
-   "name": "VCAT",
-   "entry_price_usd": 0.00122413,
-   "reason": "skip_no_signal",
-   "amount_eth": 0.0005,
-   "ts": "2026-10-01T02:49:32.432176+00:00"
-  },
-  "0xc52aedec3374422d7510e294cfaa90799595cba3": {
-   "name": "Surplus",
-   "entry_price_usd": 0.000105303,
-   "reason": "skip_no_signal",
-   "amount_eth": 0.0005,
-   "ts": "2026-10-01T02:49:41.350671+00:00"
-  },
-  "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3": {
-   "name": "GITLAWB",
-   "entry_price_usd": 5.14464e-05,
-   "reason": "skip_no_signal",
-   "amount_eth": 0.0005,
-   "ts": "2026-10-01T02:49:43.696415+00:00"
+   "ts": "2026-10-07T10:41:10.940636+00:00"
   }
  },
  "closed": [
@@ -739,6 +711,162 @@
    "how": "sl",
    "pnl_pct": -0.5407,
    "closed_ts": "2026-10-01T00:06:20.197825+00:00"
+  },
+  {
+   "name": "NOCK (manual)",
+   "entry_price_usd": 0.0,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-09-30T19:34:22.106784+00:00",
+   "token": "0x9b5e262cf9bb04869ab40b19af91d2dc85761722",
+   "exit_price_usd": 0.01743692755,
+   "how": "time_exit",
+   "pnl_pct": 0.0,
+   "closed_ts": "2026-10-01T16:26:53.557613+00:00"
+  },
+  {
+   "name": "ATLAS",
+   "entry_price_usd": 7.20043e-06,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-01T14:36:12.466909+00:00",
+   "token": "0xb462a5039a540883508ee37b5cf3999647557ba3",
+   "exit_price_usd": 3.671712513e-06,
+   "how": "sl",
+   "pnl_pct": -0.4901,
+   "closed_ts": "2026-10-01T16:26:53.558198+00:00"
+  },
+  {
+   "name": "VCAT",
+   "entry_price_usd": 0.00122413,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-01T14:36:10.106354+00:00",
+   "token": "0xfdcc845c048ad96b5c80b6a55d65c20a98d37777",
+   "exit_price_usd": 0.0007879511729,
+   "how": "sl",
+   "pnl_pct": -0.3563,
+   "closed_ts": "2026-10-01T16:26:53.558704+00:00"
+  },
+  {
+   "name": "Surplus",
+   "entry_price_usd": 0.000105303,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-01T14:36:17.797053+00:00",
+   "token": "0xc52aedec3374422d7510e294cfaa90799595cba3",
+   "exit_price_usd": 9.506072077e-05,
+   "how": "sl",
+   "pnl_pct": -0.0973,
+   "closed_ts": "2026-10-01T16:26:53.559030+00:00"
+  },
+  {
+   "name": "GITLAWB",
+   "entry_price_usd": 5.14464e-05,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-01T14:36:20.160060+00:00",
+   "token": "0x5f980dcfc4c0fa3911554cf5ab288ed0eb13dba3",
+   "exit_price_usd": 2.128481155e-05,
+   "how": "sl",
+   "pnl_pct": -0.5863,
+   "closed_ts": "2026-10-02T00:32:48.616133+00:00"
+  },
+  {
+   "name": "Surplus",
+   "entry_price_usd": 0.000114343,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-02T06:59:43.507001+00:00",
+   "token": "0xc52aedec3374422d7510e294cfaa90799595cba3",
+   "exit_price_usd": 9.824734251e-05,
+   "how": "sl",
+   "pnl_pct": -0.1408,
+   "closed_ts": "2026-10-02T09:58:57.063673+00:00"
+  },
+  {
+   "name": "VCAT",
+   "entry_price_usd": 0.00122413,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-02T06:59:46.036459+00:00",
+   "token": "0xfdcc845c048ad96b5c80b6a55d65c20a98d37777",
+   "exit_price_usd": 0.001098328404,
+   "how": "sl",
+   "pnl_pct": -0.1028,
+   "closed_ts": "2026-10-02T09:58:57.064228+00:00"
+  },
+  {
+   "name": "ATLAS",
+   "entry_price_usd": 7.20043e-06,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-02T06:59:48.650404+00:00",
+   "token": "0xb462a5039a540883508ee37b5cf3999647557ba3",
+   "exit_price_usd": 2.500289815e-06,
+   "how": "sl",
+   "pnl_pct": -0.6528,
+   "closed_ts": "2026-10-02T09:58:57.064624+00:00"
+  },
+  {
+   "name": "AERO / WETH 0.3%",
+   "entry_price_usd": 0.818234423574543,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-02T06:59:51.260706+00:00",
+   "token": "0x940181a94a35a4569e4529a3cdfb74e38fd98631",
+   "exit_price_usd": 0.7688556887,
+   "how": "time_exit",
+   "pnl_pct": -0.0603,
+   "closed_ts": "2026-10-02T19:37:26.648582+00:00"
+  },
+  {
+   "name": "eUSD",
+   "entry_price_usd": 0.996506,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-02T06:59:53.992323+00:00",
+   "token": "0xcfa3ef56d303ae4faaba0592388f19d7c3399fb4",
+   "exit_price_usd": 0.9951406631,
+   "how": "time_exit",
+   "pnl_pct": -0.0014,
+   "closed_ts": "2026-10-02T19:37:26.696100+00:00"
+  },
+  {
+   "name": "VCAT",
+   "entry_price_usd": 0.00122413,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-07T10:41:04.220941+00:00",
+   "token": "0xfdcc845c048ad96b5c80b6a55d65c20a98d37777",
+   "exit_price_usd": 0.0007706895887,
+   "how": "sl",
+   "pnl_pct": -0.3704,
+   "closed_ts": "2026-10-07T15:57:17.636577+00:00"
+  },
+  {
+   "name": "ATLAS",
+   "entry_price_usd": 7.20043e-06,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-07T10:41:06.525288+00:00",
+   "token": "0xb462a5039a540883508ee37b5cf3999647557ba3",
+   "exit_price_usd": 1.950403478e-06,
+   "how": "sl",
+   "pnl_pct": -0.7291,
+   "closed_ts": "2026-10-07T15:57:17.638060+00:00"
+  },
+  {
+   "name": "BLOHARD",
+   "entry_price_usd": 3.02889e-06,
+   "reason": "skip_no_signal",
+   "amount_eth": 0.0005,
+   "ts": "2026-10-07T10:41:08.722137+00:00",
+   "token": "0xc5c3ed6117eada5430458d2b21095089ad11bba3",
+   "exit_price_usd": 7.101480882e-07,
+   "how": "sl",
+   "pnl_pct": -0.7655,
+   "closed_ts": "2026-10-07T15:57:17.638514+00:00"
   }
  ]
 }

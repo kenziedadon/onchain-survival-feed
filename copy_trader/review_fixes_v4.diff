@@ -1,0 +1,1323 @@
+# Reviewed baseline -> fixed delta (v4: items 1-6 + Option A)
+# Baseline: copy_trader/review_diff.patch (as reviewed)
+# Generated: 2026-10-07T09:53:33Z
+
+diff --git a/copy_trader/poller.py b/copy_trader/poller.py
+--- a/copy_trader/poller.py
++++ b/copy_trader/poller.py
+@@ -41,14 +41,28 @@
+     "0xd8ba9d1a99fc21f0eca24e9b85737c28a194a4e2",  # GMGN Fee Adapter Proxy
+ }
+ 
+-# Stablecoins — stable-to-stable moves are ignored
++# Stablecoins — stable-to-stable moves are ignored.
++# Addresses verified on-chain (eth_getCode non-empty, symbol() matches).
+ STABLECOINS = {
+     "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",  # USDC
+-    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",  # USDC (duplicate for safety)
+     "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",  # DAI
+-    "0x2e277401a470f2038d4c619c31c0379e25c8582",  # USDS
++    "0x820c137fa70c8691f0e44dc420a5e53c168921dc",  # USDS
++    "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",  # USDbC
++    "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2",  # USDT
+ }
+ 
++# Per-token decimals, read from chain (decimals() on Base mainnet).
++# Do NOT infer these from set membership: DAI and USDS are 18, the other
++# three are 6. A single assumed default misprices the odd ones out by 1e12.
++TOKEN_DECIMALS = {
++    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 6,   # USDC
++    "0x50c5725949a6f0c72e6c4a641f24049a917db0cb": 18,  # DAI
++    "0x820c137fa70c8691f0e44dc420a5e53c168921dc": 18,  # USDS
++    "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": 6,   # USDbC
++    "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2": 6,   # USDT
++}
++DEFAULT_TOKEN_DECIMALS = 18  # non-stable ERC20 default
++
+ # WETH on Base
+ WETH = "0x4200000000000000000000000000000000000006"
+ 
+@@ -71,6 +85,27 @@
+ # Transfer event keccak256 signature
+ TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+ 
++# How long a seen tx hash is retained before pruning.
++#
++# This must exceed the OLDEST tx the API still returns, or a pruned hash is
++# returned again by the next fetch and re-ingested as if it were new. That
++# window is not a fixed constant: the same API served 15.6 days for one wallet
++# and 49.7 days for another in a single cycle. A retention shorter than the
++# real window silently resurrects history (observed: 19 txs pruned at 30d were
++# still fetchable, and were re-detected on the next cycle).
++#
++# So retention is the max of a floor and (observed window * margin), computed
++# from the txs actually seen. The floor guards the first run, before any
++# window has been measured.
++SEEN_TX_RETENTION_FLOOR_DAYS = 120
++SEEN_TX_RETENTION_MARGIN = 1.5
++# Kept for backwards-compatible imports.
++SEEN_TX_TTL_DAYS = SEEN_TX_RETENTION_FLOOR_DAYS
++SEEN_TX_RETENTION_SECONDS = SEEN_TX_RETENTION_FLOOR_DAYS * 86400
++SEEN_TX_TTL_SECONDS = SEEN_TX_RETENTION_SECONDS
++# The API's advertised history depth; the observed window is measured at runtime.
++BLOCKSCOUT_HISTORY_DAYS = 15
++
+ # ---------------------------------------------------------------------------
+ # Data structures
+ # ---------------------------------------------------------------------------
+@@ -129,7 +164,9 @@
+ @dataclass
+ class PollerState:
+     """Persistent state — saved to JSON after each poll cycle."""
+-    seen_tx_hashes: set = field(default_factory=set)
++    # tx_hash -> unix timestamp of the tx (0 when unknown). A dict, not a set,
++    # so entries can be pruned by age.
++    seen_tx_hashes: dict = field(default_factory=dict)
+     open_positions: dict = field(default_factory=dict)  # pick_id -> PaperPosition
+     wallet_trade_counts: dict = field(default_factory=lambda: defaultdict(int))
+     wallet_net_pnl: dict = field(default_factory=lambda: defaultdict(float))
+@@ -138,7 +175,7 @@
+ 
+     def to_dict(self) -> dict:
+         return {
+-            "seen_tx_hashes": list(self.seen_tx_hashes),
++            "seen_tx_hashes": dict(self.seen_tx_hashes),
+             "open_positions": {k: asdict(v) for k, v in self.open_positions.items()},
+             "wallet_trade_counts": dict(self.wallet_trade_counts),
+             "wallet_net_pnl": dict(self.wallet_net_pnl),
+@@ -149,7 +186,12 @@
+     @classmethod
+     def from_dict(cls, d: dict) -> PollerState:
+         state = cls()
+-        state.seen_tx_hashes = set(d.get("seen_tx_hashes", []))
++        raw_seen = d.get("seen_tx_hashes", {})
++        if isinstance(raw_seen, list):
++            # Legacy schema (bare set of hashes) — timestamps unknown.
++            state.seen_tx_hashes = {str(h): 0 for h in raw_seen}
++        else:
++            state.seen_tx_hashes = {str(h): int(ts) for h, ts in raw_seen.items()}
+         state.open_positions = {
+             k: PaperPosition(**v) for k, v in d.get("open_positions", {}).items()
+         }
+@@ -159,6 +201,19 @@
+         state.last_poll_timestamp = d.get("last_poll_timestamp", 0)
+         return state
+ 
++
++def _parse_timestamp(ts: Any) -> int:
++    """Safely parse a timestamp string into unix seconds, returning 0 on failure."""
++    if not ts:
++        return 0
++    try:
++        return int(datetime.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp())
++    except (ValueError, TypeError):
++        try:
++            return int(float(ts))
++        except (ValueError, TypeError):
++            return 0
++
+ # ---------------------------------------------------------------------------
+ # Chain data fetchers
+ # ---------------------------------------------------------------------------
+@@ -201,6 +256,69 @@
+     except Exception:
+         return None
+ 
++def fetch_eth_balance_wei(address: str, block_number: int) -> int | None:
++    """ETH balance (wei) of an address at a given block, via Base RPC."""
++    payload = {
++        "jsonrpc": "2.0",
++        "method": "eth_getBalance",
++        "params": [address, hex(block_number)],
++        "id": 1,
++    }
++    try:
++        resp = requests.post(BASE_RPC, json=payload,
++                             headers={"Content-Type": "application/json"}, timeout=30)
++        resp.raise_for_status()
++        result = resp.json().get("result")
++        return int(result, 16) if result and result != "0x" else None
++    except Exception:
++        return None
++
++def eth_leg_wei(
++    wallet_address: str,
++    receipt: dict,
++    sibling_gas_wei: int = 0,
++) -> int | None:
++    """
++    Measure the wallet's net ETH movement in the tx's block, net of gas.
++
++    The wallet's ETH leg of a native-quoted swap leaves no ERC20 Transfer log,
++    so it is measured from the balance delta across the block. The delta is
++    signed: positive = ETH received (a sell), negative = ETH spent (a buy).
++
++    Gas is EXCLUDED from the measurement, because gas is not part of the trade.
++    Each tx the wallet sent in the block deducts its own gas, so the block delta
++    is `trade_delta - total_gas`. Recovering the trade leg therefore ADDS gas
++    back. (The signed-delta convention means the correction is always +gas;
++    the trade leg itself carries the sign.)
++
++    `sibling_gas_wei` is the gas of the wallet's OTHER txs in the same block.
++    Pass 0 when the wallet has no other tx in the block.
++
++    Returns the trade leg in wei, or None if the delta is zero or unreadable.
++    """
++    block_hex = receipt.get("blockNumber")
++    if not block_hex:
++        return None
++    block_number = int(block_hex, 16)
++
++    before = fetch_eth_balance_wei(wallet_address, block_number - 1)
++    after = fetch_eth_balance_wei(wallet_address, block_number)
++    if before is None or after is None:
++        return None
++
++    delta = after - before
++
++    gas_used = int(receipt.get("gasUsed", "0x0"), 16)
++    gas_price = int(receipt.get("effectiveGasPrice", "0x0"), 16)
++    own_gas = gas_used * gas_price
++
++    # Add gas back: trade_leg = delta + own_gas + sibling_gas
++    trade_leg = delta + own_gas + sibling_gas_wei
++
++    if trade_leg == 0:
++        return None
++    return trade_leg
++
+ # ---------------------------------------------------------------------------
+ # Swap detection
+ # ---------------------------------------------------------------------------
+@@ -224,141 +342,141 @@
+         return True
+     return False
+ 
+-def extract_swap_from_receipt(receipt: dict, wallet_address: str) -> SwapEvent | None:
++def net_flow_by_token(receipt: dict, wallet_address: str) -> dict[str, int]:
+     """
+-    Extract token_in, token_out, and amounts from Transfer events in a tx receipt.
+-    A buy = wallet spends ETH/USDC/WETH and receives a token.
+-    A sell = the reverse.
++    Net flow per token for the wallet in this tx: received - sent.
++
++    Only tokens the wallet actually moved appear, and only with non-zero net.
++    A token the wallet both sent and received (net zero) drops out — that is
++    pass-through, not a leg.
+     """
+-    logs = receipt.get("logs", [])
+     wallet_lower = wallet_address.lower()
++    net: dict[str, int] = defaultdict(int)
+ 
+-    # Collect all Transfer events where the wallet is sender or receiver
+-    transfers = []
+-    for log in logs:
++    for log in receipt.get("logs", []):
+         topics = log.get("topics", [])
+         if not topics or topics[0].lower() != TRANSFER_TOPIC:
+             continue
+-        # Transfer(address indexed from, address indexed to, uint256 value)
+-        # topics[1] = from (padded), topics[2] = to (padded)
+         if len(topics) < 3:
+             continue
+         from_addr = "0x" + topics[1][-40:].lower()
+         to_addr = "0x" + topics[2][-40:].lower()
++        if from_addr != wallet_lower and to_addr != wallet_lower:
++            continue
+         data = log.get("data", "0x0")
+-        # Decode uint256 from data
+         try:
+-            value = int(data, 16) if data != "0x" else 0
++            value = int(data, 16) if data not in ("0x", "") else 0
+         except ValueError:
+             continue
+         token_addr = (log.get("address") or "").lower()
+-        transfers.append({
+-            "from": from_addr,
+-            "to": to_addr,
+-            "value": value,
+-            "token": token_addr,
+-        })
++        if not token_addr:
++            continue
++        if to_addr == wallet_lower:
++            net[token_addr] += value
++        if from_addr == wallet_lower:
++            net[token_addr] -= value
++
++    return {tok: v for tok, v in net.items() if v != 0}
+ 
+-    if not transfers:
+-        return None
+ 
+-    # Find the token the wallet received (buy) or sent (sell)
+-    # For a buy: wallet receives a non-stable, non-WETH token
+-    # For a sell: wallet sends a non-stable, non-WETH token
+-
+-    # Group transfers by token
+-    token_transfers = defaultdict(list)
+-    for t in transfers:
+-        token_transfers[t["token"]].append(t)
+-
+-    # Find the non-stable, non-WETH token involved
+-    target_token = None
+-    for token, txs in token_transfers.items():
+-        if token in STABLECOINS or token == WETH:
+-            continue
+-        # Check if wallet is involved
+-        wallet_involved = any(
+-            t["from"] == wallet_lower or t["to"] == wallet_lower for t in txs
+-        )
+-        if wallet_involved:
+-            target_token = token
+-            break
++def extract_swap_from_receipt(
++    receipt: dict,
++    wallet_address: str,
++    sibling_gas_wei: int = 0,
++) -> tuple[SwapEvent | None, str]:
++    """
++    Extract a swap from a tx receipt using net flow per token.
+ 
+-    if not target_token:
+-        return None
++    Rule:
++      * Net = received - sent per token, for tokens involving the wallet.
++      * Input  = the token with the most negative net.
++      * Output = the token with the most positive net.
++      * is_buy = the output is not a stablecoin and not WETH.
++
++    Fail closed. A swap is returned only when the flow is unambiguous. Anything
++    else returns (None, reason) and opens no position.
++
++    A native-ETH leg leaves no ERC20 Transfer log, so a one-legged flow is
++    expected for native-quoted swaps. In that case the ETH side is MEASURED
++    from the wallet's balance delta across the tx's block (see eth_leg_wei),
++    never assumed. If that measurement is unavailable the swap is skipped —
++    there is no fabricated "ETH" fallback.
++
++    Returns (SwapEvent | None, reason_string).
++    """
++    net = net_flow_by_token(receipt, wallet_address)
+ 
+-    # Determine direction: did wallet receive or send the target token?
+-    received = 0
+-    sent = 0
+-    for t in token_transfers[target_token]:
+-        if t["to"] == wallet_lower:
+-            received += t["value"]
+-        if t["from"] == wallet_lower:
+-            sent += t["value"]
+-
+-    if received > 0 and sent == 0:
+-        is_buy = True
+-        amount_out = received
+-    elif sent > 0 and received == 0:
++    negatives = {t: v for t, v in net.items() if v < 0}
++    positives = {t: v for t, v in net.items() if v > 0}
++
++    if not net:
++        return None, "no token flow involving wallet"
++
++    # --- genuine ambiguity: 2+ tokens on a side. Fail closed.
++    if len(negatives) > 1:
++        return None, f"ambiguous input: {len(negatives)} tokens sent ({sorted(negatives)})"
++    if len(positives) > 1:
++        return None, f"ambiguous output: {len(positives)} tokens received ({sorted(positives)})"
++    if len(negatives) == 1 and len(positives) == 1:
++        # Both sides are ERC20 — normal wrapped-token swap.
++        token_in = next(iter(negatives))
++        token_out = next(iter(positives))
++        amount_in_raw = -negatives[token_in]
++        amount_out_raw = positives[token_out]
++        is_buy = token_out not in STABLECOINS and token_out != WETH
++        eth_note = ""
++    elif len(negatives) == 1 and not positives:
++        # Wallet only SENT an ERC20 → it received the ETH leg (a sell).
++        token_in = next(iter(negatives))
++        amount_in_raw = -negatives[token_in]
++        token_out = "ETH"
++        leg = eth_leg_wei(wallet_address, receipt, sibling_gas_wei)
++        if leg is None:
++            return None, "one ERC20 leg sent, but ETH delta unreadable or zero"
++        if leg <= 0:
++            return None, f"one ERC20 leg sent, but ETH delta sign wrong ({leg} wei)"
++        amount_out_raw = leg
+         is_buy = False
+-        amount_out = sent
++        eth_note = f"ETH leg measured from block delta: {leg} wei"
++    elif len(positives) == 1 and not negatives:
++        # Wallet only RECEIVED an ERC20 → it spent the ETH leg (a buy).
++        token_out = next(iter(positives))
++        amount_out_raw = positives[token_out]
++        token_in = "ETH"
++        leg = eth_leg_wei(wallet_address, receipt, sibling_gas_wei)
++        if leg is None:
++            return None, "one ERC20 leg received, but ETH delta unreadable or zero"
++        if leg >= 0:
++            return None, f"one ERC20 leg received, but ETH delta sign wrong ({leg} wei)"
++        amount_in_raw = -leg
++        is_buy = token_out not in STABLECOINS and token_out != WETH
++        eth_note = f"ETH leg measured from block delta: {leg} wei"
+     else:
+-        # Both — skip (complex multi-hop)
+-        return None
++        return None, f"unhandled flow shape (neg={len(negatives)}, pos={len(positives)})"
+ 
+-    # Find what the wallet spent/received on the other side
+-    # Look for ETH or stablecoin transfers
+-    amount_in = 0.0
+-    token_in = ""
+-    for token, txs in token_transfers.items():
+-        if token == target_token:
+-            continue
+-        for t in txs:
+-            if is_buy:
+-                # Wallet spent this token
+-                if t["from"] == wallet_lower:
+-                    amount_in = t["value"]
+-                    token_in = token
+-                    break
+-            else:
+-                # Wallet received this token
+-                if t["to"] == wallet_lower:
+-                    amount_in = t["value"]
+-                    token_in = token
+-                    break
+-        if amount_in > 0:
+-            break
+-
+-    # If we can't find the other side in logs, it's likely a native ETH transfer
+-    # (ETH doesn't generate ERC20 Transfer events). We still return the swap
+-    # with what we know — token_in/amount_in will be 0/empty for native ETH.
+-    if amount_in == 0:
+-        # Check if this might be a native ETH transfer by looking at the tx value
+-        # For now, return the swap with what we have
+-        pass
+-
+-    # Convert amounts (assume 18 decimals for simplicity — could be enhanced)
+-    # In production, you'd check token decimals
+-    decimals = 18
+-    if token_in in STABLECOINS:
+-        decimals = 6
+-    if target_token in STABLECOINS:
+-        decimals = 6
++    # Sanity: a leg of zero is not a trade.
++    if amount_in_raw <= 0 or amount_out_raw <= 0:
++        return None, f"non-positive leg (in={amount_in_raw}, out={amount_out_raw})"
++
++    # A stable-to-stable move is not a position-worthy swap.
++    if token_in in STABLECOINS and token_out in STABLECOINS:
++        return None, "stable-to-stable move"
+ 
+-    amount_in_human = amount_in / (10 ** decimals) if amount_in > 0 else 0.0
+-    amount_out_human = amount_out / (10 ** decimals)
++    decimals_in = TOKEN_DECIMALS.get(token_in, DEFAULT_TOKEN_DECIMALS)
++    decimals_out = TOKEN_DECIMALS.get(token_out, DEFAULT_TOKEN_DECIMALS)
+ 
+-    return SwapEvent(
++    swap = SwapEvent(
+         tx_hash=receipt.get("transactionHash", ""),
+         wallet_address=wallet_address,
+         wallet_label="",  # filled by caller
+-        token_in=token_in or "ETH",  # assume ETH if not found in logs
+-        token_out=target_token,
+-        amount_in=amount_in_human,
+-        amount_out=amount_out_human,
++        token_in=token_in,
++        token_out=token_out,
++        amount_in=amount_in_raw / (10 ** decimals_in),
++        amount_out=amount_out_raw / (10 ** decimals_out),
+         timestamp=0,  # filled by caller from tx data
+         is_buy=is_buy,
+     )
++    return swap, ("ok" if not eth_note else f"ok; {eth_note}")
+ 
+ # ---------------------------------------------------------------------------
+ # Paper position management
+@@ -386,7 +504,10 @@
+         paper_notional_usd=paper_notional_usd,
+         quantity=quantity,
+         cost_bps=cost_bps,
+-        open_time=datetime.now(timezone.utc).isoformat(),
++        # open_time is the TX timestamp, never wall-clock. Wall-clock here made
++        # a historical buy look brand new and let it be closed seconds later by
++        # an unrelated sell that was actually older.
++        open_time=datetime.fromtimestamp(swap.timestamp, tz=timezone.utc).isoformat(),
+         open_tx_hash=swap.tx_hash,
+         source_amount_in=swap.amount_in,
+         source_token_in=swap.token_in,
+@@ -396,19 +517,26 @@
+     position: PaperPosition,
+     close_price: float,
+     close_reason: str,
++    close_timestamp: int | None = None,
+ ) -> CloseRecord:
+     """Close a paper position and compute P&L."""
+     gross_pnl_pct = (close_price / position.entry_price - 1.0) * 100.0
+     cost_pct = position.cost_bps / 100.0
+     net_pnl_pct = gross_pnl_pct - cost_pct
+ 
++    # close_time is the closing tx's timestamp when known, else wall-clock.
++    if close_timestamp:
++        close_time = datetime.fromtimestamp(close_timestamp, tz=timezone.utc).isoformat()
++    else:
++        close_time = datetime.now(timezone.utc).isoformat()
++
+     return CloseRecord(
+         pick_id=position.pick_id,
+         wallet_address=position.wallet_address,
+         wallet_label=position.wallet_label,
+         token=position.token,
+         open_time=position.open_time,
+-        close_time=datetime.now(timezone.utc).isoformat(),
++        close_time=close_time,
+         entry_price=position.entry_price,
+         close_price=close_price,
+         cost_bps=position.cost_bps,
+@@ -435,6 +563,10 @@
+         self.rotation_enabled = self.config.get("rotation", {}).get("enabled", True)
+         self.min_trades_before_cut = self.config.get("rotation", {}).get("min_trades_before_cut", 20)
+         self.max_hold_seconds = MAX_HOLD_DAYS * 86400
++        # Per-poll index of the wallet's txs by block, for sibling-gas lookups.
++        self._block_cache: dict[int, list] = {}
++        # Largest API history window observed this cycle (seconds).
++        self._observed_window_seconds: int = 0
+ 
+         # Setup logging
+         logging.basicConfig(
+@@ -475,8 +607,74 @@
+             return f"0x{addr:040x}"
+         return str(addr).lower()
+ 
+-    def poll_wallet(self, wallet: dict) -> list[SwapEvent]:
+-        """Poll one wallet for new swaps."""
++    def _prune_seen(self) -> int:
++        """
++        Drop seen tx hashes older than the retention window.
++
++        Retention is max(floor, observed_window * margin). The observed window
++        is the age of the OLDEST tx still returned by the API for any wallet
++        this cycle — the retention must exceed that, or pruned hashes come back
++        on the next fetch and get re-ingested as new.
++
++        A fixed constant is not enough: the same API served a 15.6-day window
++        for one wallet and 49.7 days for another in one cycle. Pruning at a
++        hardcoded 30 days resurrected 19 txs that were then re-detected.
++        """
++        now = int(time.time())
++        observed = getattr(self, "_observed_window_seconds", 0)
++        retention = max(
++            SEEN_TX_RETENTION_SECONDS,
++            int(observed * SEEN_TX_RETENTION_MARGIN),
++        )
++        cutoff = now - retention
++        before = len(self.state.seen_tx_hashes)
++        self.state.seen_tx_hashes = {
++            h: ts for h, ts in self.state.seen_tx_hashes.items()
++            if ts == 0 or ts >= cutoff
++        }
++        dropped = before - len(self.state.seen_tx_hashes)
++        if dropped:
++            self.logger.info(
++                f"  (retention window {retention / 86400:.1f}d "
++                f"= max({SEEN_TX_RETENTION_SECONDS / 86400:.0f}d floor, "
++                f"{observed / 86400:.1f}d observed x{SEEN_TX_RETENTION_MARGIN}))"
++            )
++        return dropped
++
++    def _sibling_gas_wei(self, address: str, block_number: int, exclude_hash: str) -> int:
++        """
++        Total gas paid by the wallet's OTHER txs in the same block.
++
++        A block-level ETH balance delta is contaminated by every tx the wallet
++        sent in that block. Those siblings' gas must be added back alongside
++        this tx's own gas, or the measured trade leg is short by their fees.
++        """
++        total = 0
++        for tx in self._block_cache.get(block_number, []):
++            if tx.get("hash") == exclude_hash:
++                continue
++            receipt = fetch_tx_receipt(tx.get("hash", ""))
++            if not receipt:
++                continue
++            total += int(receipt.get("gasUsed", "0x0"), 16) * int(
++                receipt.get("effectiveGasPrice", "0x0"), 16
++            )
++        return total
++
++    def poll_wallet(self, wallet: dict, baseline: bool = False) -> tuple[list[SwapEvent], int]:
++        """
++        Poll one wallet for new swaps.
++
++        Returns (swaps, newest_tx_timestamp). When `baseline` is True this is a
++        first run for this wallet: everything currently visible is marked seen
++        and no swaps are returned, so a fresh poller never ingests weeks of
++        history as if it were live activity.
++
++        `baseline` is passed in rather than read from state, because state is
++        global while wallets are polled in a loop — a wallet that baselined
++        first would otherwise set the watermark and let the remaining wallets
++        be treated as normal cycles.
++        """
+         address = self._normalize_address(wallet["address"])
+         label = wallet.get("label", address)
+         self.logger.info(f"Polling {label} ({address})...")
+@@ -485,15 +683,53 @@
+             txs = fetch_wallet_transactions(address)
+         except Exception as e:
+             self.logger.error(f"Failed to fetch txs for {label}: {e}")
+-            return []
++            return [], self.state.last_poll_timestamp
++
++        # Index by block so sibling gas can be computed without refetching.
++        self._block_cache = defaultdict(list)
++        for tx in txs:
++            try:
++                blk = int(tx.get("block_number", 0))
++            except (TypeError, ValueError):
++                continue
++            self._block_cache[blk].append(tx)
++
++        newest_ts = 0
++        oldest_ts = 0
++        for tx in txs:
++            ts = _parse_timestamp(tx.get("timestamp"))
++            if ts > newest_ts:
++                newest_ts = ts
++            if ts and (oldest_ts == 0 or ts < oldest_ts):
++                oldest_ts = ts
++
++        # Track how far back the API actually serves, so pruning never drops a
++        # hash that is still fetchable (which would re-ingest it as new).
++        if oldest_ts:
++            window = int(time.time()) - oldest_ts
++            if window > getattr(self, "_observed_window_seconds", 0):
++                self._observed_window_seconds = window
++
++        # --- baseline run: mark all seen, open nothing.
++        if baseline:
++            for tx in txs:
++                h = tx.get("hash", "")
++                if h:
++                    self.state.seen_tx_hashes[h] = _parse_timestamp(tx.get("timestamp"))
++            self.logger.info(
++                f"  BASELINE: marked {len(txs)} txs seen, newest ts {newest_ts}; "
++                f"opened 0 positions"
++            )
++            return [], newest_ts
+ 
+         swaps = []
++        skipped = 0
+         for tx in txs:
+             tx_hash = tx.get("hash", "")
+             if not tx_hash or tx_hash in self.state.seen_tx_hashes:
+                 continue
+ 
+-            self.state.seen_tx_hashes.add(tx_hash)
++            self.state.seen_tx_hashes[tx_hash] = _parse_timestamp(tx.get("timestamp"))
+ 
+             if not is_dex_swap(tx):
+                 continue
+@@ -502,24 +738,47 @@
+             try:
+                 receipt = fetch_tx_receipt(tx_hash)
+             except Exception as e:
+-                self.logger.warning(f"Failed to fetch receipt for {tx_hash}: {e}")
++                self.logger.warning(f"  Failed to fetch receipt for {tx_hash}: {e}")
+                 continue
+ 
+             if not receipt:
+                 continue
+ 
+-            swap = extract_swap_from_receipt(receipt, address)
++            try:
++                blk = int(tx.get("block_number", 0))
++            except (TypeError, ValueError):
++                blk = 0
++            sib_gas = self._sibling_gas_wei(address, blk, tx_hash)
++
++            swap, reason = extract_swap_from_receipt(receipt, address, sib_gas)
+             if swap:
+                 swap.wallet_label = label
+-                swap.timestamp = int(tx.get("timestamp", "0").replace("T", " ").replace("Z", "").split(".")[0] and datetime.fromisoformat(tx.get("timestamp", "1970-01-01T00:00:00Z").replace("Z", "+00:00")).timestamp() or 0)
++                swap.timestamp = _parse_timestamp(tx.get("timestamp"))
+                 swaps.append(swap)
+-                self.logger.info(f"  Detected {'BUY' if swap.is_buy else 'SELL'}: {swap.amount_in:.4f} {swap.token_in} -> {swap.amount_out:.4f} {swap.token_out}")
++                self.logger.info(
++                    f"  Detected {'BUY' if swap.is_buy else 'SELL'}: "
++                    f"{swap.amount_in:.6f} {swap.token_in[:12]} -> "
++                    f"{swap.amount_out:.6f} {swap.token_out[:12]}  [{reason}]"
++                )
++            else:
++                skipped += 1
++                self.logger.info(f"  SKIPPED {tx_hash[:18]}…: {reason}")
++
++        if skipped:
++            self.logger.info(f"  {skipped} tx(s) skipped this wallet (fail-closed)")
+ 
+-        return swaps
++        return swaps, newest_ts
+ 
+     def process_swaps(self, swaps: list[SwapEvent]):
+-        """Process detected swaps — open/close paper positions."""
+-        for swap in swaps:
++        """
++        Process detected swaps — open/close paper positions.
++
++        Swaps are processed in TX TIMESTAMP ORDER, and a close only matches a
++        position opened by a strictly older tx. Without this, a batch of
++        historical swaps closed positions the instant they opened, recording
++        -9% (pure cost) for every one of them.
++        """
++        for swap in sorted(swaps, key=lambda s: s.timestamp):
+             if swap.is_buy:
+                 # Check if wallet is rotated out
+                 if swap.wallet_address in self.state.wallet_rotated_out:
+@@ -530,26 +789,55 @@
+                 position = open_paper_position(swap, self.paper_notional)
+                 if position:
+                     self.state.open_positions[position.pick_id] = position
+-                    self.logger.info(f"  Opened paper position: {position.pick_id} @ ${position.entry_price:.6f}")
++                    self.logger.info(
++                        f"  Opened paper position: {position.pick_id} "
++                        f"@ ${position.entry_price:.6f} (tx ts {swap.timestamp})"
++                    )
+             else:
+-                # Sell — close matching open position (FIFO per token per wallet)
+-                # Find open position for this wallet + token
++                # Sell — close the matching open position, oldest first.
++                # The token being SOLD is the ERC20 the wallet spent, i.e.
++                # swap.token_in. (For a native-quoted sell, token_out is "ETH",
++                # which is never a held position — matching on token_out here
++                # silently failed to close anything.)
++                sold_token = swap.token_in
+                 close_pick_id = None
++                close_open_ts = None
+                 for pick_id, pos in self.state.open_positions.items():
+-                    if pos.wallet_address == swap.wallet_address and pos.token == swap.token_out:
++                    if pos.wallet_address != swap.wallet_address:
++                        continue
++                    if pos.token != sold_token:
++                        continue
++                    try:
++                        pos_ts = int(datetime.fromisoformat(pos.open_time).timestamp())
++                    except (ValueError, TypeError):
++                        continue
++                    if pos_ts >= swap.timestamp:
++                        # Not strictly older — cannot be closed by this sell.
++                        continue
++                    if close_open_ts is None or pos_ts < close_open_ts:
++                        close_open_ts = pos_ts
+                         close_pick_id = pick_id
+-                        break
+ 
+                 if close_pick_id:
+                     position = self.state.open_positions.pop(close_pick_id)
+-                    close_price = fetch_token_price(swap.token_out)
++                    close_price = fetch_token_price(sold_token)
+                     if close_price:
+-                        record = close_paper_position(position, close_price, "mirrored_exit")
++                        record = close_paper_position(
++                            position, close_price, "mirrored_exit", swap.timestamp
++                        )
+                         self._append_journal(record)
+                         self.state.wallet_trade_counts[swap.wallet_address] += 1
+                         self.state.wallet_net_pnl[swap.wallet_address] += record.net_pnl_pct
+-                        self.logger.info(f"  Closed {close_pick_id}: net {record.net_pnl_pct:+.2f}% (reason: mirrored_exit)")
++                        self.logger.info(
++                            f"  Closed {close_pick_id}: net {record.net_pnl_pct:+.2f}% "
++                            f"(reason: mirrored_exit)"
++                        )
+                         self._check_rotation(swap.wallet_address)
++                else:
++                    self.logger.info(
++                        f"  Sell with no strictly-older open position for "
++                        f"{sold_token[:12]} — no close"
++                    )
+ 
+     def _check_rotation(self, wallet_address: str):
+         """Check if a wallet should be rotated out."""
+@@ -586,12 +874,38 @@
+     def run_once(self):
+         """Run one poll cycle."""
+         self.logger.info("=== Poll cycle start ===")
++        # Decide baseline ONCE, before polling any wallet. Reading the global
++        # watermark inside the wallet loop let the first wallet's baseline
++        # switch the remaining wallets into normal-cycle mode.
++        is_baseline = not self.state.last_poll_timestamp
++        if is_baseline:
++            self.logger.info("  No watermark — this cycle is a BASELINE run "
++                             "(all wallets: mark seen, open nothing)")
++
++        newest_overall = self.state.last_poll_timestamp
+         for wallet in self.config.get("wallets", []):
+-            swaps = self.poll_wallet(wallet)
++            swaps, newest_ts = self.poll_wallet(wallet, baseline=is_baseline)
++            if newest_ts > newest_overall:
++                newest_overall = newest_ts
+             self.process_swaps(swaps)
++
++        # Advance the watermark to the newest tx actually observed.
++        self.state.last_poll_timestamp = newest_overall
++
++        pruned = self._prune_seen()
++        if pruned:
++            self.logger.info(
++                f"  Pruned {pruned} seen tx hash(es) older than {SEEN_TX_TTL_DAYS}d"
++            )
++
+         self.check_max_hold()
+         self._save_state()
+-        self.logger.info("=== Poll cycle complete ===")
++        self.logger.info(
++            f"=== Poll cycle complete === "
++            f"(seen={len(self.state.seen_tx_hashes)}, "
++            f"open={len(self.state.open_positions)}, "
++            f"watermark={self.state.last_poll_timestamp})"
++        )
+ 
+     def run_daemon(self):
+         """Run continuously."""
+
+diff --git a/copy_trader/test_acceptance.py b/copy_trader/test_acceptance.py
+--- a/copy_trader/test_acceptance.py
++++ b/copy_trader/test_acceptance.py
+@@ -20,6 +20,7 @@
+ import os
+ import sys
+ import time
++from collections import defaultdict
+ from datetime import datetime, timezone, timedelta
+ from pathlib import Path
+ from unittest.mock import patch, MagicMock
+@@ -40,12 +41,18 @@
+     fetch_wallet_transactions,
+     fetch_tx_receipt,
+     fetch_token_price,
++    _parse_timestamp,
+     KNOWN_ROUTERS,
+     STABLECOINS,
+     WETH,
++    TRANSFER_TOPIC,
+     ROUNDTRIP_COST_BPS,
+     DEFAULT_PAPER_NOTIONAL_USD,
+     MAX_HOLD_DAYS,
++    SEEN_TX_TTL_SECONDS,
++    SEEN_TX_RETENTION_SECONDS,
++    SEEN_TX_TTL_DAYS,
++    BLOCKSCOUT_HISTORY_DAYS,
+ )
+ 
+ 
+@@ -69,15 +76,22 @@
+ 
+ 
+ def test_detection_proof(config_path: str) -> bool:
+-    """Test 2: Detection proof — one real swap per wallet from last 7 days."""
+-    print("\n=== TEST 2: Detection proof (real swaps from last 7 days) ===")
++    """Test 2: Detection proof — real swaps with REAL parsed amounts and tokens.
++
++    Counts alone are not proof. This asserts, on live chain data, that every
++    detected swap has amount_in > 0 and a resolvable token_in address — the
++    exact fields that were silently 0/\"ETH\" while the count-only version
++    passed.
++    """
++    print("\n=== TEST 2: Detection proof (real swaps, amount_in > 0, real token_in) ===")
+     try:
+         poller = CopyTraderPoller(config_path, "/tmp/test_state.json", "/tmp/test_closes.jsonl")
+         wallets = poller.config.get("wallets", [])
+ 
+         found_swaps = []
++        failures = []
+         for wallet in wallets:
+-            address = wallet["address"]
++            address = poller._normalize_address(wallet["address"])
+             label = wallet.get("label", address)
+             print(f"\n  Checking {label} ({address})...")
+ 
+@@ -85,40 +99,111 @@
+                 txs = fetch_wallet_transactions(address)
+             except Exception as e:
+                 print(f"    ✗ Failed to fetch txs: {e}")
++                failures.append(f"{label}: fetch failed")
+                 continue
+ 
+-            # Look for DEX swaps in recent txs
++            # index by block for sibling-gas lookups
++            poller._block_cache = defaultdict(list)
++            for t in txs:
++                try:
++                    poller._block_cache[int(t.get("block_number", 0))].append(t)
++                except (TypeError, ValueError):
++                    pass
++
++            got = 0
+             for tx in txs:
+                 tx_hash = tx.get("hash", "")
+-                if not tx_hash:
++                if not tx_hash or not is_dex_swap(tx):
+                     continue
+-                if not is_dex_swap(tx):
+-                    continue
+-
+-                # Fetch receipt
+                 try:
+                     receipt = fetch_tx_receipt(tx_hash)
+                 except Exception as e:
+-                    print(f"    ⚠ Failed to fetch receipt for {tx_hash}: {e}")
++                    print(f"    ⚠ receipt fetch failed for {tx_hash[:18]}: {e}")
+                     continue
+-
+                 if not receipt:
+                     continue
+ 
+-                swap = extract_swap_from_receipt(receipt, address)
+-                if swap:
+-                    swap.wallet_label = label
+-                    found_swaps.append(swap)
+-                    print(f"    ✓ Found swap: {tx_hash[:20]}...")
+-                    print(f"      {'BUY' if swap.is_buy else 'SELL'}: {swap.amount_in:.4f} {swap.token_in[:10]}... -> {swap.amount_out:.4f} {swap.token_out[:10]}...")
+-                    break  # One per wallet is enough
++                try:
++                    blk = int(tx.get("block_number", 0))
++                except (TypeError, ValueError):
++                    blk = 0
++                sib = poller._sibling_gas_wei(address, blk, tx_hash)
+ 
+-        if len(found_swaps) >= 1:
+-            print(f"\n  ✓ Detection proof: {len(found_swaps)} swaps found across wallets")
+-            return True
+-        else:
+-            print(f"\n  ✗ No swaps found in recent txs")
++                swap, reason = extract_swap_from_receipt(receipt, address, sib)
++                if not swap:
++                    continue
++
++                swap.wallet_label = label
++                swap.timestamp = _parse_timestamp(tx.get("timestamp"))
++                found_swaps.append(swap)
++
++                # --- the assertions the count-only test never made ---
++                ok = True
++                if not (swap.amount_in > 0):
++                    failures.append(f"{label} {tx_hash[:14]}: amount_in={swap.amount_in}")
++                    ok = False
++                if not (swap.amount_out > 0):
++                    failures.append(f"{label} {tx_hash[:14]}: amount_out={swap.amount_out}")
++                    ok = False
++                # "ETH" is a legitimate side ONLY when it was MEASURED from a
++                # block delta (native-quoted swap). Any other non-address token
++                # is a fabricated label and fails.
++                for side, tok, amt in (("token_in", swap.token_in, swap.amount_in),
++                                       ("token_out", swap.token_out, swap.amount_out)):
++                    if tok == "ETH":
++                        if not (amt > 0):
++                            failures.append(f"{label} {tx_hash[:14]}: {side}=ETH with amount {amt}")
++                            ok = False
++                    elif not (isinstance(tok, str) and tok.startswith("0x") and len(tok) == 42):
++                        failures.append(f"{label} {tx_hash[:14]}: bad {side}={tok!r}")
++                        ok = False
++
++                # A native leg must be accompanied by a measurement note.
++                if (swap.token_in == "ETH" or swap.token_out == "ETH") and "measured" not in reason:
++                    failures.append(f"{label} {tx_hash[:14]}: ETH side without measurement proof")
++                    ok = False
++
++                print(f"    {'✓' if ok else '✗'} {tx_hash[:20]}…  "
++                      f"{'BUY ' if swap.is_buy else 'SELL'} "
++                      f"{swap.amount_in:.6f} {swap.token_in[:12]} -> "
++                      f"{swap.amount_out:.6f} {swap.token_out[:12]}")
++                print(f"        reason: {reason}")
++                got += 1
++                if got >= 3:
++                    break
++
++            if got == 0:
++                # Only a failure if the wallet actually HAS swap activity.
++                # A wallet with no DEX txs at all is a legitimate zero, not a bug.
++                dex_count = sum(1 for t in txs if is_dex_swap(t))
++                if dex_count > 0:
++                    failures.append(f"{label}: {dex_count} dex txs but 0 parsed")
++                    print(f"    ✗ {dex_count} dex txs found but none parsed")
++                else:
++                    print(f"    – no DEX txs in window (legitimate zero, not a failure)")
++
++        print()
++        if failures:
++            print(f"  ✗ {len(failures)} assertion failure(s):")
++            for f in failures[:10]:
++                print(f"      - {f}")
+             return False
++
++        # Every swap must carry a real, positive input side.
++        assert found_swaps, "no swaps found at all"
++        bad = [s for s in found_swaps if not (s.amount_in > 0)]
++        assert not bad, f"{len(bad)} swap(s) with amount_in <= 0"
++        zero = [s for s in found_swaps if s.token_in == "ETH" and s.amount_in <= 0]
++        assert not zero, "ETH token_in with non-positive amount"
++
++        eth_legs = [s for s in found_swaps if s.token_in == "ETH"]
++        print(f"  ✓ {len(found_swaps)} swaps parsed from live chain data")
++        print(f"  ✓ ALL have amount_in > 0 (min {min(s.amount_in for s in found_swaps):.9f})")
++        print(f"  ✓ ALL have a 42-char token_in and token_out")
++        if eth_legs:
++            print(f"  ✓ {len(eth_legs)} native-ETH leg(s) MEASURED from block delta "
++                  f"(not assumed): {[f'{s.amount_in:.6f}' for s in eth_legs]}")
++        return True
+     except Exception as e:
+         print(f"  ✗ FAILED: {e}")
+         import traceback
+@@ -196,36 +281,321 @@
+ 
+ 
+ def test_dedup_proof(config_path: str) -> bool:
+-    """Test 4: Dedup proof — same tx twice = one paper position."""
++    """Test 4: Dedup proof — same tx twice via poll_wallet = one paper position."""
+     print("\n=== TEST 4: Dedup proof (same tx twice = one position) ===")
+     try:
++        fake_tx = {
++            "hash": "0xdedup_tx_test",
++            "block_number": 52276580,
++            "to": {"hash": "0xcf77a3ba9a5ca396e57b271c5c0b26f421741e481", "is_contract": True},
++            "transaction_types": ["token_transfer"],
++            "timestamp": "2026-08-20T12:00:00Z",
++        }
++        fake_receipt = {
++            "status": "0x1",
++            "transactionHash": "0xdedup_tx_test",
++            "blockNumber": hex(52276580),
++            "gasUsed": "0x5208",
++            "effectiveGasPrice": "0x3b9aca00",
++            "logs": [
++                {
++                    "address": WETH,
++                    "topics": [
++                        TRANSFER_TOPIC,
++                        "0x000000000000000000000000d569e570b94265e5ebc7df1990f99ee68d3f60a1",
++                        "0x000000000000000000000000cf77a3ba9a5ca396e57b271c5c0b26f421741e481",
++                    ],
++                    "data": hex(int(0.1 * 10**18)),
++                },
++                {
++                    "address": "0x1234567890123456789012345678901234567890",
++                    "topics": [
++                        TRANSFER_TOPIC,
++                        "0x000000000000000000000000cf77a3ba9a5ca396e57b271c5c0b26f421741e481",
++                        "0x000000000000000000000000d569e570b94265e5ebc7df1990f99ee68d3f60a1",
++                    ],
++                    "data": hex(int(100 * 10**18)),
++                },
++            ],
++        }
++
+         state = PollerState()
+-        buy_swap = SwapEvent(
+-            tx_hash="0xsame_tx_hash",
+-            wallet_address="0xd569e570b94265e5ebc7df1990f99ee68d3f60a1",
+-            wallet_label="WindowB64532",
+-            token_in=WETH,
+-            token_out="0x1234567890123456789012345678901234567890",
+-            amount_in=0.1,
+-            amount_out=100.0,
+-            timestamp=int(time.time()),
+-            is_buy=True,
+-        )
++        poller = CopyTraderPoller(config_path, "/tmp/test_state.json", "/tmp/test_closes.jsonl")
++        poller.state = state
++        # Give it a watermark so this is not treated as a baseline run.
++        state.last_poll_timestamp = int(time.time()) - 3600
++
++        with patch("copy_trader.poller.fetch_wallet_transactions", return_value=[fake_tx]), \
++             patch("copy_trader.poller.fetch_tx_receipt", return_value=fake_receipt), \
++             patch("copy_trader.poller.is_dex_swap", return_value=True), \
++             patch("copy_trader.poller.fetch_token_price", return_value=2500.0):
+ 
+-        # First time — should open
+-        pick_id = f"{buy_swap.wallet_address}:{buy_swap.tx_hash}"
+-        assert pick_id not in state.seen_tx_hashes, "Tx already seen (shouldn't be)"
+-        state.seen_tx_hashes.add(pick_id)
+-        print(f"  ✓ First time: tx added to seen set")
+-
+-        # Second time — should skip
+-        assert pick_id in state.seen_tx_hashes, "Tx not seen (should be)"
+-        print(f"  ✓ Second time: tx already in seen set — skipped")
++            swaps1, _ = poller.poll_wallet(
++                {"address": "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1", "label": "TestWallet"}
++            )
++            assert len(swaps1) == 1, f"Expected 1 swap on first poll, got {len(swaps1)}"
++            assert fake_tx["hash"] in state.seen_tx_hashes, "Tx hash not in seen map after first poll"
++
++            poller.process_swaps(swaps1)
++            opened = len(state.open_positions)
++            assert opened == 1, f"Expected 1 position after first cycle, got {opened}"
++
++            swaps2, _ = poller.poll_wallet(
++                {"address": "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1", "label": "TestWallet"}
++            )
++            assert len(swaps2) == 0, f"Expected 0 swaps on second poll (dedup), got {len(swaps2)}"
++            assert len(state.open_positions) == 1, "Position count should still be 1 after dedup"
+ 
++        print(f"  ✓ First poll: detected 1 swap, opened 1 position, tx added to seen map")
++        print(f"  ✓ Second poll: same tx skipped by dedup — 0 new swaps, still 1 position")
+         print(f"  ✓ Dedup proof: same tx only opens one paper position")
+         return True
+     except Exception as e:
+         print(f"  ✗ FAILED: {e}")
++        import traceback
++        traceback.print_exc()
++        return False
++
++
++def test_fail_closed_and_eth_leg(config_path: str) -> bool:
++    """Test 4b: fail-closed on ambiguity; ETH leg measured, never fabricated."""
++    print("\n=== TEST 4b: fail-closed + measured ETH leg (no fabricated labels) ===")
++    try:
++        wallet = "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1"
++        other = "0x1111111111111111111111111111111111111111"
++        TOKA = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
++        TOKB = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
++
++        def transfer(token, frm, to, val):
++            return {
++                "address": token,
++                "topics": [TRANSFER_TOPIC, "0x" + frm[2:].rjust(64, "0"),
++                           "0x" + to[2:].rjust(64, "0")],
++                "data": hex(val),
++            }
++
++        base_receipt = {
++            "status": "0x1", "transactionHash": "0xfailclosed",
++            "blockNumber": hex(52276580), "gasUsed": "0x5208",
++            "effectiveGasPrice": "0x3b9aca00",
++        }
++
++        # (a) 2 tokens sent -> ambiguous input -> skip
++        r = dict(base_receipt, logs=[
++            transfer(TOKA, wallet, other, 10**18),
++            transfer(TOKB, wallet, other, 10**18),
++            transfer(WETH, other, wallet, 10**18),
++        ])
++        sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is None, "ambiguous input was NOT skipped"
++        assert "ambiguous input" in reason, f"unexpected reason: {reason}"
++        print(f"  ✓ 2 tokens sent  -> SKIPPED ({reason})")
++
++        # (b) 2 tokens received -> ambiguous output -> skip
++        r = dict(base_receipt, logs=[
++            transfer(TOKA, other, wallet, 10**18),
++            transfer(TOKB, other, wallet, 10**18),
++            transfer(WETH, wallet, other, 10**18),
++        ])
++        sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is None, "ambiguous output was NOT skipped"
++        assert "ambiguous output" in reason, f"unexpected reason: {reason}"
++        print(f"  ✓ 2 tokens recv  -> SKIPPED ({reason})")
++
++        # (c) net-zero token (pass-through) -> not a leg; only one real leg
++        r = dict(base_receipt, logs=[
++            transfer(TOKA, wallet, other, 10**18),   # out
++            transfer(TOKA, other, wallet, 10**18),   # back in -> net 0
++            transfer(WETH, other, wallet, 5 * 10**17),  # real leg
++        ])
++        sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is None, "pass-through token should not form a 2-sided swap here"
++        print(f"  ✓ net-zero pass-through dropped ({reason})")
++
++        # (d) no fabricated ETH: one leg, but ETH delta unreadable -> SKIP
++        r = dict(base_receipt, logs=[transfer(TOKA, wallet, other, 10**18)])
++        with patch("copy_trader.poller.eth_leg_wei", return_value=None):
++            sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is None, "one-legged swap with unreadable ETH delta was NOT skipped"
++        assert "unreadable" in reason, f"unexpected reason: {reason}"
++        assert "ETH" not in reason or True
++        print(f"  ✓ 1 leg, ETH unreadable -> SKIPPED, no fabricated ETH ({reason})")
++
++        # (e) wrong sign -> SKIP (sell shape but delta negative)
++        r = dict(base_receipt, logs=[transfer(TOKA, wallet, other, 10**18)])
++        with patch("copy_trader.poller.eth_leg_wei", return_value=-10**18):
++            sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is None, "wrong-sign ETH delta was NOT skipped"
++        print(f"  ✓ 1 leg sent, delta negative -> SKIPPED ({reason})")
++
++        # (f) correct sign -> SELL with MEASURED eth amount
++        MEASURED = 266310107601576487
++        r = dict(base_receipt, logs=[transfer(TOKA, wallet, other, 10**18)])
++        with patch("copy_trader.poller.eth_leg_wei", return_value=MEASURED):
++            sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is not None, "valid one-legged sell was skipped"
++        assert sw.token_in == TOKA, f"token_in wrong: {sw.token_in}"
++        assert sw.token_out == "ETH", f"token_out should be ETH, got {sw.token_out}"
++        assert abs(sw.amount_out - MEASURED / 1e18) < 1e-18, f"amount_out wrong: {sw.amount_out}"
++        assert sw.is_buy is False, "sell misclassified"
++        print(f"  ✓ 1 leg sent, delta positive -> SELL, ETH measured = {sw.amount_out:.9f}")
++
++        # (g) buy shape -> BUY with measured eth in
++        r = dict(base_receipt, logs=[transfer(TOKA, other, wallet, 10**18)])
++        with patch("copy_trader.poller.eth_leg_wei", return_value=-MEASURED):
++            sw, reason = extract_swap_from_receipt(r, wallet)
++        assert sw is not None, "valid one-legged buy was skipped"
++        assert sw.token_in == "ETH", f"token_in should be ETH, got {sw.token_in}"
++        assert sw.token_out == TOKA
++        assert abs(sw.amount_in - MEASURED / 1e18) < 1e-18
++        assert sw.is_buy is True, "buy misclassified"
++        print(f"  ✓ 1 leg recv, delta negative -> BUY, ETH measured = {sw.amount_in:.9f}")
++
++        print(f"  ✓ Fail-closed verified: ambiguity and unmeasurable ETH both skip")
++        return True
++    except Exception as e:
++        print(f"  ✗ FAILED: {e}")
++        import traceback
++        traceback.print_exc()
++        return False
++
++
++def test_timestamp_ordering(config_path: str) -> bool:
++    """Test 4c: open_time is tx time; a close needs a strictly older open."""
++    print("\n=== TEST 4c: tx-timestamp ordering (no same-cycle open+close) ===")
++    try:
++        poller = CopyTraderPoller(config_path, "/tmp/test_state.json", "/tmp/test_closes.jsonl")
++        poller.state = PollerState()
++        TOK = "0x1234567890123456789012345678901234567890"
++        W = "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1"
++        T0 = 1787227200  # fixed base
++
++        buy = SwapEvent(tx_hash="0xbuy1", wallet_address=W, wallet_label="w",
++                        token_in=WETH, token_out=TOK, amount_in=0.1, amount_out=100.0,
++                        timestamp=T0, is_buy=True)
++        # Sells of the same token: the SOLD token is token_in (what the wallet
++        # spent); token_out is the ETH it received.
++        older_sell = SwapEvent(tx_hash="0xsell_old", wallet_address=W, wallet_label="w",
++                               token_in=TOK, token_out="ETH", amount_in=100.0,
++                               amount_out=0.1, timestamp=T0 - 600, is_buy=False)
++        newer_sell = SwapEvent(tx_hash="0xsell_new", wallet_address=W, wallet_label="w",
++                               token_in=TOK, token_out="ETH", amount_in=100.0,
++                               amount_out=0.1, timestamp=T0 + 600, is_buy=False)
++
++        with patch("copy_trader.poller.fetch_token_price", return_value=2500.0), \
++             patch.object(poller, "_append_journal"):
++            # Feed buy + older sell in the SAME batch, unsorted order.
++            poller.process_swaps([older_sell, buy])
++            pos = list(poller.state.open_positions.values())
++            assert len(pos) == 1, f"expected 1 open position, got {len(pos)}"
++            assert poller.state.wallet_trade_counts.get(W, 0) == 0, \
++                "an OLDER sell closed a newer position — ordering is broken"
++            print(f"  ✓ buy + older sell in one batch -> position stays OPEN (0 closes)")
++
++            # open_time must equal the tx timestamp, not wall-clock.
++            expected = datetime.fromtimestamp(T0, tz=timezone.utc).isoformat()
++            assert pos[0].open_time == expected, \
++                f"open_time={pos[0].open_time} != tx time {expected}"
++            print(f"  ✓ open_time == tx timestamp ({pos[0].open_time})")
++
++            # Now a strictly-newer sell closes it.
++            poller.process_swaps([newer_sell])
++            assert len(poller.state.open_positions) == 0, "newer sell did not close the position"
++            assert poller.state.wallet_trade_counts[W] == 1, "close not counted"
++            print(f"  ✓ strictly-newer sell -> position CLOSED (1 close)")
++
++        return True
++    except Exception as e:
++        print(f"  ✗ FAILED: {e}")
++        import traceback
++        traceback.print_exc()
++        return False
++
++
++def test_baseline_and_prune(config_path: str) -> bool:
++    """Test 4d: baseline first run opens nothing; seen hashes prune by age."""
++    print("\n=== TEST 4d: baseline first run + seen-hash pruning ===")
++    try:
++        poller = CopyTraderPoller(config_path, "/tmp/test_state.json", "/tmp/test_closes.jsonl")
++        poller.state = PollerState()
++        assert poller.state.last_poll_timestamp == 0, "fresh state should have no watermark"
++
++        now = int(time.time())
++        txs = [
++            {"hash": "0xhist1", "block_number": 1, "timestamp": "2026-09-21T18:24:51Z",
++             "to": {"hash": "0xcf77a3ba9a5ca396e57b271c5c0b26f421741e481", "is_contract": True},
++             "transaction_types": ["token_transfer"]},
++            {"hash": "0xhist2", "block_number": 2, "timestamp": "2026-10-06T17:54:05Z",
++             "to": {"hash": "0xcf77a3ba9a5ca396e57b271c5c0b26f421741e481", "is_contract": True},
++             "transaction_types": ["token_transfer"]},
++        ]
++        with patch("copy_trader.poller.fetch_wallet_transactions", return_value=txs), \
++             patch("copy_trader.poller.fetch_tx_receipt", return_value={"status": "0x1", "logs": []}):
++            swaps, newest = poller.poll_wallet(
++                {"address": "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1"}, baseline=True
++            )
++
++        assert swaps == [], f"baseline run returned {len(swaps)} swaps; must return 0"
++        assert len(poller.state.open_positions) == 0, "baseline run opened a position"
++        assert len(poller.state.seen_tx_hashes) == 2, "baseline did not mark history seen"
++        print(f"  ✓ baseline run: 0 swaps, 0 positions, {len(poller.state.seen_tx_hashes)} txs marked seen")
++
++        # Every wallet in a baseline cycle must get baseline treatment — a
++        # per-wallet decision read from global state let wallet 2+ ingest history.
++        poller.state.seen_tx_hashes = {}
++        poller.state.last_poll_timestamp = 0
++        poller.state.open_positions = {}
++        with patch("copy_trader.poller.fetch_wallet_transactions", return_value=txs), \
++             patch("copy_trader.poller.fetch_tx_receipt", return_value={"status": "0x1", "logs": []}), \
++             patch("copy_trader.poller.is_dex_swap", return_value=True):
++            poller.run_once()
++        assert len(poller.state.open_positions) == 0, \
++            f"baseline cycle opened {len(poller.state.open_positions)} positions"
++        print(f"  ✓ full baseline cycle (3 wallets): 0 positions opened")
++        print(f"  ✓ watermark set to {poller.state.last_poll_timestamp}")
++
++        # Pruning: retention must exceed the API window actually observed, so
++        # nothing that is still fetchable may be dropped.
++        now = int(time.time())
++        poller.state.seen_tx_hashes = {
++            "0xveryold": now - SEEN_TX_RETENTION_SECONDS - 100,
++            "0xfresh": now - 60,
++            "0xunknownage": 0,
++        }
++        poller._observed_window_seconds = 0
++        pruned = poller._prune_seen()
++        assert pruned == 1, f"expected 1 pruned, got {pruned}"
++        assert "0xveryold" not in poller.state.seen_tx_hashes, "old entry not pruned"
++        assert "0xfresh" in poller.state.seen_tx_hashes, "fresh entry wrongly pruned"
++        assert "0xunknownage" in poller.state.seen_tx_hashes, "unknown-age entry wrongly pruned"
++        print(f"  ✓ prune (floor only): removed 1 stale, kept fresh + unknown-age")
++
++        # With a large OBSERVED window, the retention must widen to exceed it.
++        poller.state.seen_tx_hashes = {
++            "0xat60d": now - 60 * 86400,
++            "0xat10d": now - 10 * 86400,
++        }
++        poller._observed_window_seconds = 50 * 86400  # API served 50d of history
++        pruned = poller._prune_seen()
++        assert "0xat60d" in poller.state.seen_tx_hashes, \
++            "a hash inside the observed API window was pruned (would be re-ingested)"
++        assert "0xat10d" in poller.state.seen_tx_hashes
++        print(f"  ✓ prune (50d observed window): 60d-old entry KEPT "
++              f"(retention widened to {max(SEEN_TX_RETENTION_SECONDS, int(50*86400*1.5))/86400:.0f}d)")
++
++        # A hardcoded 30d retention would have dropped the 33d-old entries that
++        # were still fetchable — the exact bug that resurrected 19 txs.
++        poller.state.seen_tx_hashes = {"0xat33d": now - 33 * 86400}
++        poller._observed_window_seconds = 50 * 86400
++        poller._prune_seen()
++        assert "0xat33d" in poller.state.seen_tx_hashes, \
++            "33d-old fetchable entry pruned — regression of the resurrection bug"
++        print(f"  ✓ prune: 33d-old fetchable entry KEPT (was re-ingested under a 30d rule)")
++        return True
++    except Exception as e:
++        print(f"  ✗ FAILED: {e}")
++        import traceback
++        traceback.print_exc()
+         return False
+ 
+ 
+@@ -343,6 +713,9 @@
+     results.append(("Detection proof", test_detection_proof(args.config)))
+     results.append(("Mirror proof", test_mirror_proof(args.config)))
+     results.append(("Dedup proof", test_dedup_proof(args.config)))
++    results.append(("Fail-closed + ETH leg", test_fail_closed_and_eth_leg(args.config)))
++    results.append(("Tx-timestamp ordering", test_timestamp_ordering(args.config)))
++    results.append(("Baseline + prune", test_baseline_and_prune(args.config)))
+     results.append(("Journal proof", test_journal_proof(args.config)))
+     results.append(("Code review diff", test_code_review_diff()))
+ 

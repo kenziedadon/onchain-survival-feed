@@ -123,8 +123,12 @@ def parse_fields(source: dict, spec: dict[str, str],
 
 #: GoPlus security fields that are NUMERIC and gate the verdict.
 #: Each must parse or the token is UNSCREENABLE.
+# GoPlus numeric fields. top10_holder_concentration is NOT a GoPlus key
+# (absent 10/10 sampled live tokens — defect #2). Concentration math must
+# be derived from the holders[] array in the intake layer, not parsed here.
+# Keeping it in this spec caused parse_fields() to raise UnscreenableError
+# on every real token, since the missing key resolves to None.
 GOPLUS_NUMERIC_FIELDS = {
     "buy_tax": "buy_tax",
     "sell_tax": "sell_tax",
-    "top10_holder_concentration": "top10_holder_concentration",
 }

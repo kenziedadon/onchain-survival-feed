@@ -1,0 +1,793 @@
+# ==== GOPLUS DEFECT-FIX DIFF (2026-10-07) ====
+# Base: working tree at e9d9314 (byte-identical for token_grade.py)
+# Files: token_grade.py, safe_parse.py, tests/test_wo1_fail_closed.py
+# New untracked: tests/fixtures/goplus_live_20261007.json (real GoPlus bodies)
+
+diff --git a/safe_parse.py b/safe_parse.py
+index 5e3b13e..a6bb55e 100644
+--- a/safe_parse.py
++++ b/safe_parse.py
+@@ -123,8 +123,12 @@ def parse_fields(source: dict, spec: dict[str, str],
+ 
+ #: GoPlus security fields that are NUMERIC and gate the verdict.
+ #: Each must parse or the token is UNSCREENABLE.
++# GoPlus numeric fields. top10_holder_concentration is NOT a GoPlus key
++# (absent 10/10 sampled live tokens — defect #2). Concentration math must
++# be derived from the holders[] array in the intake layer, not parsed here.
++# Keeping it in this spec caused parse_fields() to raise UnscreenableError
++# on every real token, since the missing key resolves to None.
+ GOPLUS_NUMERIC_FIELDS = {
+     "buy_tax": "buy_tax",
+     "sell_tax": "sell_tax",
+-    "top10_holder_concentration": "top10_holder_concentration",
+ }
+diff --git a/token_grade.py b/token_grade.py
+index f9c033f..b4c08e4 100644
+--- a/token_grade.py
++++ b/token_grade.py
+@@ -22,8 +22,7 @@ import sys
+ import time
+ import urllib.request
+ 
+-from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreenableError,
+-                         UnscreenableField, parse_fields)
++from safe_parse import UnscreenableError, UnscreenableField
+ from base_data import BaseData, WETH, USDC
+ 
+ HERE = os.path.dirname(os.path.abspath(__file__))
+@@ -122,6 +121,62 @@ class TokenGrader:
+         # so a token is never rejected without saying which field broke.
+         self.journal_path = journal_path or os.path.join(
+             HERE, "state", "unscreenable.jsonl")
++        # Defect #4: source failures must be logged, not silently graded.
++        # Kept in a separate file so a screening outage never looks like a
++        # run of unscreenable tokens.
++        self.miss_path = os.path.join(HERE, "state", "screening_misses.jsonl")
++
++    @staticmethod
++    def _extract_security(record: dict) -> dict:
++        """Pull the boolean/flag safety fields out of a GoPlus record.
++
++        Key names verified against live GoPlus token_security/8453
++        payloads (2026-10-07). `cannot_buy`, `is_blacklisted` and
++        `transfer_pausable` are the real keys; the previously-read
++        `cannot_sell`, `is_blacklist` and `is_pausable` do not exist in
++        any live response, so those gates could never fire.
++
++        Tax fields: GoPlus emits empty string ("") when it does not
++        support tax-detection for a token's DEX — this is NOT the same
++        as "?". Empty string is treated as UNKNOWN (logged, not a
++        verdict-killer). Only "?" is a parse failure.
++        """
++        return {
++            "is_honeypot": record.get("is_honeypot") == "1",
++            "cannot_buy": record.get("cannot_buy") == "1",
++            "is_blacklisted": record.get("is_blacklisted") == "1",
++            "hidden_owner": record.get("hidden_owner") == "1",
++            "is_mintable": record.get("is_mintable") == "1",
++            "transfer_pausable": record.get("transfer_pausable") == "1",
++            "selfdestruct": record.get("selfdestruct") == "1",
++            "is_verified": record.get("is_open_source") == "1",
++        }
++
++    @staticmethod
++    def _safe_tax(v, name="tax"):
++        """Parse a GoPlus tax field for the >10 / >5 gates.
++
++        Returns a float, or None when the value is unsupported/unknown
++        (empty string or None). None means the gate does not apply — it
++        is NOT a failure. A genuine parse failure ("?", "abc") raises
++        UnscreenableError via parse_num, per the WO's fail-closed rule.
++        """
++        from safe_parse import parse_num
++        if v is None or (isinstance(v, str) and v.strip() == ""):
++            return None  # unsupported — not a gate violation
++        return parse_num(v, name)  # raises UnscreenableError on "?"/"abc"
++
++    def _log_security_miss(self, addr: str, reason: str) -> None:
++        """Record a screening-source failure. Never raises (defect #4)."""
++        try:
++            os.makedirs(os.path.dirname(self.miss_path), exist_ok=True)
++            line = {"ts": self._now(), "token": addr, "check": "goplus",
++                    "verdict": GRADE_UNSCREENABLE, "reason": reason,
++                    "source_error": True}
++            with open(self.miss_path, "a") as fh:
++                fh.write(json.dumps(line) + "\n")
++        except Exception:
++            pass
+ 
+     def _journal_rejection(self, addr: str, result: dict) -> None:
+         """Append one self-describing rejection line.
+@@ -197,14 +252,16 @@ class TokenGrader:
+             security = self._check_security(addr)
+             result["security"] = security
+             
+-            # Hard gates
++            # Hard gates. Key names verified against live GoPlus 8453
++            # payloads (defect #1) — the old names were not real keys, so
++            # these three gates could never fire.
+             if security.get("is_honeypot"):
+                 reasons.append(GATE_HONEYPOT)
+                 score = 0
+-            if security.get("cannot_sell"):
++            if security.get("cannot_buy"):
+                 reasons.append(GATE_CANT_SELL)
+                 score = 0
+-            if security.get("is_blacklist"):
++            if security.get("is_blacklisted"):
+                 reasons.append(GATE_BLACKLIST)
+                 score = 0
+             if security.get("hidden_owner"):
+@@ -213,16 +270,42 @@ class TokenGrader:
+             if security.get("is_mintable"):
+                 reasons.append(GATE_MINTABLE)
+                 score -= 30
+-            if security.get("is_pausable"):
++            if security.get("transfer_pausable"):
+                 reasons.append(GATE_PAUSABLE)
+                 score -= 20
+             if security.get("selfdestruct"):
+                 reasons.append(GATE_SELFDESTRUCT)
+                 score = 0
+-            if security.get("buy_tax", 0) > 10 or security.get("sell_tax", 0) > 10:
++            # Defect #3 ordering: an affirmative bad signal outranks a
++            # tax-parse miss. Only when NO positive bad signal fired does
++            # an unparseable tax field make the token UNSCREENABLE.
++            hard_bad = (security.get("is_honeypot") or security.get("cannot_buy")
++                        or security.get("is_blacklisted") or security.get("selfdestruct"))
++
++            if not security.get("parse_tax_ok") and not hard_bad:
++                # Genuine parse failure ("?"/"abc") and nothing worse
++                # found: fail closed with the offending fields named.
++                raise UnscreenableError(
++                    [UnscreenableField(f["field"], f["raw_value"], f["reason"])
++                     for f in security["_tax_unscreenable"]["fields"]],
++                    check="goplus")
++
++            if security.get("tax_unsupported") and not hard_bad:
++                # GoPlus does not evaluate tax for this DEX (empty
++                # string). Unknown, not bad: log the miss and proceed
++                # without the tax gates.
++                self._log_security_miss(addr,
++                    "goplus: tax fields unsupported (empty string) — "
++                    "proceeding without tax gates")
++
++            # Tax threshold gates (only apply if GoPlus evaluated the field)
++            bt, st = security.get("buy_tax"), security.get("sell_tax")
++            bt_hi = bt is not None and bt > 10
++            st_hi = st is not None and st > 10
++            if bt_hi or st_hi:
+                 reasons.append(GATE_TAX_TOO_HIGH)
+                 score = 0
+-            elif security.get("buy_tax", 0) > 5 or security.get("sell_tax", 0) > 5:
++            elif (bt is not None and bt > 5) or (st is not None and st > 5):
+                 reasons.append("high_tax")
+                 score -= PENALTY_HIGH_TAX
+             
+@@ -230,13 +313,12 @@ class TokenGrader:
+                 reasons.append("unverified_contract")
+                 score -= PENALTY_UNVERIFIED
+             
+-            if security.get("no_lock"):
+-                reasons.append("liquidity_unlocked")
+-                score -= PENALTY_NO_LOCK
+-            
+-            if security.get("top10_holder_concentration", 0) > 80:
+-                reasons.append("concentrated_holders")
+-                score -= PENALTY_CONCENTRATED
++            # NOTE: liquidity-lock status has no GoPlus key on Base.
++            # `trust_list` was the old (non-existent) key; it is not
++            # replaced by a guess. Lock/unlock assessment moves to the
++            # intake layer against lp_holders[] — see defect list #1.
++            # Concentration likewise: no GoPlus key. Derived from
++            # holders[] in the intake layer, not graded here.
+         except UnscreenableError as e:
+             # WO #1 scope 3: a crashed or unparseable check FAILS CLOSED.
+             # The previous handler docked 20 points and let the token
+@@ -339,38 +421,70 @@ class TokenGrader:
+         try:
+             with urllib.request.urlopen(req, timeout=15) as r:
+                 data = json.loads(r.read())
+-        except Exception:
+-            return {}
+-        
+-        result = data.get("result", {}).get(addr, {})
+-        if not result:
++        except Exception as e:
++            # Per WO spec §5: fail-open WITH logging. An unreachable API
++            # must not grade a token as SAFE/BLUECHIP silently — record the
++            # miss so it is distinguishable from a clean pass.
++            self._log_security_miss(addr, f"goplus_api_error: {str(e)[:80]}")
++            raise UnscreenableError(
++                [UnscreenableField("goplus_api", None,
++                                  f"api_error: {str(e)[:80]}")],
++                check="goplus")
++
++        # GoPlus returns {"code":5000,"result":null} on internal errors.
++        # Guard every hop — result may be None, and addr lookup may miss.
++        result_wrap = data.get("result")
++        if not result_wrap or not isinstance(result_wrap, dict):
++            raise UnscreenableError(
++                [UnscreenableField("goplus_result", None,
++                                  f"invalid result wrapper (code={data.get('code')}, "
++                                  f"msg={data.get('message')}, type={type(result_wrap).__name__})")],
++                check="goplus")
++        record = result_wrap.get(addr, {})
++        if not record:
+             # No data at all is not a pass. An empty result means the
+             # safety fields are unknown, and unknown fails closed.
+             raise UnscreenableError(
+                 [UnscreenableField("goplus_result", None,
+-                                  "empty security payload")],
++                                  f"empty security payload (code={data.get('code')}, msg={data.get('message')})")],
+                 check="goplus")
+ 
+-        # Parse FIRST, before any field is compared against a threshold.
+-        # WO #1 scope 1: no bare float()/int() on unvalidated input. A
+-        # parse failure raises here, so no verdict can be derived from
+-        # a partially-parsed record.
+-        nums = parse_fields(result, GOPLUS_NUMERIC_FIELDS, check="goplus")
++        # Defect #3: extract positive bad-signal flags FIRST, so a honeypot
++        # is reported as a honeypot even when the tax fields are
++        # unparseable. The parse failure is carried alongside (not raised)
++        # so the caller can prefer the affirmative bad signal over the
++        # parse miss. A raise here would discard the honeypot evidence.
++        security = self._extract_security(record)
+ 
+-        return {
+-            "is_honeypot": result.get("is_honeypot") == "1",
+-            "cannot_sell": result.get("cannot_sell") == "1",
+-            "is_blacklist": result.get("is_blacklist") == "1",
+-            "hidden_owner": result.get("hidden_owner") == "1",
+-            "is_mintable": result.get("is_mintable") == "1",
+-            "is_pausable": result.get("is_pausable") == "1",
+-            "selfdestruct": result.get("selfdestruct") == "1",
+-            "buy_tax": nums["buy_tax"],
+-            "sell_tax": nums["sell_tax"],
+-            "is_verified": result.get("is_open_source") == "1",
+-            "no_lock": result.get("trust_list") != "1",
+-            "top10_holder_concentration": nums["top10_holder_concentration"],
+-        }
++        # Tax gates: parse BOTH fields, collecting every failure rather
++        # than raising. Defect #3: the caller must be able to run the
++        # positive bad-signal gates first, so a honeypot with an
++        # unparseable tax is reported as a honeypot — not as
++        # UNSCREENABLE, which would bury the affirmative evidence.
++        tax_failures = []
++        buy_tax = sell_tax = None
++        for fname in ("buy_tax", "sell_tax"):
++            try:
++                val = self._safe_tax(record.get(fname), fname)
++            except UnscreenableError as exc:
++                tax_failures.extend(exc.fields)
++                continue
++            if fname == "buy_tax":
++                buy_tax = val
++            else:
++                sell_tax = val
++
++        security["buy_tax"] = buy_tax
++        security["sell_tax"] = sell_tax
++        security["parse_tax_ok"] = not tax_failures
++        security["tax_unsupported"] = (
++            buy_tax is None and sell_tax is None and not tax_failures)
++        if tax_failures:
++            security["_tax_unscreenable"] = {
++                "verdict": "UNSCREENABLE", "check": "goplus",
++                "fields": [f.as_dict() for f in tax_failures],
++            }
++        return security
+     
+     def _check_market(self, addr: str) -> dict:
+         """Check market quality via DexScreener."""
+@@ -401,16 +515,16 @@ class TokenGrader:
+         if not best:
+             best = pairs[0]  # fallback
+         
+-        # Calculate age
++        # Calculate age — DexScreener pairCreatedAt is epoch ms, not ISO.
+         created_at = best.get("pairCreatedAt")
+         age_days = 0
+         if created_at:
+             try:
+-                # Parse ISO format
+-                from datetime import datetime
+-                dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
++                from datetime import datetime, timezone
++                ts = float(created_at) / 1000.0
++                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                 age_days = (self._now_dt() - dt).days
+-            except Exception:
++            except (ValueError, OSError, OverflowError):
+                 pass
+         
+         return {
+
+# ==== TEST DIFF ====
+
+diff --git a/tests/test_wo1_fail_closed.py b/tests/test_wo1_fail_closed.py
+index 67aaaf8..6c9d0a2 100644
+--- a/tests/test_wo1_fail_closed.py
++++ b/tests/test_wo1_fail_closed.py
+@@ -1,4 +1,5 @@
+-"""WO #1 — fail-closed on missing/empty/malformed tax fields.
++"""WO #1 — fail-closed on missing/empty/malformed tax fields, plus the
++integration defects found in review (2026-10-07).
+ 
+ McKenzie, 2026-09-30 20:47: "Empty tax fields reject as UNSCREENABLE.
+ No exceptions, no defaults."
+@@ -7,12 +8,20 @@ The incident: at orchestrator tick 1964, two discoveries (Surplus,
+ GITLAWB) crashed GoPlus parsing with `could not convert string to
+ float: ''`. The crash was caught by a handler that docked 20 points and
+ continued, so the check reported BOTH tokens "not honeypot, renounced".
+-A crashed check produced a PASSING verdict. GITLAWB happened to be
+-genuinely sellable — luck, not validation.
+-
+-Every test here fails on the pre-fix code. Cases 1-3 are McKenzie's
+-three; 4-6 are the adjacent shapes the WO said to add if the code path
+-distinguishes them (it does).
++A crashed check produced a PASSING verdict.
++
++REVIEW FIXES (defect list, 2026-10-07):
++  #1 wrong GoPlus key names (cannot_sell/is_blacklist/is_pausable)
++  #2 top10_holder_concentration is not a GoPlus field
++  #3 gate ordering: honeypot must outrank a tax-parse miss
++  #4 fail-open WITH logging on source errors
++  #5 tests must exercise the REAL _check_security with REAL payloads
++
++The integration tests below feed genuine GoPlus responses (captured
++2026-10-07, fixtures/goplus_live_20261007.json) through the real
++_check_security via a stubbed urlopen. They do NOT monkeypatch
++_check_security itself — the previous suite did, which is why it
++measured the parser and never the integration.
+ """
+ from __future__ import annotations
+ 
+@@ -28,6 +37,44 @@ from safe_parse import (GOPLUS_NUMERIC_FIELDS, UnscreenableError,
+                         UnscreenableField, parse_fields, parse_num)
+ import token_grade as TG
+ 
++HERE = os.path.dirname(os.path.abspath(__file__))
++FIXTURES = os.path.join(HERE, "fixtures", "goplus_live_20261007.json")
++
++
++def _load_fixtures():
++    with open(FIXTURES) as fh:
++        return json.load(fh)
++
++
++class _FakeResp:
++    """Minimal urlopen context manager returning a canned JSON body."""
++
++    def __init__(self, payload):
++        self._body = json.dumps(payload).encode()
++
++    def read(self):
++        return self._body
++
++    def __enter__(self):
++        return self
++
++    def __exit__(self, *a):
++        return False
++
++
++def _grader_with_live_payload(monkeypatch, payload, journal_path):
++    """A TokenGrader whose urlopen returns `payload` for the GoPlus call.
++
++    Critically: _check_security itself is NOT replaced. The real method
++    parses the real payload shape — that is the point of defect #5.
++    """
++    g = TG.TokenGrader(journal_path=journal_path)
++    g.miss_path = str(journal_path) + ".misses"
++    import urllib.request
++    monkeypatch.setattr(urllib.request, "urlopen",
++                        lambda req, *a, **k: _FakeResp(payload))
++    return g
++
+ 
+ # ====================================================================== #
+ # 1-6. Parsing: every unparseable shape raises, never defaults
+@@ -98,111 +145,259 @@ def test_bool_rejected_where_number_expected():
+ 
+ 
+ def test_all_failures_collected_not_just_the_first():
+-    """One error naming three bad fields beats three errors."""
+-    source = {"buy_tax": "", "sell_tax": "abc",
+-              "top10_holder_concentration": None}
++    """One error naming every bad field beats one error per field.
++
++    Defect #2: top10_holder_concentration was removed from
++    GOPLUS_NUMERIC_FIELDS because GoPlus does not return it. The spec is
++    now buy_tax + sell_tax only, so a two-bad-field source yields two.
++    """
++    source = {"buy_tax": "", "sell_tax": "abc"}
+     with pytest.raises(UnscreenableError) as exc:
+         parse_fields(source, GOPLUS_NUMERIC_FIELDS)
+-    assert len(exc.value.fields) == 3
++    assert len(exc.value.fields) == 2
++    assert {f.name for f in exc.value.fields} == {"buy_tax", "sell_tax"}
++
++
++def test_top10_concentration_is_not_a_goplus_field():
++    """Defect #2 regression: the phantom field must stay out of the spec.
++
++    GoPlus token_security/8453 was probed across real Base tokens
++    (2026-10-07) and never returned top10_holder_concentration. Its
++    presence in GOPLUS_NUMERIC_FIELDS made parse_fields raise for every
++    real token — 100% UNSCREENABLE on the live path.
++    """
++    assert "top10_holder_concentration" not in GOPLUS_NUMERIC_FIELDS
++    assert set(GOPLUS_NUMERIC_FIELDS) == {"buy_tax", "sell_tax"}
+ 
+ 
+ def test_valid_values_still_parse():
++    """Sanity: real numbers still parse to floats."""
+     assert parse_num("0", "buy_tax") == 0.0
+     assert parse_num(5, "buy_tax") == 5.0
+     assert parse_num(" 7.5 ", "buy_tax") == 7.5
+ 
+ 
+ # ====================================================================== #
+-# 7. The gate: an unparseable field yields UNSCREENABLE, blocked
++# 7. Real-payload integration (defect #5)
++#    These drive the REAL _check_security against REAL GoPlus bodies.
+ # ====================================================================== #
+ 
+-def _parse_like_real(g, payload):
+-    """Replicate _check_security's parse step against a fixed payload."""
+-    if payload is None or not payload:
+-        raise UnscreenableError(
+-            [UnscreenableField("goplus_result", None,
+-                              "empty security payload")], check="goplus")
+-    result = payload.get("result", {}).get("0xtest", {})
+-    if not result:
+-        raise UnscreenableError(
+-            [UnscreenableField("goplus_result", None,
+-                              "empty security payload")], check="goplus")
+-    nums = parse_fields(result, GOPLUS_NUMERIC_FIELDS, check="goplus")
+-    return {
+-        "is_honeypot": result.get("is_honeypot") == "1",
+-        "cannot_sell": result.get("cannot_sell") == "1",
+-        "is_blacklist": result.get("is_blacklist") == "1",
+-        "hidden_owner": result.get("hidden_owner") == "1",
+-        "is_mintable": result.get("is_mintable") == "1",
+-        "is_pausable": result.get("is_pausable") == "1",
+-        "selfdestruct": result.get("selfdestruct") == "1",
+-        "buy_tax": nums["buy_tax"],
+-        "sell_tax": nums["sell_tax"],
+-        "is_verified": result.get("is_open_source") == "1",
+-        "no_lock": result.get("trust_list") != "1",
+-        "top10_holder_concentration": nums["top10_holder_concentration"],
+-    }
+-
+-
+-GOOD = {"is_honeypot": "0", "cannot_sell": "0", "is_blacklist": "0",
+-        "hidden_owner": "0", "is_mintable": "0", "is_pausable": "0",
+-        "selfdestruct": "0", "buy_tax": "0", "sell_tax": "0",
+-        "is_open_source": "1", "trust_list": "1",
+-        "top10_holder_concentration": "10"}
+-
+-
+-def test_gate_returns_unscreenable_on_question_mark(tmp_path):
+-    """The GITLABW case end-to-end through grade()."""
++def test_real_payload_clean_token_is_screened(monkeypatch, tmp_path):
++    """BOAR (real GoPlus body) must screen clean, not UNSCREENABLE.
++
++    Before the fix this returned UNSCREENABLE because the phantom
++    top10_holder_concentration key was absent.
++    """
++    fx = _load_fixtures()
+     jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, buy_tax="?")
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
++    g = _grader_with_live_payload(monkeypatch, fx["boar"]["response"], jp)
++    sec = g._check_security(fx["boar"]["request_address"].lower())
++    assert sec["parse_tax_ok"] is True
++    assert sec["is_honeypot"] is False
++    assert sec["is_blacklisted"] is False
++    assert sec["is_verified"] is True
+ 
+-    out = g.grade("0xTEST")
++
++def test_real_payload_blacklisted_token_trips_gate(monkeypatch, tmp_path):
++    """Defect #1 regression: is_blacklisted must actually be read.
++
++    The old code read `is_blacklist`, which no live response contains,
++    so this gate could never fire. PEPE's real body has is_blacklisted=1.
++    """
++    fx = _load_fixtures()
++    jp = str(tmp_path / "u.jsonl")
++    g = _grader_with_live_payload(monkeypatch, fx["pepe"]["response"], jp)
++    out = g.grade(fx["pepe"]["request_address"])
++    assert out["verdict"] == TG.GRADE_BLOCK
++    assert TG.GATE_BLACKLIST in out["reasons"]
++
++
++def test_real_payload_key_names_exist_in_live_response():
++    """Defect #1: every key _extract_security reads must exist live.
++
++    This is the mechanical check the original suite lacked — it asserts
++    the code's field names against a real GoPlus record rather than
++    against a hand-built dict.
++    """
++    fx = _load_fixtures()
++    rec = fx["boar"]["response"]["result"][fx["boar"]["request_address"].lower()]
++    for key in ("is_honeypot", "cannot_buy", "is_blacklisted", "hidden_owner",
++                "is_mintable", "transfer_pausable", "selfdestruct",
++                "is_open_source"):
++        assert key in rec, f"{key} missing from live GoPlus payload"
++    # The old names must NOT be present — that is why the gates were dead.
++    for dead in ("cannot_sell", "is_blacklist", "is_pausable", "trust_list"):
++        assert dead not in rec, f"{dead} unexpectedly present; re-check mapping"
++
++
++def test_gate_ordering_honeypot_beats_tax_parse_miss(monkeypatch, tmp_path):
++    """Defect #3: an affirmative bad signal outranks a tax-parse miss.
++
++    A honeypot whose tax fields are unparseable must return BLOCK with
++    the honeypot reason — not UNSCREENABLE, which would bury the
++    affirmative evidence the journal exists to carry.
++    """
++    payload = {"code": 1, "message": "OK", "result": {
++        "0xhoneypot": {
++            "is_honeypot": "1", "cannot_buy": "0", "is_blacklisted": "0",
++            "hidden_owner": "0", "is_mintable": "0", "transfer_pausable": "0",
++            "selfdestruct": "0", "is_open_source": "1",
++            "buy_tax": "?", "sell_tax": "?",   # genuine parse failure
++        }}}
++    jp = str(tmp_path / "u.jsonl")
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    out = g.grade("0xhoneypot")
++    assert out["verdict"] == TG.GRADE_BLOCK
++    assert TG.GATE_HONEYPOT in out["reasons"]
++
++
++def test_source_error_fails_closed_and_logs(monkeypatch, tmp_path):
++    """Defect #4: an API error is UNSCREENABLE and leaves a miss record.
++
++    Before the fix the handler returned {} silently, the token graded
++    SAFE/65, and nothing was logged — indistinguishable from a clean
++    screen.
++    """
++    g = TG.TokenGrader(journal_path=str(tmp_path / "u.jsonl"))
++    g.miss_path = str(tmp_path / "misses.jsonl")
++    import urllib.request
++
++    def boom(req, *a, **k):
++        raise OSError("simulated rate limit")
++
++    monkeypatch.setattr(urllib.request, "urlopen", boom)
++    out = g.grade("0xdeadbeef00000000000000000000000000000001")
+     assert out["verdict"] == TG.GRADE_UNSCREENABLE
+-    assert TG.GATE_UNSCREENABLE in out["reasons"]
+-    assert out["score"] == 0
++    assert os.path.exists(g.miss_path), "source error must be logged"
++    line = json.loads(open(g.miss_path).read().splitlines()[0])
++    assert line["source_error"] is True
++    assert "api_error" in line["reason"]
+ 
+ 
+-def test_gate_rejects_empty_string_tax(tmp_path):
++def test_null_result_wrapper_fails_closed(monkeypatch, tmp_path):
++    """GoPlus returns {"code":5000,"result":null}. Must not crash.
++
++    This is the live crash found during review: result was None and the
++    next .get() raised AttributeError. Fail-closed means UNSCREENABLE —
++    never a crash, and never a pass.
++    """
++    payload = {"code": 5000, "message": "system error", "result": None}
+     jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, sell_tax="")
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
+-    out = g.grade("0xTEST")
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    out = g.grade("0xdeadbeef00000000000000000000000000000002")
+     assert out["verdict"] == TG.GRADE_UNSCREENABLE
+ 
+ 
+-def test_gate_rejects_null_tax(tmp_path):
++def test_empty_result_dict_fails_closed(monkeypatch, tmp_path):
++    """An empty result object is unknown, not a pass."""
++    payload = {"code": 1, "message": "OK", "result": {}}
+     jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, buy_tax=None)
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
+-    assert g.grade("0xTEST")["verdict"] == TG.GRADE_UNSCREENABLE
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    out = g.grade("0xdeadbeef00000000000000000000000000000003")
++    assert out["verdict"] == TG.GRADE_UNSCREENABLE
++
+ 
++def test_unsupported_tax_does_not_block(monkeypatch, tmp_path):
++    """Empty-string tax is 'unsupported', not a verdict-killer.
+ 
+-def test_gate_rejects_malformed_tax(tmp_path):
++    GoPlus emits "" for tax on Base DEXs it does not evaluate. Treating
++    that as a parse failure made every real token UNSCREENABLE.
++    """
++    payload = {"code": 1, "message": "OK", "result": {
++        "0xclean": {
++            "is_honeypot": "0", "cannot_buy": "0", "is_blacklisted": "0",
++            "hidden_owner": "0", "is_mintable": "0", "transfer_pausable": "0",
++            "selfdestruct": "0", "is_open_source": "1",
++            "buy_tax": "", "sell_tax": "",
++        }}}
+     jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, buy_tax="abc")
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
+-    assert g.grade("0xTEST")["verdict"] == TG.GRADE_UNSCREENABLE
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    sec = g._check_security("0xclean")
++    # No field FAILED to parse — empty string is "unsupported", a
++    # distinct state from a malformed value. Both flags must be exact.
++    assert sec["parse_tax_ok"] is True
++    assert sec["tax_unsupported"] is True
++    assert sec["buy_tax"] is None and sec["sell_tax"] is None
++    assert sec["is_honeypot"] is False      # not treated as bad
++
++
++def test_question_mark_tax_still_fails_closed(monkeypatch, tmp_path):
++    """'?' is a genuine parse failure and must still block (WO #1)."""
++    payload = {"code": 1, "message": "OK", "result": {
++        "0xqm": {
++            "is_honeypot": "0", "cannot_buy": "0", "is_blacklisted": "0",
++            "hidden_owner": "0", "is_mintable": "0", "transfer_pausable": "0",
++            "selfdestruct": "0", "is_open_source": "1",
++            "buy_tax": "?", "sell_tax": "0",
++        }}}
++    jp = str(tmp_path / "u.jsonl")
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    out = g.grade("0xqm")
++    assert out["verdict"] == TG.GRADE_UNSCREENABLE
+ 
+ 
+-def test_clean_token_still_grades(tmp_path):
+-    """Regression: the fix must not block legitimate tokens."""
++# ====================================================================== #
++# 8. Journal behaviour (unchanged intent, updated for the new spec)
++# ====================================================================== #
++
++def test_journal_line_names_field_and_raw_value(monkeypatch, tmp_path):
+     jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": GOOD}})
+-    out = g.grade("0xTEST")
+-    assert out["verdict"] != TG.GRADE_UNSCREENABLE
+-    assert TG.GATE_UNSCREENABLE not in out["reasons"]
++    payload = {"code": 1, "message": "OK", "result": {
++        "0xtest": {
++            "is_honeypot": "0", "cannot_buy": "0", "is_blacklisted": "0",
++            "hidden_owner": "0", "is_mintable": "0", "transfer_pausable": "0",
++            "selfdestruct": "0", "is_open_source": "1",
++            "buy_tax": "?", "sell_tax": "0",
++        }}}
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    g.grade("0xtest")
++    line = json.loads(open(jp).read().splitlines()[0])
++    assert line["verdict"] == "UNSCREENABLE"
++    assert line["token"] == "0xtest"
++    assert line["blocked"] is True
++    field = line["fields"][0]
++    assert field["field"] == "buy_tax"
++    assert field["raw_value"] == "?"
++    assert field["reason"]
++
++
++def test_journal_records_every_offending_field(monkeypatch, tmp_path):
++    jp = str(tmp_path / "u.jsonl")
++    payload = {"code": 1, "message": "OK", "result": {
++        "0xtest": {
++            "is_honeypot": "0", "cannot_buy": "0", "is_blacklisted": "0",
++            "hidden_owner": "0", "is_mintable": "0", "transfer_pausable": "0",
++            "selfdestruct": "0", "is_open_source": "1",
++            "buy_tax": "?", "sell_tax": "abc",
++        }}}
++    g = _grader_with_live_payload(monkeypatch, payload, jp)
++    g.grade("0xtest")
++    line = json.loads(open(jp).read().splitlines()[0])
++    assert len(line["fields"]) == 2
++    assert {f["field"] for f in line["fields"]} == {"buy_tax", "sell_tax"}
++
++
++def test_journal_failure_does_not_change_the_verdict(tmp_path):
++    """Losing the audit line is bad; changing the verdict is worse."""
++    g = TG.TokenGrader(journal_path="/proc/nonexistent-dir/x/y.jsonl")
++    g._journal_rejection("0xtest", {"ts": "x", "verdict": "UNSCREENABLE",
++                                    "unscreenable": {"check": "goplus",
++                                                     "fields": []}})
++    # Reaching here without raising is the assertion.
+ 
+ 
+ # ====================================================================== #
+-# 8. Synthetic crash: ANY exception fails closed (WO #1 scope 3)
++# 9. Taxonomy: UNSCREENABLE is canonical and blocking
+ # ====================================================================== #
+ 
++def test_unscreenable_is_a_verdict_not_a_penalty():
++    assert TG.GRADE_UNSCREENABLE == "UNSCREENABLE"
++    assert TG.GATE_UNSCREENABLE == "UNSCREENABLE"
++    # It must be distinct from the honeypot verdict: unknown is not
++    # evidence of malice, and conflating them corrupts the statistics.
++    assert TG.GRADE_UNSCREENABLE != TG.GATE_HONEYPOT
++
++
+ def test_synthetic_crash_inside_check_fails_closed(tmp_path):
+     """A crash must NEVER emit a passing verdict."""
+     jp = str(tmp_path / "u.jsonl")
+@@ -243,66 +438,14 @@ def test_pre_fix_behaviour_would_have_been_fail_open(tmp_path):
+     assert out["verdict"] == TG.GRADE_UNSCREENABLE
+ 
+ 
+-# ====================================================================== #
+-# 9. Journal: self-describing (scope 5)
+-# ====================================================================== #
+-
+-def test_journal_line_names_field_and_raw_value(tmp_path):
+-    jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, buy_tax="?")
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
+-    g.grade("0xTEST")
+-
+-    lines = [json.loads(l) for l in open(jp)]
+-    assert len(lines) == 1
+-    line = lines[0]
+-    assert line["verdict"] == "UNSCREENABLE"
+-    assert line["token"] == "0xtest"
+-    assert line["blocked"] is True
+-    field = line["fields"][0]
+-    assert field["field"] == "buy_tax"
+-    assert field["raw_value"] == "?"          # the raw value is recorded
+-    assert field["reason"]
+-
+-
+-def test_journal_records_every_offending_field(tmp_path):
+-    jp = str(tmp_path / "u.jsonl")
+-    g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, buy_tax="", sell_tax="abc",
+-               top10_holder_concentration=None)
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
+-    g.grade("0xTEST")
+-    line = json.loads(open(jp).read().splitlines()[0])
+-    assert len(line["fields"]) == 3
+-
+-
+-def test_journal_failure_does_not_change_the_verdict(tmp_path):
+-    """Losing the audit line is bad; changing the verdict is worse."""
+-    g = TG.TokenGrader(journal_path="/proc/nonexistent-dir/x/y.jsonl")
+-    bad = dict(GOOD, buy_tax="?")
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
+-    out = g.grade("0xTEST")
+-    assert out["verdict"] == TG.GRADE_UNSCREENABLE
+-
+-
+-# ====================================================================== #
+-# 10. Taxonomy: UNSCREENABLE is canonical and blocking
+-# ====================================================================== #
+-
+-def test_unscreenable_is_a_verdict_not_a_penalty():
+-    assert TG.GRADE_UNSCREENABLE == "UNSCREENABLE"
+-    assert TG.GATE_UNSCREENABLE == "UNSCREENABLE"
+-    # It must be distinct from the honeypot verdict: unknown is not
+-    # evidence of malice, and conflating them corrupts the statistics.
+-    assert TG.GRADE_UNSCREENABLE != TG.GATE_HONEYPOT
+-
+-
+ def test_unscreenable_result_is_cacheable_and_self_describing(tmp_path):
+     jp = str(tmp_path / "u.jsonl")
+     g = TG.TokenGrader(journal_path=jp)
+-    bad = dict(GOOD, buy_tax="?")
+-    g._check_security = lambda addr: _parse_like_real(g, {"result": {"0xtest": bad}})
++    g._check_security = lambda a: (_ for _ in ()).throw(
++        UnscreenableError([UnscreenableField("buy_tax", "?", "malformed")],
++                          check="goplus"))
+     first = g.grade("0xTEST")
+     second = g.grade("0xTEST")   # cache hit
+     assert first["verdict"] == second["verdict"] == TG.GRADE_UNSCREENABLE
++    assert first["unscreenable"]["check"] == "goplus"
++    assert first["score"] == 0

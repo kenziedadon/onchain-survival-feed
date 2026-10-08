@@ -242,7 +242,11 @@ def arm_signal(grid_pass=False, early_edge_pass=False, methodology_pass=False,
         c["_arm_provenance"] = ARM_PROVENANCE
         c["_arm_ts"] = datetime.now(timezone.utc).isoformat()
         c["kill_switch"] = c.get("kill_switch", False)
-        c["require_confirmation"] = not auto_confirm
+        # HARD-WIRED: the confirmation gate is NOT a function of any caller flag.
+        # arm_signal() records edge evidence; it never decides whether the operator
+        # gets asked to confirm. auto_confirm is retained in edge_evidence.json for
+        # audit only and has no authority here.
+        c["require_confirmation"] = True
         # Strip any stale edge_evidence from caps so readers fall back to the
         # dedicated file — prevents caps from retaining a stale embedded copy.
         c.pop("edge_evidence", None)

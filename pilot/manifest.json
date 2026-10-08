@@ -1,0 +1,35 @@
+{
+  "test_id": "t2-4",
+  "test_title": "3-coin real-data pilot: 0.0003 ETH each, SPLIT 0.5/0.5, min_score=30, max_slippage_bps=100",
+  "test_source": "mainnet.base.org:eth_getLogs (Swap events, V2+V3, real)",
+  "pilot_time_utc": "2026-10-07T03:08:12Z",
+  "swap_topic0_v2": "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822",
+  "swap_topic0_v3": "0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67",
+  "pool_selection_rule": "highest liquidity, tie-break lowest fee_bps, then lowest pool_addr",
+  "coins": [
+    {
+      "token_addr": "0xB20000000000000000000074deAC544E1E9a1f33",
+      "name": "STONKFLY (manual)",
+      "score": 0,
+      "liquidity": 0,
+      "fee_bps": 0,
+      "pool": null
+    },
+    {
+      "token_addr": "0x8b67f2e56139ca052a7ec49cbcd1aa9c83f2752a",
+      "name": "MUTATIO (manual)",
+      "score": 0,
+      "liquidity": 0,
+      "fee_bps": 0,
+      "pool": null
+    },
+    {
+      "token_addr": "0x9b5e262cf9bb04869ab40b19af91d2dc85761722",
+      "name": "NOCK (manual)",
+      "score": 0,
+      "liquidity": 0,
+      "fee_bps": 0,
+      "pool": null
+    }
+  ]
+}

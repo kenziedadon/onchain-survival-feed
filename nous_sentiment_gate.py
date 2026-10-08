@@ -64,7 +64,11 @@ for p in pools:
     qt = a.get("quote_token_address") or ""
     liq = float(a.get("reserve_in_usd") or 0)
     vol = a.get("volume_usd") or {}
+    if isinstance(vol, str):
+        vol = {}
     pchg = a.get("price_change_percentage") or {}
+    if isinstance(pchg, str):
+        pchg = {}
     if addr is None or liq < 100000:
         continue
     is_eth = bt.lower() == WETH or qt.lower() == WETH or "weth" in name.lower() or "eth/" in name.lower()
@@ -107,8 +111,8 @@ for addr, name, liq, vol, pchg in qual:
             "token_address": addr,
             "symbol": name.split("/")[0],
             "liquidity_usd": round(liq, 2),
-            "volume_5m": vol.get("m5", {}).get("usd", 0),
-            "volume_1h": vol.get("h1", {}).get("usd", 0),
+            "volume_5m": (vol.get("m5") or {}).get("usd", 0) if isinstance(vol.get("m5"), dict) else 0,
+            "volume_1h": (vol.get("h1") or {}).get("usd", 0) if isinstance(vol.get("h1"), dict) else 0,
             "price_change_24h": pchg.get("h24", 0),
             "ema_crossover": True,
             "prev_fast": round(f[-2], 8), "prev_slow": round(s[-2], 8),
@@ -116,7 +120,7 @@ for addr, name, liq, vol, pchg in qual:
         })
 
 # ---------- 4. Nous scoring ----------
-NOUS_URL = "https://inference.nousresearch.com/v1/chat/completions"
+NOUS_URL = "https://inference-api.nousresearch.com/v1/chat/completions"
 scored = []
 for c in crossovers:
     if not token:

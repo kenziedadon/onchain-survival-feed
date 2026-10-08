@@ -1,0 +1,59 @@
+============================================================
+  SHADOW MODE REPORT
+  Generated: 2026-10-07 02:19 UTC
+============================================================
+
+GATE STATE:
+  kill_switch:   ARMED (safe)
+  live_trading:  off
+  edge_pass:     True
+  mode:          DISARMED
+
+SHADOW BOOK (0 open, 68 closed):
+
+  Closed: 68 total | 3W / 26L / 39BE
+  Avg PnL: -0.08%
+  Win rate: 4%
+
+  Last 5 closed:
+    Surplus                   -0.14%  skip_no_signal
+    VCAT                      -0.10%  skip_no_signal
+    ATLAS                     -0.65%  skip_no_signal
+    AERO / WETH 0.3%          -0.06%  skip_no_signal
+    eUSD                      -0.00%  skip_no_signal
+
+TELEMETRY (last 7 days, 161 records):
+  By type:
+    shadow_entry                      69
+    skip_no_signal                    68
+    shadow_exit                       22
+    skip_not_on_sale                   1
+    risk_gate_blocked                  1
+
+  Shadow entries: 69 total
+  By skip reason:
+    skip_no_signal                              68
+    skip_not_on_sale:BB%B=0.76                   1
+
+  Activity by day:
+    2026-09-30    95 events
+    2026-10-01    30 events
+    2026-10-02    36 events
+
+  EMA crossover: 0 skips (no signal)
+
+  Most scanned tokens (last 7d):
+    Surplus                      34 scans
+    VCAT                         33 scans
+    AERO / WETH 0.3%             28 scans
+    GITLAWB                      26 scans
+    NOCK (manual)                18 scans
+    ATLAS                        15 scans
+    eUSD                          7 scans
+
+============================================================
+SUMMARY:
+  🟢 Bot is DISARMED — shadow mode only
+  🔴 Shadow PnL negative (-0.1%, 4% win)
+  Shadow book: 0 open / 68 closed
+===========================================================
