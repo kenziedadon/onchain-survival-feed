@@ -387,7 +387,8 @@ def test_null_values_handling():
     """Null values in bundle handled gracefully.
 
     With null mcap/stage, fail-open: stage is UNKNOWN (unknown sub-gate),
-    mcap is unknown (unknown sub-gate). No positive bad signal -> no REJECT.
+    mcap is unknown (unknown sub-gate). Stage mcap floors are SKIPPED.
+    Present-zero txns REJECT independently (positive bad signal).
     """
     bundle = {
         "dexscreener": {"pairCreatedAt": None, "mcap": None, "liquidity_usd": None,
@@ -396,11 +397,11 @@ def test_null_values_handling():
         "goplus": {},
     }
     result = screen_token(bundle)
-    # Stage unknown + mcap unknown -> no floor applicable, no REJECT.
-    # (Zero-txn is 0<100, but only fires when txn_count>0 to avoid
-    # misreading "no data" as "no txns".)
+    # Stage unknown -> mcap floors skipped. But present-zero txns REJECT
+    # independently (positive bad signal, not dependent on mcap).
     assert result["stage"] == "UNKNOWN"
-    assert result["verdict"] in ("PASS", "FLAG")
+    assert result["verdict"] == "REJECT"
+    assert any("txns" in r for r in result["reasons"])
 
 
 def test_source_error_payloads_unknown():
@@ -408,14 +409,15 @@ def test_source_error_payloads_unknown():
 
     WO addendum (2026-10-07): unknown stage is a SOURCE gap, not a bad
     signal. Fail-open: the stage gate is marked `unknown`, mcap is unknown
-    (empty string), no floor fires -> verdict is PASS/FLAG, not REJECT.
+    (empty string), no floor fires. Stage mcap floors are SKIPPED.
+    Present-zero txns REJECT independently (positive bad signal).
     """
     bundle = {
         "dexscreener": {
             "pairCreatedAt": 0,  # triggers UNKNOWN stage
             "mcap": "",          # unknown mcap (not a number)
             "liquidity_usd": None,
-            "txns_24h": {"buys": 0, "sells": 0},
+            "txns_24h": {"buys": 0, "sells": 0},  # present-zero -> REJECT
             "info": {},
         },
         "blockscout": {"holders": [], "total_supply": ""},
@@ -423,8 +425,9 @@ def test_source_error_payloads_unknown():
     }
     result = screen_token(bundle)
     assert result["stage"] == "UNKNOWN"
-    # Fail-open: no positive bad signal -> not REJECT.
-    assert result["verdict"] != "REJECT"
+    # Stage unknown -> mcap floors skipped. But present-zero txns REJECT.
+    assert result["verdict"] == "REJECT"
+    assert any("txns" in r for r in result["reasons"])
     # Both the unknown stage and unknown mcap are logged.
     assert any("stage" in u for u in result["unknown"])
     assert any("mcap" in u for u in result["unknown"])
@@ -711,6 +714,32 @@ def test_absent_txns_key_marks_unknown():
     # Absent key -> unknown, no txn REJECT
     assert result["verdict"] in ("PASS", "FLAG")
     assert any("txns_24h" in u for u in result["unknown"])
+
+
+def test_txn_gate_independent_of_mcap():
+    """Present-zero txns REJECT even when mcap is unknown.
+
+    Regression: the txn gate was nested inside the mcap-known else block,
+    so a token with unknown mcap + present-zero txns would not REJECT.
+    Present-zero is a positive bad signal — it must fire regardless.
+    """
+    bundle = {
+        "dexscreener": {
+            "pairCreatedAt": _fresh_pair_created(),
+            "mcap": None,  # unknown mcap
+            "liquidity_usd": 100_000,
+            "txns_24h": {"buys": 0, "sells": 0},  # present-zero
+            "info": {"socials": [{"url": "x"}], "websites": ["w"]},
+        },
+        "blockscout": {"holders": [], "total_supply": "0"},
+        "goplus": {},
+    }
+    result = screen_token(bundle)
+    # Present-zero txns REJECT independently of mcap
+    assert result["verdict"] == "REJECT"
+    assert any("txns" in r for r in result["reasons"])
+    # mcap is still marked unknown
+    assert any("mcap" in u for u in result["unknown"])
 
 
 # ============================================================

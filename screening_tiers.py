@@ -344,7 +344,7 @@ def screen_token(bundle: dict) -> dict[str, Any]:
     liq = _safe_float(dex.get("liquidity_usd"))
 
     # Txn gate: distinguish absent key vs present-zero (defect #2 + #3)
-    txns = dex.get("txns_24h")
+    txns = dex.get("txns_24h") or {}
     txns_present_in_source = "txns_24h" in (dex or {})
     if txns_present_in_source:
         txn_count = int(_safe_float(txns.get("buys")) + _safe_float(txns.get("sells")))
@@ -446,14 +446,15 @@ def screen_token(bundle: dict) -> dict[str, Any]:
         if mcap_known and stage != "UNKNOWN" and mcap < MCAP_FLOOR_FRESH:
             _reject(f"mcap ${mcap:,.0f} < ${MCAP_FLOOR_FRESH:,} floor")
 
-        # Txn gate: present-zero REJECTs (genuine), absent key marks unknown
-        if txns_present_in_source:
-            # Key was present — present-zero or present-but-low fires the floor
-            if txn_count < TXN_MIN_FRESH:
-                _reject(f"txns 24h {txn_count} < {TXN_MIN_FRESH} min")
-        else:
-            # Key absent — data gap, mark unknown, no floor
-            result["unknown"].append("txns_24h: absent from DexScreener")
+    # Txn gate: present-zero REJECTs (genuine), absent key marks unknown
+    # This is INDEPENDENT of mcap — a positive bad signal fires regardless
+    if txns_present_in_source:
+        # Key was present — present-zero or present-but-low fires the floor
+        if txn_count < TXN_MIN_FRESH:
+            _reject(f"txns 24h {txn_count} < {TXN_MIN_FRESH} min")
+    else:
+        # Key absent — data gap, mark unknown, no floor
+        result["unknown"].append("txns_24h: absent from DexScreener")
 
     socials = len((dex.get("info") or {}).get("socials") or [])
     websites = len((dex.get("info") or {}).get("websites") or [])
@@ -526,7 +527,7 @@ if __name__ == "__main__":
     import json
 
     ap = argparse.ArgumentParser(description="Screen a token by tier")
-    ap.add_argument("bundle_json", help="JSON bundle (DexScreener + Blockscout + GoPlus)")
+    ap.add_argument("bundle_json", nargs="?", help="JSON bundle (DexScreener + Blockscout + GoPlus)")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--test-boar", action="store_true", help="Run live BOAR test")
     args = ap.parse_args()
@@ -559,6 +560,22 @@ if __name__ == "__main__":
             ).read()
         )
         gp_rec = (gp_resp.get("result") or {}).get(addr.lower(), {})
+
+        # Blockscout token info (raw supply for concentration)
+        bs_tok = {}
+        try:
+            bs_resp = json.loads(
+                urllib.request.urlopen(
+                    urllib.request.Request(
+                        f"https://base.blockscout.com/api/v2/tokens/{addr.lower()}",
+                        headers={"User-Agent": "Mozilla/5.0"},
+                    ),
+                    timeout=15,
+                ).read()
+            )
+            bs_tok = bs_resp
+        except Exception:
+            pass  # CLI best-effort; production path uses fetch_screening_bundle
 
         bundle = {
             "dexscreener": {
