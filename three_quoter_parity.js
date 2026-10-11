@@ -101,9 +101,9 @@ async function main() {
     if (d.code === 0) {
       kyOutUsd = parseFloat(d.data.routeSummary.amountOutUsd);
       kyOut = Number(d.data.routeSummary.amountOut) / 10 ** USDC_DEC;
-      console.log(`  KyberSwap : ${kyOut.toFixed(6)} USDC | outUsd=$${kyOutUsd} | venue=${d.data.routeSummary.route[0][0].exchange}`);
-    } else console.log(`  KyberSwap : code ${d.code} ${d.message}`);
-  } catch (e) { console.log(`  KyberSwap : ERROR ${e.message}`); }
+      console.log(`  kyberswap : ${kyOut.toFixed(6)} USDC | outUsd=$${kyOutUsd} | venue=${d.data.routeSummary.route[0][0].exchange}`);
+    } else console.log(`  kyberswap : code ${d.code} ${d.message}`);
+  } catch (e) { console.log(`  kyberswap : ERROR ${e.message}`); }
   await sleep(800);
 
   // --- Uniswap V3 (QuoterV2, find live pool first) ---
@@ -125,9 +125,9 @@ async function main() {
       const r = await client.call({ to: UNIV3_QUOTERV2, data: d, gas: 500000n });
       const out = decodeFunctionResult({ abi: quoter2Abi, functionName: 'quoteExactInputSingle', data: r.data })[0];
       u3Out = Number(out) / 10 ** USDC_DEC;
-      console.log(`  UniswapV3 : ${u3Out.toFixed(6)} USDC (pool ${pool} @ ${u3Fee}bps, QuoterV2)`);
-    } else console.log('  UniswapV3 : no WETH/USDC pool at any fee tier');
-  } catch (e) { console.log(`  UniswapV3 : ERROR ${e.shortMessage || e.message}`); }
+      console.log(`  uniswap_v3 : ${u3Out.toFixed(6)} USDC (pool ${pool} @ ${u3Fee}bps, QuoterV2)`);
+    } else console.log('  uniswap_v3 : no WETH/USDC pool at any fee tier');
+  } catch (e) { console.log(`  uniswap_v3 : ERROR ${e.shortMessage || e.message}`); }
   await sleep(800);
 
   // --- Aerodrome (volatile route) ---
@@ -138,8 +138,8 @@ async function main() {
     const r = await client.call({ to: AERO_ROUTER, data: d });
     const a = decodeAbiParameters([{ type: 'uint256[]' }], r.data)[0];
     aeOut = Number(a[a.length - 1]) / 10 ** USDC_DEC;
-    console.log(`  Aerodrome: ${aeOut.toFixed(6)} USDC (volatile route)`);
-  } catch (e) { console.log(`  Aerodrome: ERROR ${e.shortMessage || e.message}`); }
+    console.log(`  aerodrome : ${aeOut.toFixed(6)} USDC (volatile route)`);
+  } catch (e) { console.log(`  aerodrome : ERROR ${e.shortMessage || e.message}`); }
 
   // --- independent check ---
   let dx = null;
@@ -152,15 +152,15 @@ async function main() {
   console.log();
 
   console.log('=== SPREAD (bps) — quote vs quote ===');
-  const pairs = [['KyberSwap vs UniswapV3', kyOut, u3Out], ['KyberSwap vs Aerodrome', kyOut, aeOut],
-    ['UniswapV3 vs Aerodrome', u3Out, aeOut]];
+  const pairs = [['kyberswap vs uniswap_v3', kyOut, u3Out], ['kyberswap vs aerodrome', kyOut, aeOut],
+    ['uniswap_v3 vs aerodrome', u3Out, aeOut]];
   let maxLive = null;
   for (const [label, a, b] of pairs) {
     const s = spreadBps(a, b);
     if (s != null) { console.log(`  ${label.padEnd(24)}: ${s.toFixed(2)} bps`); if (maxLive == null || s > maxLive) maxLive = s; }
     else console.log(`  ${label.padEnd(24)}: n/a`);
   }
-  if (kyOut && dx) console.log(`  ${'KyberSwap vs DexScreener'.padEnd(24)}: ${spreadBps(kyOut, dx).toFixed(2)} bps (independent)`);
+  if (kyOut && dx) console.log(`  ${'kyberswap vs DexScreener'.padEnd(24)}: ${spreadBps(kyOut, dx).toFixed(2)} bps (independent)`);
   console.log();
 
   console.log('=== SPREAD JOURNAL TEST ===');

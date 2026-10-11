@@ -7,8 +7,9 @@ What it does:
   * Queries the KyberSwap Meta Aggregation [V1] `GET /{chain}/api/v1/routes`
     endpoint for Base (chainId 8453, chain name "base") and returns a normalized
     quote: input/output amounts, USD both sides, gas, per-leg venue detail.
-  * Verifies the router address returned by the API actually has CODE on Base
-    before trusting a route (same fail-closed discipline as simulate.py).
+  * Fail-closed router check: if the router address the API returns has no
+    CODE on Base, quote() RAISES and returns nothing (same fail-closed
+    discipline as simulate.py — an unverified address is never trusted).
 
 What it never does:
   * No build/encode, no swap, no signing, no private key, no state change.
@@ -171,11 +172,15 @@ class KyberQuoter:
         return data
 
     def quote(self, token_in, token_out, amount_in_wei, **kw):
-        """Normalized read-only quote. Fails closed if router has no code."""
+        """Normalized read-only quote. RAISES if the router has no code on
+        Base — an unverified router is never trusted (fail-closed)."""
         data = self.get_route(token_in, token_out, amount_in_wei, **kw)
         rs = data["routeSummary"]
         router = data.get("routerAddress") or ROUTER_BASE
         router_ok = router_has_code(router)
+        if not router_ok:
+            raise RuntimeError(f"kyber router {router} has NO code on Base — "
+                               "refusing to trust route (fail-closed)")
         legs = []
         for leg_group in rs.get("route") or []:
             # route is a list of legs (usually a single-element list)
