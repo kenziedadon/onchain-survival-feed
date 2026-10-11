@@ -93,6 +93,33 @@ def _gmgn_throttled(*args, **kwargs):
     return _GmgnProc(1, "", "RATE_LIMIT_BANNED")
 
 
+def _all_sources_down():
+    """Patch the four-source chain so EVERY source returns no usable price.
+
+    The poller's price path is now the consensus chain (price_chain), which
+    fans out to four sources. To test 'no price available -> position survives',
+    all four must fail. Patching each transport layer (subprocess, requests.get,
+    dexscreener urllib, kyberswap client) is brittle; instead we replace the
+    chain's fetcher registry, which is the real integration seam.
+    """
+    from copy_trader import price_chain as pc
+    from copy_trader.poller import PriceResult
+    real = dict(pc._FETCHERS)
+    fail = lambda tok: PriceResult(reason="no_pool", detail="stubbed down")  # noqa: E731
+    pc._FETCHERS = {name: fail for name in pc.CHAIN_SOURCE_ORDER}
+    return pc, real
+
+
+def _all_sources_price(price: float):
+    """Patch the chain so every source returns the same healthy price."""
+    from copy_trader import price_chain as pc
+    from copy_trader.poller import PriceResult
+    real = dict(pc._FETCHERS)
+    ok = lambda tok: PriceResult(price=price, reason="ok")  # noqa: E731
+    pc._FETCHERS = {name: ok for name in pc.CHAIN_SOURCE_ORDER}
+    return pc, real
+
+
 def _make_position(hours_old: float = 2.0) -> PaperPosition:
     ts = int((datetime.now(timezone.utc) - timedelta(hours=hours_old)).timestamp())
     return PaperPosition(
@@ -163,11 +190,11 @@ def _make_poller(state: PollerState) -> CopyTraderPoller:
 
 
 def test_throttled_close_keeps_position_open(tmp: Path) -> bool:
-    """A price failure on the mirrored-exit must NOT erase the position.
+    """No price on the mirrored-exit must NOT erase the position.
 
-    Dual-source path: BOTH GMGN and GeckoTerminal are throttled, so no price is
-    available and the position must survive to close next cycle. Injects at both
-    real layers (subprocess + requests.get), not by patching the wrapper.
+    Dual/quad-source path: ALL four sources fail, so no price is available and
+    the position must survive to close next cycle. Injects at the chain's
+    fetcher registry (the real integration seam), not the wrapper.
     """
     state = PollerState()
     pos = _make_position(hours_old=2.0)
@@ -177,9 +204,11 @@ def test_throttled_close_keeps_position_open(tmp: Path) -> bool:
 
     sell = _make_sell_swap()
 
-    with patch("copy_trader.poller.requests.get", side_effect=_http_429), \
-         patch("subprocess.run", side_effect=_gmgn_throttled):
+    pc, real = _all_sources_down()
+    try:
         poller.process_swaps([sell])
+    finally:
+        pc._FETCHERS = real
 
     still_open = pos.pick_id in state.open_positions
     print(f"  position still open after throttled close: {still_open}")
@@ -187,9 +216,9 @@ def test_throttled_close_keeps_position_open(tmp: Path) -> bool:
 
 
 def test_throttled_max_hold_keeps_position_open(tmp: Path) -> bool:
-    """A price failure during max-hold must NOT erase the position.
+    """No price during max-hold must NOT erase the position.
 
-    Dual-source: both sources throttled -> no price -> position survives.
+    All four sources down -> no price -> position survives.
     """
     state = PollerState()
     pos = _make_position(hours_old=48.0)   # well past any max_hold
@@ -198,9 +227,11 @@ def test_throttled_max_hold_keeps_position_open(tmp: Path) -> bool:
     poller = _make_poller(state)
     poller.max_hold_seconds = 3600          # 1h — position is overdue
 
-    with patch("copy_trader.poller.requests.get", side_effect=_http_429), \
-         patch("subprocess.run", side_effect=_gmgn_throttled):
+    pc, real = _all_sources_down()
+    try:
         poller.check_max_hold()
+    finally:
+        pc._FETCHERS = real
 
     still_open = pos.pick_id in state.open_positions
     print(f"  position still open after throttled max_hold: {still_open}")
@@ -210,8 +241,7 @@ def test_throttled_max_hold_keeps_position_open(tmp: Path) -> bool:
 def test_price_result_distinguishes_failure() -> bool:
     """fetch_token_price_result must return a typed failure, not a price.
 
-    Dual-source: both throttled -> typed non-ok result with price None.
-    Injects at both real layers.
+    All four sources down -> typed non-ok result with price None.
     """
     from copy_trader import poller as p
 
@@ -221,9 +251,11 @@ def test_price_result_distinguishes_failure() -> bool:
         return False
 
     fn = getattr(p, "fetch_token_price_result", None) or p.fetch_token_price
-    with patch("copy_trader.poller.requests.get", side_effect=_http_429), \
-         patch("subprocess.run", side_effect=_gmgn_throttled):
+    pc, real = _all_sources_down()
+    try:
         r = fn(TOKEN)
+    finally:
+        pc._FETCHERS = real
     reason = getattr(r, "reason", None) or (r.get("reason") if isinstance(r, dict) else None)
     price = getattr(r, "price", None) or (r.get("price") if isinstance(r, dict) else None)
     print(f"  typed result -> reason={reason!r} price={price!r}")
@@ -233,8 +265,8 @@ def test_price_result_distinguishes_failure() -> bool:
 def test_successful_close_still_works(tmp: Path) -> bool:
     """Control: with a healthy price, the close path must still function.
 
-    Guards against a fix that leaves positions open forever. GMGN (primary)
-    returns a healthy price deterministically; no live binary/network.
+    Guards against a fix that leaves positions open forever. All four sources
+    return a healthy price via the chain stub; no live binary/network.
     """
     state = PollerState()
     pos = _make_position(hours_old=2.0)
@@ -245,10 +277,12 @@ def test_successful_close_still_works(tmp: Path) -> bool:
     sell = _make_sell_swap()
     journal = tmp / "closes.jsonl"
 
-    with patch("copy_trader.poller.requests.get", return_value=_price_body("0.0008")), \
-         patch("subprocess.run", side_effect=_gmgn_price("0.0008")), \
-         patch.object(poller, "_append_journal", lambda rec: None):
-        poller.process_swaps([sell])
+    pc, real = _all_sources_price(0.0008)
+    try:
+        with patch.object(poller, "_append_journal", lambda rec: None):
+            poller.process_swaps([sell])
+    finally:
+        pc._FETCHERS = real
 
     closed = pos.pick_id not in state.open_positions
     print(f"  position closed on healthy price: {closed}")

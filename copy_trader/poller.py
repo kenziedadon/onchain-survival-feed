@@ -104,7 +104,10 @@ class PriceResult:
 
     @property
     def ok(self) -> bool:
-        return self.price is not None and self.reason == PRICE_OK
+        # price > 0 (not merely "not None"): a $0.00 quote is never a real
+        # price. GMGN returns the string "0" for unpriced tokens; that must
+        # parse to 0.0 and be rejected here, not pass as a usable quote.
+        return self.price is not None and self.price > 0 and self.reason == PRICE_OK
 
     @property
     def retryable(self) -> bool:
@@ -404,35 +407,36 @@ def _fetch_token_price_gecko(token_address: str) -> PriceResult:
 
 
 def fetch_token_price_result(token_address: str) -> PriceResult:
-    """Fetch current token price in USD: GMGN-first, GeckoTerminal fallback.
+    """Fetch current token price in USD via the four-source consensus chain.
 
-    Cutover per the read-only price-feed comparison (PRICE_FEED_COMPARISON.md):
-    the two sources agree to a median of 0.155% and fail on different axes
-    (GMGN burst-bans; GeckoTerminal 429s under sustained pacing), so GMGN is
-    the primary and GeckoTerminal the fallback. Additive — the GeckoTerminal
-    path is unchanged and still reachable directly via _fetch_token_price_gecko.
+    Chain: GMGN -> GeckoTerminal -> DexScreener -> KyberSwap, with a circuit
+    breaker, disagreement journal, and per-source timeout budgets (see
+    price_chain.py). Consensus = median of the sources that return a usable
+    price, so a single stale/bad source cannot drag the result.
 
-    Fallback logic:
-      - GMGN ok        -> return it (primary).
-      - GMGN not ok    -> consult GeckoTerminal; return whichever is ok.
-      - both not ok    -> if either reported a genuine no_pool, that is the
-                          truth; otherwise surface GMGN's transport fault.
-    A no-price outcome from BOTH sources is a genuine no_pool, not a fault.
+    Falls back to the two-source GMGN->GeckoTerminal path if the chain module
+    is unavailable for any reason, so the poller never loses its price path.
+    A no-price outcome from all sources is a genuine no_pool, never $0.00.
     """
+    try:
+        from copy_trader.price_chain import fetch_price_consensus
+        chain_result, _diag = fetch_price_consensus(token_address)
+        return chain_result
+    except Exception:
+        # Chain unavailable — degrade to the two-source path below.
+        pass
+
+    # --- Two-source fallback (GMGN-first, GeckoTerminal) ---
     gmgn = fetch_token_price_gmgn(token_address)
     if gmgn.ok:
         return gmgn
-    # GMGN did not produce a usable price. Consult GeckoTerminal.
     gecko = _fetch_token_price_gecko(token_address)
     if gecko.ok:
         return gecko
-    # Both failed. Prefer the more informative reason: if either saw a real
-    # pool absence, that is the truth; otherwise surface GMGN's transport fault.
     if gecko.reason == PRICE_NO_POOL or gmgn.reason == PRICE_NO_POOL:
         return PriceResult(reason=PRICE_NO_POOL,
                            detail=f"gmgn={gmgn.reason}:{gmgn.detail}; "
                                   f"gecko={gecko.reason}:{gecko.detail}")
-    # Retryable transport faults on both — return GMGN's (primary) with detail.
     return PriceResult(reason=gmgn.reason,
                        detail=f"gmgn={gmgn.reason}:{gmgn.detail}; "
                               f"gecko={gecko.reason}:{gecko.detail}")
