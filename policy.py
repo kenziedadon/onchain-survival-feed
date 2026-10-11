@@ -120,8 +120,13 @@ def check_kill_switch(caps: Dict) -> Tuple[bool, str]:
 # === LAYER 2: ARM PROVENANCE ===
 def check_arm_provenance(caps: Dict) -> Tuple[bool, str]:
     if caps.get("live_trading") is True:
-        if caps.get("arm_provenance") != "arm_signal_v1":
-            return False, f"ARM_PROVENANCE: live_trading=true without valid arm (got={caps.get('arm_provenance')})"
+        # Accept EITHER key shape (bare `arm_provenance` or `_arm_provenance`).
+        # arm_signal() stamps the underscore-prefixed key; reading only one shape
+        # made a legitimately-armed config veto itself. Neither key matching still
+        # fails closed.
+        prov = caps.get("arm_provenance") or caps.get("_arm_provenance")
+        if prov != "arm_signal_v1":
+            return False, f"ARM_PROVENANCE: live_trading=true without valid arm (got={prov})"
     return True, "ok"
 
 

@@ -43,9 +43,16 @@ def load_caps():
     # Reject any armed config (live_trading=true) that was NOT produced by the
     # legitimate arm path. Self-heals to a safe disarmed state instead of trusting
     # a hand-edited or restored armed backup (e.g. the quarantined caps.json.bak2).
-    if c.get("live_trading") is True and c.get("arm_provenance") != ARM_PROVENANCE:
+    #
+    # Accept EITHER key shape: arm_signal() stamps the underscore-prefixed
+    # `_arm_provenance`, while older/restored configs carry the bare
+    # `arm_provenance`. Reading only one shape made a legitimately-armed config
+    # force-disarm itself on the next load (the silent veto). A config matching
+    # NEITHER key still fails closed.
+    prov = c.get("arm_provenance") or c.get("_arm_provenance")
+    if c.get("live_trading") is True and prov != ARM_PROVENANCE:
         print("[risk] GUARD: live_trading=true without valid arm provenance "
-              f"(expected {ARM_PROVENANCE}, got={c.get('arm_provenance')}, source={CAPS_FILE}). Force-disarming to safe state.")
+              f"(expected {ARM_PROVENANCE}, got={prov}, source={CAPS_FILE}). Force-disarming to safe state.")
         c["live_trading"] = False
         c["kill_switch"] = True
         c["require_confirmation"] = True
@@ -53,13 +60,16 @@ def load_caps():
         _save_edge_evidence({
             "ts": datetime.now(timezone.utc).isoformat(),
             "pass": False, "grid_pass": False, "early_edge_pass": False,
-            "detail": f"GUARD force-disarm: live_trading=true without arm provenance (got={c.get('arm_provenance')}, expected={ARM_PROVENANCE})",
+            "detail": f"GUARD force-disarm: live_trading=true without arm provenance (got={prov}, expected={ARM_PROVENANCE})",
             "auto_confirm": False,
             "_guard_disarmed": True,
         })
-        # Preserve the provenance attempt (for audit) but disarm the live flag
+        # Preserve the provenance attempt (for audit) but disarm the live flag.
+        # Keep whichever shape was present so the audit trail is not lost.
         if c.get("arm_provenance") is not None:
             c["_arm_provenance"] = c.get("arm_provenance")
+        elif c.get("_arm_provenance") is not None:
+            c["arm_provenance"] = c.get("_arm_provenance")
         # Clear any stale embedded copy so readers fall back to the dedicated file.
         c.pop("edge_evidence", None)
         save_caps(c)

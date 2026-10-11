@@ -69,6 +69,48 @@ WETH = "0x4200000000000000000000000000000000000006"
 # Cost model: 900bps round-trip (matches Copy Path Ledger bar)
 ROUNDTRIP_COST_BPS = 900.0
 
+# ---------------------------------------------------------------------------
+# Price-fetch failure semantics
+# ---------------------------------------------------------------------------
+# Every failure mode gets its own reason so callers can tell "retryable
+# transport fault" from "this token has no priced pool". A bare None cannot
+# express that difference, and a fallback chain keyed on None is decorative:
+# it either never fires or fires pointlessly.
+PRICE_OK = "ok"
+PRICE_HTTP_429 = "http_429"
+PRICE_HTTP_5XX = "http_5xx"
+PRICE_NO_POOL = "no_pool"          # 404, or price_usd empty — genuinely unpriced
+PRICE_PARSE_ERROR = "parse_error"
+PRICE_NETWORK = "network"          # timeout / connection error
+
+# Reasons where trying a second source is meaningful. no_pool is NOT here:
+# if GeckoTerminal has no pool, GMGN has no pool either.
+PRICE_RETRYABLE = frozenset({PRICE_HTTP_429, PRICE_HTTP_5XX, PRICE_NETWORK,
+                             PRICE_PARSE_ERROR})
+
+# Bounded retry: converts most of an observed 56% first-pass 429 rate into
+# success, and caps total stall so a throttled window cannot hang a poll cycle.
+PRICE_FETCH_MAX_ATTEMPTS = 3
+PRICE_FETCH_BACKOFF_BASE_S = 1.0
+
+
+@dataclass
+class PriceResult:
+    """A price fetch outcome. `price is None` means exactly one thing:
+    there is no usable price, and `reason` says why."""
+    price: float | None = None
+    reason: str = PRICE_OK
+    detail: str | None = None
+
+    @property
+    def ok(self) -> bool:
+        return self.price is not None and self.reason == PRICE_OK
+
+    @property
+    def retryable(self) -> bool:
+        """True when a second source might plausibly succeed."""
+        return self.reason in PRICE_RETRYABLE
+
 # Default paper notional per position
 DEFAULT_PAPER_NOTIONAL_USD = 25.0
 
@@ -243,18 +285,80 @@ def fetch_tx_receipt(tx_hash: str) -> dict | None:
         return None
     return result
 
+def fetch_token_price_result(token_address: str) -> PriceResult:
+    """Fetch current token price in USD from GeckoTerminal, with a typed reason.
+
+    Returns a PriceResult so callers can distinguish "no pool exists" from
+    "the request failed" — the distinction a fallback chain depends on.
+
+    NOTE: fetch_token_price() below is the legacy bare-None wrapper kept for
+    call sites that have not been migrated. It collapses every reason to None
+    and must not be used to decide whether to try another source.
+    """
+    url = f"https://api.geckoterminal.com/api/v2/networks/base/tokens/{token_address}"
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+
+    last_exc: str | None = None
+    for attempt in range(PRICE_FETCH_MAX_ATTEMPTS):
+        try:
+            resp = requests.get(url, headers=headers, timeout=15)
+        except (requests.Timeout, requests.ConnectionError) as exc:
+            last_exc = f"{type(exc).__name__}: {exc}"
+            reason = PRICE_NETWORK
+        except Exception as exc:  # noqa: BLE001 - classify, never swallow
+            last_exc = f"{type(exc).__name__}: {exc}"
+            reason = PRICE_NETWORK
+        else:
+            code = getattr(resp, "status_code", None)
+            if code == 429:
+                last_exc = "HTTP 429"
+                reason = PRICE_HTTP_429
+            elif code is not None and 500 <= code < 600:
+                last_exc = f"HTTP {code}"
+                reason = PRICE_HTTP_5XX
+            else:
+                try:
+                    resp.raise_for_status()
+                except requests.HTTPError as exc:
+                    code = getattr(resp, "status_code", None) or 0
+                    # 404 is a genuine "no such token/pool", not a transport fault.
+                    reason = PRICE_NO_POOL if code == 404 else PRICE_HTTP_5XX
+                    return PriceResult(reason=reason, detail=str(exc)[:200])
+                except Exception as exc:  # noqa: BLE001
+                    reason = PRICE_HTTP_5XX
+                    return PriceResult(reason=reason, detail=str(exc)[:200])
+                else:
+                    try:
+                        data = resp.json()
+                        price = data.get("data", {}).get("attributes", {}).get("price_usd")
+                    except Exception as exc:  # noqa: BLE001
+                        return PriceResult(reason=PRICE_PARSE_ERROR,
+                                           detail=str(exc)[:200])
+                    if not price:
+                        # Token exists but carries no price — no priced pool.
+                        return PriceResult(reason=PRICE_NO_POOL,
+                                           detail="price_usd empty/absent")
+                    try:
+                        return PriceResult(price=float(price), reason=PRICE_OK)
+                    except (TypeError, ValueError) as exc:
+                        return PriceResult(reason=PRICE_PARSE_ERROR,
+                                           detail=str(exc)[:200])
+
+        # Retryable failure — back off before the next attempt.
+        if attempt < PRICE_FETCH_MAX_ATTEMPTS - 1:
+            time.sleep(PRICE_FETCH_BACKOFF_BASE_S * (2 ** attempt)
+                        + (PRICE_FETCH_BACKOFF_BASE_S * 0.25))
+
+    return PriceResult(reason=reason, detail=last_exc or "unknown")
+
+
 def fetch_token_price(token_address: str) -> float | None:
-    """Fetch current token price in USD from GeckoTerminal."""
-    try:
-        url = f"https://api.geckoterminal.com/api/v2/networks/base/tokens/{token_address}"
-        headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
-        resp = requests.get(url, headers=headers, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-        price = data.get("data", {}).get("attributes", {}).get("price_usd")
-        return float(price) if price else None
-    except Exception:
-        return None
+    """Legacy wrapper: price in USD, or None for ANY failure.
+
+    Deprecated for failure-handling decisions — use fetch_token_price_result().
+    Retained so existing callers keep working unchanged.
+    """
+    return fetch_token_price_result(token_address).price
 
 def fetch_eth_balance_wei(address: str, block_number: int) -> int | None:
     """ETH balance (wei) of an address at a given block, via Base RPC."""
@@ -821,9 +925,14 @@ class CopyTraderPoller:
                         close_pick_id = pick_id
 
                 if close_pick_id:
-                    position = self.state.open_positions.pop(close_pick_id)
+                    # FETCH BEFORE POP. The position must stay in
+                    # open_positions until we hold a close price: a retryable
+                    # failure (429/5xx/network) leaves it open to close on the
+                    # next cycle. Popping first erased the position outright —
+                    # no journal record, no PnL, no rotation credit, no log line.
                     close_price = fetch_token_price(sold_token)
                     if close_price:
+                        position = self.state.open_positions.pop(close_pick_id)
                         record = close_paper_position(
                             position, close_price, "mirrored_exit", swap.timestamp
                         )
@@ -863,9 +972,12 @@ class CopyTraderPoller:
                 to_close.append(pick_id)
 
         for pick_id in to_close:
-            position = self.state.open_positions.pop(pick_id)
+            # FETCH BEFORE POP — see the mirrored-exit path above. A throttled
+            # max-hold close must not erase the position; it retries next cycle.
+            position = self.state.open_positions[pick_id]
             close_price = fetch_token_price(position.token)
             if close_price:
+                self.state.open_positions.pop(pick_id)
                 record = close_paper_position(position, close_price, "max_hold")
                 self._append_journal(record)
                 self.state.wallet_trade_counts[position.wallet_address] += 1
