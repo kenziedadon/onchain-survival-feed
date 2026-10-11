@@ -18,6 +18,7 @@ Run: python -m copy_trader.test_price_failure
 from __future__ import annotations
 
 import sys
+import os
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -70,6 +71,26 @@ def _price_body(price: str):
                 }
             }
     return _OK()
+
+
+class _GmgnProc:
+    """Stand-in for the subprocess result gmgn-cli returns."""
+    def __init__(self, returncode, stdout, stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+def _gmgn_price(price: str):
+    """Deterministic healthy GMGN token-info output (no live binary/network)."""
+    import json as _json
+    body = _json.dumps({"price": {"price": price, "price_24h": price}})
+    return lambda argv, **kw: _GmgnProc(0, body)
+
+
+def _gmgn_throttled(*args, **kwargs):
+    """GMGN unavailable: non-zero exit (burst-ban / quota), the real failure mode."""
+    return _GmgnProc(1, "", "RATE_LIMIT_BANNED")
 
 
 def _make_position(hours_old: float = 2.0) -> PaperPosition:
@@ -132,14 +153,21 @@ def _make_poller(state: PollerState) -> CopyTraderPoller:
     poller.min_trades_before_cut = 20
     poller.max_hold_seconds = 3600
     poller.logger = __import__("logging").getLogger("test")
+    # journal_path is normally set in __init__ (a str); the close path's
+    # _append_journal reads it. Point it at a throwaway file so a real close
+    # does not crash. Kept a str to match __init__'s signature.
+    import tempfile
+    poller.journal_path = os.path.join(
+        tempfile.mkdtemp(prefix="poller-journal-"), "j.jsonl")
     return poller
 
 
 def test_throttled_close_keeps_position_open(tmp: Path) -> bool:
-    """A 429 on the mirrored-exit price must NOT erase the position.
+    """A price failure on the mirrored-exit must NOT erase the position.
 
-    Current code pops before fetching, so the position is destroyed and no
-    journal record is written. This test fails on current code.
+    Dual-source path: BOTH GMGN and GeckoTerminal are throttled, so no price is
+    available and the position must survive to close next cycle. Injects at both
+    real layers (subprocess + requests.get), not by patching the wrapper.
     """
     state = PollerState()
     pos = _make_position(hours_old=2.0)
@@ -149,8 +177,8 @@ def test_throttled_close_keeps_position_open(tmp: Path) -> bool:
 
     sell = _make_sell_swap()
 
-    # HTTP layer 429. fetch_token_price() will swallow it and return None.
-    with patch("copy_trader.poller.requests.get", side_effect=_http_429):
+    with patch("copy_trader.poller.requests.get", side_effect=_http_429), \
+         patch("subprocess.run", side_effect=_gmgn_throttled):
         poller.process_swaps([sell])
 
     still_open = pos.pick_id in state.open_positions
@@ -159,7 +187,10 @@ def test_throttled_close_keeps_position_open(tmp: Path) -> bool:
 
 
 def test_throttled_max_hold_keeps_position_open(tmp: Path) -> bool:
-    """A 429 during max-hold must NOT erase the position."""
+    """A price failure during max-hold must NOT erase the position.
+
+    Dual-source: both sources throttled -> no price -> position survives.
+    """
     state = PollerState()
     pos = _make_position(hours_old=48.0)   # well past any max_hold
     state.open_positions[pos.pick_id] = pos
@@ -167,7 +198,8 @@ def test_throttled_max_hold_keeps_position_open(tmp: Path) -> bool:
     poller = _make_poller(state)
     poller.max_hold_seconds = 3600          # 1h — position is overdue
 
-    with patch("copy_trader.poller.requests.get", side_effect=_http_429):
+    with patch("copy_trader.poller.requests.get", side_effect=_http_429), \
+         patch("subprocess.run", side_effect=_gmgn_throttled):
         poller.check_max_hold()
 
     still_open = pos.pick_id in state.open_positions
@@ -176,10 +208,10 @@ def test_throttled_max_hold_keeps_position_open(tmp: Path) -> bool:
 
 
 def test_price_result_distinguishes_failure() -> bool:
-    """fetch_token_price must return a typed result, not bare None.
+    """fetch_token_price_result must return a typed failure, not a price.
 
-    None must mean exactly one thing. This test fails on current code, which
-    returns None for both "429" and "no pool".
+    Dual-source: both throttled -> typed non-ok result with price None.
+    Injects at both real layers.
     """
     from copy_trader import poller as p
 
@@ -189,9 +221,9 @@ def test_price_result_distinguishes_failure() -> bool:
         return False
 
     fn = getattr(p, "fetch_token_price_result", None) or p.fetch_token_price
-    with patch("copy_trader.poller.requests.get", side_effect=_http_429):
+    with patch("copy_trader.poller.requests.get", side_effect=_http_429), \
+         patch("subprocess.run", side_effect=_gmgn_throttled):
         r = fn(TOKEN)
-    # A typed result must expose a failure reason distinct from a price.
     reason = getattr(r, "reason", None) or (r.get("reason") if isinstance(r, dict) else None)
     price = getattr(r, "price", None) or (r.get("price") if isinstance(r, dict) else None)
     print(f"  typed result -> reason={reason!r} price={price!r}")
@@ -201,7 +233,8 @@ def test_price_result_distinguishes_failure() -> bool:
 def test_successful_close_still_works(tmp: Path) -> bool:
     """Control: with a healthy price, the close path must still function.
 
-    Guards against a fix that leaves positions open forever.
+    Guards against a fix that leaves positions open forever. GMGN (primary)
+    returns a healthy price deterministically; no live binary/network.
     """
     state = PollerState()
     pos = _make_position(hours_old=2.0)
@@ -212,8 +245,8 @@ def test_successful_close_still_works(tmp: Path) -> bool:
     sell = _make_sell_swap()
     journal = tmp / "closes.jsonl"
 
-    # Patch the journal writer so we don't touch real files.
     with patch("copy_trader.poller.requests.get", return_value=_price_body("0.0008")), \
+         patch("subprocess.run", side_effect=_gmgn_price("0.0008")), \
          patch.object(poller, "_append_journal", lambda rec: None):
         poller.process_swaps([sell])
 

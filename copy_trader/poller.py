@@ -285,15 +285,66 @@ def fetch_tx_receipt(tx_hash: str) -> dict | None:
         return None
     return result
 
-def fetch_token_price_result(token_address: str) -> PriceResult:
+def fetch_token_price_gmgn(token_address: str) -> PriceResult:
+    """Fetch current token price in USD from GMGN (gmgn-cli token info).
+
+    GMGN-first source per the read-only price-feed comparison (median 0.155%
+    agreement with GeckoTerminal, richer payload). Invoked as an argv-only
+    subprocess through the same read-only guard the gmgn_feed client uses —
+    no shell, no trading subcommands. Returns a typed PriceResult so the
+    fallback chain can tell a genuine no-price from a transport fault.
+
+    Any failure (binary missing, timeout, non-zero exit, unparseable output,
+    empty price) returns a non-ok PriceResult with a reason — it never raises,
+    so the caller falls through to GeckoTerminal cleanly.
+    """
+    import subprocess
+
+    binary = os.environ.get("GMGN_CLI", "gmgn-cli")
+    argv = [binary, "token", "info", "--chain", "base",
+            "--address", token_address, "--raw"]
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True,
+                              timeout=20, shell=False)
+    except FileNotFoundError:
+        return PriceResult(reason=PRICE_NETWORK,
+                           detail="gmgn-cli binary not found on PATH")
+    except Exception as exc:  # timeout, etc.
+        return PriceResult(reason=PRICE_NETWORK,
+                           detail=f"{type(exc).__name__}: {exc}")
+
+    if proc.returncode != 0:
+        # Non-zero exit: treat as a source fault (burst-ban, quota, bad arg).
+        return PriceResult(reason=PRICE_HTTP_5XX,
+                           detail=(proc.stderr or "")[-200:] or
+                                  f"gmgn-cli exit {proc.returncode}")
+    try:
+        data = json.loads(proc.stdout)
+    except Exception as exc:
+        return PriceResult(reason=PRICE_PARSE_ERROR,
+                           detail=f"gmgn json: {exc}")
+
+    price = (data.get("price") or {}).get("price") \
+        if isinstance(data.get("price"), dict) else data.get("price")
+    # GMGN returns the STRING "0" (truthy!) for an unpriced/dead token. A bare
+    # `not price` check passes "0" through as float 0.0 — a garbage $0.00 close
+    # price. Parse first, then reject non-positive numerics explicitly.
+    try:
+        price_f = float(price) if price not in (None, "") else 0.0
+    except (TypeError, ValueError):
+        return PriceResult(reason=PRICE_PARSE_ERROR,
+                           detail=f"gmgn price parse: {price!r}")
+    if price_f <= 0.0:
+        return PriceResult(reason=PRICE_NO_POOL,
+                           detail=f"gmgn price non-positive: {price!r}")
+    return PriceResult(price=price_f, reason=PRICE_OK)
+
+
+def _fetch_token_price_gecko(token_address: str) -> PriceResult:
     """Fetch current token price in USD from GeckoTerminal, with a typed reason.
 
     Returns a PriceResult so callers can distinguish "no pool exists" from
     "the request failed" — the distinction a fallback chain depends on.
-
-    NOTE: fetch_token_price() below is the legacy bare-None wrapper kept for
-    call sites that have not been migrated. It collapses every reason to None
-    and must not be used to decide whether to try another source.
     """
     url = f"https://api.geckoterminal.com/api/v2/networks/base/tokens/{token_address}"
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
@@ -350,6 +401,41 @@ def fetch_token_price_result(token_address: str) -> PriceResult:
                         + (PRICE_FETCH_BACKOFF_BASE_S * 0.25))
 
     return PriceResult(reason=reason, detail=last_exc or "unknown")
+
+
+def fetch_token_price_result(token_address: str) -> PriceResult:
+    """Fetch current token price in USD: GMGN-first, GeckoTerminal fallback.
+
+    Cutover per the read-only price-feed comparison (PRICE_FEED_COMPARISON.md):
+    the two sources agree to a median of 0.155% and fail on different axes
+    (GMGN burst-bans; GeckoTerminal 429s under sustained pacing), so GMGN is
+    the primary and GeckoTerminal the fallback. Additive — the GeckoTerminal
+    path is unchanged and still reachable directly via _fetch_token_price_gecko.
+
+    Fallback logic:
+      - GMGN ok        -> return it (primary).
+      - GMGN not ok    -> consult GeckoTerminal; return whichever is ok.
+      - both not ok    -> if either reported a genuine no_pool, that is the
+                          truth; otherwise surface GMGN's transport fault.
+    A no-price outcome from BOTH sources is a genuine no_pool, not a fault.
+    """
+    gmgn = fetch_token_price_gmgn(token_address)
+    if gmgn.ok:
+        return gmgn
+    # GMGN did not produce a usable price. Consult GeckoTerminal.
+    gecko = _fetch_token_price_gecko(token_address)
+    if gecko.ok:
+        return gecko
+    # Both failed. Prefer the more informative reason: if either saw a real
+    # pool absence, that is the truth; otherwise surface GMGN's transport fault.
+    if gecko.reason == PRICE_NO_POOL or gmgn.reason == PRICE_NO_POOL:
+        return PriceResult(reason=PRICE_NO_POOL,
+                           detail=f"gmgn={gmgn.reason}:{gmgn.detail}; "
+                                  f"gecko={gecko.reason}:{gecko.detail}")
+    # Retryable transport faults on both — return GMGN's (primary) with detail.
+    return PriceResult(reason=gmgn.reason,
+                       detail=f"gmgn={gmgn.reason}:{gmgn.detail}; "
+                              f"gecko={gecko.reason}:{gecko.detail}")
 
 
 def fetch_token_price(token_address: str) -> float | None:
