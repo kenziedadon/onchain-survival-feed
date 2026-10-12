@@ -69,6 +69,15 @@ WETH = "0x4200000000000000000000000000000000000006"
 # Cost model: 900bps round-trip (matches Copy Path Ledger bar)
 ROUNDTRIP_COST_BPS = 900.0
 
+# Project root — this file lives at <root>/copy_trader/poller.py. The state
+# file default is anchored here so a run from ANY cwd reads and writes the
+# same canonical state.json. A CWD-relative default ("copy_trader/state.json")
+# silently writes state elsewhere when the poller is launched from a different
+# directory, and cut-fast/rotation counts drift with it. A user-supplied
+# --state still resolves against the cwd (standard CLI semantics).
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_STATE_PATH = str(PROJECT_ROOT / "copy_trader" / "state.json")
+
 # ---------------------------------------------------------------------------
 # Price-fetch failure semantics
 # ---------------------------------------------------------------------------
@@ -777,7 +786,18 @@ class CopyTraderPoller:
             format="%(asctime)s [%(levelname)s] %(message)s",
         )
         self.logger = logging.getLogger("copy_trader")
-
+        # WO1: log the resolved absolute state/journal paths at startup so the
+        # run's log shows exactly which files it reads and writes.
+        self.logger.info(f"State file: {os.path.abspath(self.state_path)}")
+        self.logger.info(f"Journal file: {os.path.abspath(self.journal_path)}")
+        # WO2: surface the active flag at startup so an excluded wallet is
+        # visible in the log before the first cycle completes.
+        for w in self.config.get("wallets", []):
+            label = w.get("label", w.get("address"))
+            if w.get("active") is False:
+                self.logger.info(f"Watchlist: SKIP {label} (active: false in config)")
+            else:
+                self.logger.info(f"Watchlist: watching {label}")
     def _load_config(self) -> dict:
         with open(self.config_path) as f:
             return yaml.safe_load(f)
@@ -1088,6 +1108,13 @@ class CopyTraderPoller:
 
         newest_overall = self.state.last_poll_timestamp
         for wallet in self.config.get("wallets", []):
+            # WO2: `active: false` excludes the wallet from this cycle. A
+            # missing or null flag means active — existing behavior unchanged.
+            if wallet.get("active") is False:
+                self.logger.info(
+                    f"  Skipping {wallet.get('label', wallet.get('address'))} "
+                    f"(active: false in config)")
+                continue
             swaps, newest_ts = self.poll_wallet(wallet, baseline=is_baseline)
             if newest_ts > newest_overall:
                 newest_overall = newest_ts
@@ -1128,13 +1155,17 @@ class CopyTraderPoller:
 def main():
     parser = argparse.ArgumentParser(description="Paper copy-trader poller")
     parser.add_argument("--config", required=True, help="Path to watched-wallets.yaml")
-    parser.add_argument("--state", default="copy_trader/state.json", help="Path to state file")
+    parser.add_argument("--state", default=DEFAULT_STATE_PATH, help="Path to state file (default: absolute, anchored at project root)")
     parser.add_argument("--journal", default="copy_trader/closes.jsonl", help="Path to journal file")
     parser.add_argument("--once", action="store_true", help="Run one poll cycle and exit")
     parser.add_argument("--daemon", action="store_true", help="Run continuously")
     args = parser.parse_args()
-
-    poller = CopyTraderPoller(args.config, args.state, args.journal)
+    # A user-supplied relative --state still resolves against the cwd
+    # (standard CLI semantics); resolve() makes the startup log show exactly
+    # where it lands. The default above (DEFAULT_STATE_PATH) is already
+    # absolute, anchored at the project root.
+    state_path = str(Path(args.state).expanduser().resolve())
+    poller = CopyTraderPoller(args.config, state_path, args.journal)
 
     if args.once:
         poller.run_once()

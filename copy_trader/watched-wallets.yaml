@@ -4,7 +4,7 @@ rotation:
   enabled: true
   min_trades_before_cut: 20
 
-# Approved watchlist — exactly three. Addresses quoted so YAML does not
+# Approved watchlist. Addresses quoted so YAML does not
 # parse the 0x… form as an integer (YAML 1.1 hex-int coercion).
 wallets:
   - address: "0xd569e570b94265e5ebc7df1990f99ee68d3f60a1"
@@ -16,3 +16,11 @@ wallets:
   - address: "0xbf004bff64725914ee36d03b87d6965b8ecb721c"
     label: aa_AFeng
     role: experiment
+    active: false
+    inactive_note: "0 buys/0 sells ever on GMGN — dead wallet. History retained; slot replaced by pe___lu."
+  - address: "0x347ffc6db9acc54ac2019795173b9599e8b82bd9"
+    label: pe___lu
+    role: experiment
+    active: true
+    added: "2026-10-11 (McKenzie authorized)"
+    note: "KOL-flagged, 73.3% WR, +$1,233 realized (GMGN). Cut-fast: mirror first 20 trades, cut slot if negative (rotation.min_trades_before_cut=20)."
