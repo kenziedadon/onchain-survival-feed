@@ -17,6 +17,11 @@ WO7. The decided secret-store form for the probe lane:
     returned and the caller must keep the lane disarmed. There is no plaintext
     fallback anywhere in this module.
 
+WO8 adds the IMPORT path: an EXISTING key (the main probe wallet's owner
+key) is typed at a hidden local terminal prompt and validated against an
+expected address BEFORE anything is written — fail-closed on mismatch,
+wrong-key refusal, no-overwrite, zeroize-after-handoff.
+
 This module performs NO arming, NO posture change, and NO funding. It only
 holds/returns key bytes in memory. Whether to act on a returned key is the
 caller's decision, gated elsewhere.
@@ -151,6 +156,138 @@ def generate_and_encrypt(passphrase: bytes) -> tuple:
     log.info("keystore generated+encrypted: %s (mode 0600), addr=%s",
              KEYSTORE_FILE, address)
     return address, KEYSTORE_FILE
+
+
+def import_and_encrypt(expected_address: str, passphrase: bytes = None) -> tuple:
+    """IMPORT an EXISTING ETH key into the locked keystore (WO8).
+
+    The probe operates from the MAIN wallet
+    0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F; its owner key is imported,
+    not generated. Fail-closed at every junction:
+
+      1. The private key is typed at a HIDDEN local terminal prompt
+         (getpass -> /dev/tty, no echo). It never transits argv (invisible
+         to ps), never an env var, never a file, and never chat.
+      2. It must be valid hex of exactly 32 bytes, and the address derived
+         via eth_keys must equal expected_address EXACTLY (case-insensitive
+         hex identity; a malformed or mismatched key is refused and
+         NOTHING is written).
+      3. The passphrase arrives via the same fd mechanism as generation and
+         must be non-empty.
+      4. The key bytes are piped into gpg's stdin (plaintext never on disk)
+         into the SAME store (~/.probe-keystore/probe_key.gpg, AES256,
+         dir 0700 / file 0600). If the keystore file already EXISTS, this
+         REFUSES: re-import is a deliberate operator delete first.
+      5. The in-memory plaintext is zeroized right after the gpg handoff.
+
+    Returns (public_address, keystore_path) — the same shape as
+    generate_and_encrypt. The private key is never printed, never logged,
+    never returned. Performs NO arming, NO posture change, NO wiring.
+    """
+    # Refuse BEFORE prompting: an existing keystore is never overwritten.
+    if os.path.exists(KEYSTORE_FILE):
+        raise KeystoreError(
+            f"keystore already exists: {KEYSTORE_FILE} — refusing to "
+            f"overwrite. Delete it deliberately first if a re-import is "
+            f"intended; re-import is an operator action."
+        )
+
+    exp = expected_address.strip() if expected_address else ""
+    if not (exp.startswith("0x") and len(exp) == 42
+            and all(c in "0123456789abcdefABCDEF" for c in exp[2:])):
+        raise KeystoreError(
+            f"expected_address is not a valid 0x + 40-hex address: "
+            f"{expected_address!r}"
+        )
+
+    # 1. Key from a hidden local prompt only.
+    import getpass
+    key_text = getpass.getpass(
+        "Probe private key (hex, typed locally, never stored): "
+    )
+    raw = _parse_hex_key(key_text)
+
+    # 2. Derive and validate against expected_address. Nothing is written
+    #    on mismatch.
+    try:
+        from eth_keys import keys as _eth_keys
+    except ImportError as e:
+        raise KeystoreError(
+            "eth_keys not available for address derivation; cannot import"
+        ) from e
+    try:
+        address = _eth_keys.PrivateKey(raw).public_key.to_checksum_address()
+    except Exception as e:  # noqa: BLE001 — any derivation failure fails closed
+        raise KeystoreError(
+            f"key does not derive a valid secp256k1 address: {e}"
+        ) from e
+    if address.lower() != exp.lower():
+        raise KeystoreError(
+            "derived address does not match expected_address — wrong key "
+            "refused, nothing written. (lane stays disarmed)"
+        )
+
+    # 3. Passphrase via the same fd mechanism; empty refused.
+    if passphrase is None:
+        passphrase = getpass.getpass(
+            "Probe keystore passphrase (typed locally, not stored): "
+        ).encode("utf-8")
+    if not passphrase:
+        raise KeystoreError("empty passphrase refused")
+
+    # 4. Pipe key bytes into the same gpg store; plaintext never on disk.
+    os.makedirs(KEYSTORE_DIR, mode=0o700, exist_ok=True)
+    os.chmod(KEYSTORE_DIR, 0o700)
+
+    proc = _gpg_with_passphrase_fd(
+        ["--symmetric", "--cipher-algo", _CIPHER, "--output", KEYSTORE_FILE],
+        passphrase,
+        stdin_data=raw,
+    )
+    # 5. Wipe the in-memory plaintext immediately after handing it to gpg.
+    raw = bytearray(raw)
+    _zeroize(raw)
+    if proc.returncode != 0:
+        try:
+            if os.path.exists(KEYSTORE_FILE):
+                os.remove(KEYSTORE_FILE)
+        except OSError:
+            pass
+        raise KeystoreError(
+            f"gpg encryption failed (rc={proc.returncode}): "
+            f"{proc.stderr.decode(errors='replace').strip()}"
+        )
+    os.chmod(KEYSTORE_FILE, 0o600)
+    log.info("keystore imported+encrypted: %s (mode 0600), addr=%s",
+             KEYSTORE_FILE, address)
+    return address, KEYSTORE_FILE
+
+
+def _parse_hex_key(text: str) -> bytes:
+    """Validate hex private-key input: exactly 32 bytes, or raise.
+
+    Accepts an optional 0x/0X prefix and surrounding whitespace. Anything
+    else (non-hex, wrong length, empty) raises KeystoreError — fail-closed,
+    nothing is written by the caller on this path.
+    """
+    s = text.strip()
+    if s[:2] in ("0x", "0X"):
+        s = s[2:]
+    s = "".join(s.split())
+    if not s:
+        raise KeystoreError("empty key refused")
+    if len(s) != 64:
+        raise KeystoreError(
+            f"key must be exactly 32 bytes (64 hex chars); got {len(s)} "
+            f"hex chars — refusing"
+        )
+    try:
+        raw = bytes.fromhex(s)
+    except ValueError as e:
+        raise KeystoreError(f"key is not valid hex: {e}") from e
+    if len(raw) != 32:  # defensive; 64 hex chars always decodes to 32 bytes
+        raise KeystoreError(f"key is {len(raw)} bytes, expected 32")
+    return raw
 
 
 def decrypt_at_use(passphrase: bytes = None) -> bytes:

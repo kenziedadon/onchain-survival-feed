@@ -25,12 +25,14 @@ discarded and the temp dir removed at teardown.
 """
 
 import contextlib
+import inspect
 import io
 import os
 import shutil
 import stat
 import sys
 import tempfile
+from unittest import mock
 
 sys.path.insert(0, "/home/kenzodadon/base-trend-bot")
 
@@ -191,6 +193,209 @@ def test_zeroize_wipes_bytearray():
     print("PASS _zeroize wipes bytearray in place, tolerates immutable bytes")
 
 
+# ─────────────────────────── WO8: IMPORT path ───────────────────────────
+#
+# import_and_encrypt reads the key from a hidden local terminal prompt
+# (getpass -> /dev/tty). In tests, getpass.getpass is monkeypatched to feed
+# a THROWAWAY key hex — the real prompt is exercised only hands-on. All
+# throwaway keys are freshly generated per test and never reused.
+
+MAIN_WALLET = "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F"
+
+
+def _throwaway_key():
+    """Fresh (key_bytes, hex, address) triple from the OS CSPRNG."""
+    raw = os.urandom(32)
+    return raw, raw.hex(), _eth_keys.PrivateKey(raw).public_key.to_checksum_address()
+
+
+def test_import_matching_address_roundtrip():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        raw, key_hex, address = _throwaway_key()
+        # 1. import with matching expected_address -> stored
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            got_addr, path = pk.import_and_encrypt(address, THROWAWAY_PASS)
+        assert got_addr == address, "returned address != expected"
+        assert path == pk.KEYSTORE_FILE
+        assert os.path.exists(path), "keystore file created"
+        # 2. decrypt round-trip derives the SAME address
+        key = pk.decrypt_at_use(THROWAWAY_PASS)
+        assert len(key) == 32
+        assert bytes(key) == raw, "decrypted key != imported key"
+        derived = _eth_keys.PrivateKey(key).public_key.to_checksum_address()
+        assert derived == address, "round-trip address mismatch"
+        print("PASS import: matching address stored; decrypt round-trip "
+              "derives the same address")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_wrong_expected_address_refused():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, _addr = _throwaway_key()
+        # valid key, but expected_address belongs to a DIFFERENT wallet
+        _r2, _h2, other_addr = _throwaway_key()
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            raised = False
+            try:
+                pk.import_and_encrypt(other_addr, THROWAWAY_PASS)
+            except pk.KeystoreError:
+                raised = True
+        assert raised, "wrong expected_address must raise KeystoreError"
+        assert not os.path.exists(pk.KEYSTORE_FILE), "no file on wrong key"
+        print("PASS import: valid key with wrong expected address refused, "
+              "no file written")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_malformed_key_refused():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, _hex_, addr = _throwaway_key()
+        for bad in ["nothexatall", "", "ab" * 31, "ab" * 33, "zz" * 32]:
+            with mock.patch("getpass.getpass", return_value=bad):
+                raised = False
+                try:
+                    pk.import_and_encrypt(addr, THROWAWAY_PASS)
+                except pk.KeystoreError:
+                    raised = True
+            assert raised, f"malformed key {bad[:8]!r}... must be refused"
+            assert not os.path.exists(pk.KEYSTORE_FILE), \
+                f"no file for malformed key {bad[:8]!r}..."
+        print("PASS import: malformed keys refused (non-hex, empty, "
+              "wrong length)")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_empty_passphrase_refused():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, addr = _throwaway_key()
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            raised = False
+            try:
+                pk.import_and_encrypt(addr, b"")
+            except pk.KeystoreError:
+                raised = True
+        assert raised, "import must refuse empty passphrase"
+        assert not os.path.exists(pk.KEYSTORE_FILE), "no file on empty pass"
+        print("PASS import: empty passphrase refused, no file written")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_existing_file_refusal():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, addr = _throwaway_key()
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            pk.import_and_encrypt(addr, THROWAWAY_PASS)
+        # Re-import of ANY key must be refused — deliberate delete first.
+        _r2, hex2, addr2 = _throwaway_key()
+        with mock.patch("getpass.getpass", return_value=hex2):
+            raised = False
+            try:
+                pk.import_and_encrypt(addr2, THROWAWAY_PASS)
+            except pk.KeystoreError:
+                raised = True
+        assert raised, "existing keystore must be refused (no overwrite)"
+        # the ORIGINAL import must still decrypt — nothing was clobbered
+        key = pk.decrypt_at_use(THROWAWAY_PASS)
+        assert _eth_keys.PrivateKey(key).public_key.to_checksum_address() == addr
+        print("PASS import: existing-file refusal, original import intact")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_plaintext_never_on_disk():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        raw, key_hex, addr = _throwaway_key()
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            pk.import_and_encrypt(addr, THROWAWAY_PASS)
+        key = pk.decrypt_at_use(THROWAWAY_PASS)
+        assert bytes(key) == raw, "round-trip key mismatch before grep proof"
+        # grep raw + hex of the REAL test key in the ciphertext
+        with open(pk.KEYSTORE_FILE, "rb") as f:
+            blob = f.read()
+        assert raw not in blob, "raw private key leaked into ciphertext"
+        assert key.hex().encode() not in blob, "key hex leaked into ciphertext"
+        # no stray plaintext anywhere in the keystore dir
+        for root, _dirs, files in os.walk(pk.KEYSTORE_DIR):
+            for name in files:
+                p = os.path.join(root, name)
+                with open(p, "rb") as f:
+                    data = f.read()
+                assert raw not in data, f"raw key found in {p}"
+                assert key.hex().encode() not in data, f"key hex found in {p}"
+        print("PASS import: plaintext never on disk (raw + hex grep proof)")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_key_never_printed():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        raw, key_hex, addr = _throwaway_key()
+        buf = io.StringIO()
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            with contextlib.redirect_stdout(buf):
+                pk.import_and_encrypt(addr, THROWAWAY_PASS)
+        out = buf.getvalue()
+        assert key_hex not in out, "key hex printed to stdout"
+        assert raw not in out.encode("utf-8", "ignore"), "key printed"
+        print("PASS import: key never printed to stdout")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_bad_expected_address_refused():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, _addr = _throwaway_key()
+        for bad in [None, "", "0x123", "not-an-address", "0x" + "g" * 40]:
+            with mock.patch("getpass.getpass", return_value=key_hex):
+                raised = False
+                try:
+                    pk.import_and_encrypt(bad, THROWAWAY_PASS)
+                except pk.KeystoreError:
+                    raised = True
+            assert raised, f"expected_address {bad!r} must be refused"
+            assert not os.path.exists(pk.KEYSTORE_FILE), "no file on bad addr"
+        print("PASS import: malformed expected_address refused, no file")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_signature():
+    """The key is never a parameter — it comes from the terminal only."""
+    sig = inspect.signature(pk.import_and_encrypt)
+    params = list(sig.parameters)
+    assert params == ["expected_address", "passphrase"], (
+        f"import_and_encrypt params {params} — key must not be a parameter"
+    )
+    print("PASS import: key is not a parameter (terminal prompt only)")
+
+
+def test_import_locked_permissions():
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, addr = _throwaway_key()
+        with mock.patch("getpass.getpass", return_value=key_hex):
+            pk.import_and_encrypt(addr, THROWAWAY_PASS)
+        dir_mode = stat.S_IMODE(os.stat(pk.KEYSTORE_DIR).st_mode)
+        file_mode = stat.S_IMODE(os.stat(pk.KEYSTORE_FILE).st_mode)
+        assert dir_mode == 0o700, f"dir mode {oct(dir_mode)} != 0700"
+        assert file_mode == 0o600, f"file mode {oct(file_mode)} != 0600"
+        print("PASS import: locked permissions, dir 0700 / file 0600")
+    finally:
+        _restore(orig, tmp)
+
+
 if __name__ == "__main__":
     tests = [
         test_generation_returns_only_address,
@@ -202,6 +407,17 @@ if __name__ == "__main__":
         test_missing_file_fails_closed,
         test_key_never_printed,
         test_zeroize_wipes_bytearray,
+        # WO8 import path
+        test_import_matching_address_roundtrip,
+        test_import_wrong_expected_address_refused,
+        test_import_malformed_key_refused,
+        test_import_empty_passphrase_refused,
+        test_import_existing_file_refusal,
+        test_import_plaintext_never_on_disk,
+        test_import_key_never_printed,
+        test_import_bad_expected_address_refused,
+        test_import_signature,
+        test_import_locked_permissions,
     ]
     failed = 0
     for t in tests:
