@@ -222,6 +222,12 @@ class PollerState:
     # so entries can be pruned by age.
     seen_tx_hashes: dict = field(default_factory=dict)
     open_positions: dict = field(default_factory=dict)  # pick_id -> PaperPosition
+    # Exits where the matched sell's price fetch returned None. Parked exits
+    # stay open and are retried each poll cycle, escalating loudly after 3
+    # consecutive unpriceable days. Persisted — survives a cycle rest.
+    pending_closes: dict = field(
+        default_factory=dict
+    )  # pick_id -> {"sell_timestamp": int, "consecutive_days": int}
     wallet_trade_counts: dict = field(default_factory=lambda: defaultdict(int))
     wallet_net_pnl: dict = field(default_factory=lambda: defaultdict(float))
     wallet_rotated_out: set = field(default_factory=set)
@@ -231,6 +237,7 @@ class PollerState:
         return {
             "seen_tx_hashes": dict(self.seen_tx_hashes),
             "open_positions": {k: asdict(v) for k, v in self.open_positions.items()},
+            "pending_closes": dict(self.pending_closes),
             "wallet_trade_counts": dict(self.wallet_trade_counts),
             "wallet_net_pnl": dict(self.wallet_net_pnl),
             "wallet_rotated_out": list(self.wallet_rotated_out),
@@ -248,6 +255,9 @@ class PollerState:
             state.seen_tx_hashes = {str(h): int(ts) for h, ts in raw_seen.items()}
         state.open_positions = {
             k: PaperPosition(**v) for k, v in d.get("open_positions", {}).items()
+        }
+        state.pending_closes = {
+            str(k): v for k, v in d.get("pending_closes", {}).items()
         }
         state.wallet_trade_counts = defaultdict(int, d.get("wallet_trade_counts", {}))
         state.wallet_net_pnl = defaultdict(float, d.get("wallet_net_pnl", {}))
@@ -775,6 +785,9 @@ class CopyTraderPoller:
         self.rotation_enabled = self.config.get("rotation", {}).get("enabled", True)
         self.min_trades_before_cut = self.config.get("rotation", {}).get("min_trades_before_cut", 20)
         self.max_hold_seconds = MAX_HOLD_DAYS * 86400
+        # Time source for the unpriceable-days counter. Injected so the counter
+        # advances on calendar time even in tests that don't wait a real day.
+        self.now_fn = lambda: datetime.now(timezone.utc)
         # Per-poll index of the wallet's txs by block, for sibling-gas lookups.
         self._block_cache: dict[int, list] = {}
         # Largest API history window observed this cycle (seconds).
@@ -1049,11 +1062,18 @@ class CopyTraderPoller:
                         self._append_journal(record)
                         self.state.wallet_trade_counts[swap.wallet_address] += 1
                         self.state.wallet_net_pnl[swap.wallet_address] += record.net_pnl_pct
+                        self.state.pending_closes.pop(close_pick_id, None)  # cancel pending
                         self.logger.info(
                             f"  Closed {close_pick_id}: net {record.net_pnl_pct:+.2f}% "
                             f"(reason: mirrored_exit)"
                         )
                         self._check_rotation(swap.wallet_address)
+                    else:
+                        # Price fetch returned nothing for a matched exit. The
+                        # position must stay open, so the exit is parked — it is
+                        # retried each cycle and escalates loudly after 3
+                        # consecutive unpriceable days instead of being dropped.
+                        self._park_close(pick_id=close_pick_id, sell_timestamp=swap.timestamp)
                 else:
                     self.logger.info(
                         f"  Sell with no strictly-older open position for "
@@ -1071,6 +1091,117 @@ class CopyTraderPoller:
         if trades >= self.min_trades_before_cut and net_pnl < 0:
             self.state.wallet_rotated_out.add(wallet_address)
             self.logger.warning(f"  ROTATE_OUT: {wallet_address} — {trades} trades, net PnL {net_pnl:+.2f}%")
+
+    def _park_close(self, pick_id: str, sell_timestamp: int,
+                    close_reason: str = "mirrored_exit") -> None:
+        """Price fetch returned nothing for a matched exit. Park it, do not drop.
+
+        The unpriceable-days counter is CALENDAR TIME, not call count: a new
+        exit starts at day 1 on its first failed price fetch, and a day is
+        DERIVED from elapsed wall-clock time since the FIRST failure
+        (floor of elapsed days plus one). A 60s poll cadence must never
+        run the counter 2, 3, 4 ... in minutes.
+        """
+        if pick_id not in self.state.open_positions:
+            return  # position already gone; nothing to park
+        now_s = int(self.now_fn().timestamp())
+        entry = self.state.pending_closes.get(pick_id)
+        if entry is None:
+            self.state.pending_closes[pick_id] = {
+                "sell_timestamp": sell_timestamp,
+                "close_reason": close_reason,
+                "first_ts": now_s,
+                "consecutive_days": 1,
+            }
+            self.logger.warning(
+                f"  PRICE-FAIL PENDING {pick_id}: price unavailable for "
+                f"{self.state.open_positions[pick_id].token[:12]}; position held "
+                f"open and retried next cycle (day 1)"
+            )
+        else:
+            entry["consecutive_days"] = (now_s - entry["first_ts"]) // 86400 + 1
+            self.logger.warning(
+                f"  PRICE-FAIL PENDING {pick_id}: {entry['consecutive_days']} day(s) "
+                f"unpriceable, retrying next cycle"
+            )
+        self._escalate_close(pick_id)
+
+    def _escalate_close(self, pick_id: str) -> None:
+        entry = self.state.pending_closes.get(pick_id)
+        if entry is None or entry["consecutive_days"] < 3:
+            return
+        if entry.get("escalated"):
+            return  # loud once at the threshold; not re-logged every cycle
+        entry["escalated"] = True
+        self.logger.error(
+            f"  ESCALATE CLOSE {pick_id}: {entry['consecutive_days']} consecutive days "
+            f"unpriceable — exit held open and retried"
+        )
+
+    def _retry_pending_closes(self) -> None:
+        """Per-cycle retry of parked mirrored exits, driven through the live
+        daemon path (not only the sell-matching branch).
+
+        A parked exit's matching SELL is already in seen_tx_hashes, so
+        process_swaps never meets that exit again — without this pass it is a
+        nicer-silent drop that never retries. This re-runs the exit: pull the
+        price from the chain; on success close the position, journal the row,
+        log it, apply PnL, cancel the pending record, and let rotation score
+        it; on a persistent None re-park and retry next cycle. Called once
+        at the end of every run_once so the real cycle path, with the sell
+        already in seen hashes, drives the close.
+        """
+        for pick_id, entry in list(self.state.pending_closes.items()):
+            if pick_id not in self.state.open_positions:
+                # Position already gone — drop the stale pending record.
+                self.state.pending_closes.pop(pick_id, None)
+                continue
+            position = self.state.open_positions[pick_id]
+            price = fetch_token_price(position.token)
+            if price is None:
+                # Price still unavailable — advance the calendar-time day
+                # counter (derived, not call-counted) and re-check escalation.
+                elapsed = int(self.now_fn().timestamp()) - entry["first_ts"]
+                entry["consecutive_days"] = elapsed // 86400 + 1
+                if entry["consecutive_days"] >= 3 and not entry.get("escalated"):
+                    entry["escalated"] = True
+                    self.logger.error(
+                        f"  ESCALATE CLOSE {pick_id}: {entry['consecutive_days']} consecutive days "
+                        f"unpriceable — exit held open and retried"
+                    )
+                self.logger.warning(
+                    f"  PRICE-FAIL RETRY {pick_id}: price unavailable for "
+                    f"{position.token[:12]}; parked exit re-parked, retrying "
+                    f"next cycle"
+                )
+                continue
+            # close the position out of open_positions (like the mirrored_exit
+            # path does) so the same open position is not treated as open on
+            # a real daemon rerun alongside the newly priced exit.
+            position = self.state.open_positions.pop(pick_id)
+            # Close with the reason the exit was parked under — a parked
+            # max-hold exit (no sell ever happened, sell_timestamp 0) must
+            # not be stamped as a leader-mirrored exit: that would corrupt
+            # close_reason in the ledger the verdict rests on. Mirrored
+            # exits keep the real sell timestamp; max-hold passes 0 so the
+            # record takes wall-clock close_time.
+            reason = entry.get("close_reason", "mirrored_exit")
+            sell_ts = entry["sell_timestamp"] if reason == "mirrored_exit" else 0
+            record = close_paper_position(
+                position,
+                price,
+                reason,
+                sell_ts,
+            )
+            self._append_journal(record)
+            self.state.wallet_trade_counts[position.wallet_address] += 1
+            self.state.wallet_net_pnl[position.wallet_address] += record.net_pnl_pct
+            self.state.pending_closes.pop(pick_id, None)
+            self.logger.info(
+                f"  Closed {pick_id}: net {record.net_pnl_pct:+.2f}% "
+                f"(price-retry, reason: {reason}, open from parked)"
+            )
+            self._check_rotation(position.wallet_address)
 
     def check_max_hold(self):
         """Close any positions past max hold time."""
@@ -1092,7 +1223,15 @@ class CopyTraderPoller:
                 self._append_journal(record)
                 self.state.wallet_trade_counts[position.wallet_address] += 1
                 self.state.wallet_net_pnl[position.wallet_address] += record.net_pnl_pct
+                self.state.pending_closes.pop(pick_id, None)
                 self.logger.info(f"  Closed {pick_id}: net {record.net_pnl_pct:+.2f}% (reason: max_hold)")
+            else:
+                # Price fetch returned nothing for a max-hold exit: park it,
+                # loudly logged, and retried each cycle. Zero silent failures.
+                # close_reason=max_hold so the retry pass closes it as max_hold
+                # (no sell ever happened; sell_timestamp 0).
+                self._park_close(pick_id=pick_id, sell_timestamp=0,
+                                 close_reason="max_hold")
                 self._check_rotation(position.wallet_address)
 
     def run_once(self):
@@ -1129,6 +1268,7 @@ class CopyTraderPoller:
                 f"  Pruned {pruned} seen tx hash(es) older than {SEEN_TX_TTL_DAYS}d"
             )
 
+        self._retry_pending_closes()
         self.check_max_hold()
         self._save_state()
         self.logger.info(
