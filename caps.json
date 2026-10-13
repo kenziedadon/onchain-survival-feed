@@ -28,7 +28,7 @@
   "kill_switch": true,
   "live_trading": false,
   "require_confirmation": true,
-  "max_trade_eth": 0.0003,
+  "max_trade_eth": 0.001,
   "max_daily_loss_eth": 0.0004,
   "max_slippage_bps": 100,
   "min_score": 25,
