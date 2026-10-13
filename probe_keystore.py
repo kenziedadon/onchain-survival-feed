@@ -329,14 +329,51 @@ def decrypt_at_use(passphrase: bytes = None) -> bytes:
     return key
 
 
-if __name__ == "__main__":
+def main(argv=None) -> int:
+    """CLI entry. Two subcommands, both fail-closed:
+
+      probe_keystore.py import <expected_address>
+          Import an EXISTING key. Prompt 1 takes the private key (hidden,
+          no echo); prompt 2 sets the keystore passphrase. Refuses anything
+          that does not derive to <expected_address> exactly; refuses to
+          overwrite an existing keystore. On success prints ONLY the
+          address and path. Exit 0 on success, 1 on fail-closed, 2 on
+          usage error.
+
+      probe_keystore.py
+          Decrypt-at-use. Prompts for the passphrase, returns the key to
+          memory, prints nothing sensitive. Exit 0/1.
+
+    Performs NO arming, NO posture change, NO wiring.
+    """
     logging.basicConfig(level=logging.INFO)
-    # Decrypt-at-use entry: prompt for passphrase, print nothing sensitive.
+    argv = sys.argv[1:] if argv is None else argv
+
+    if len(argv) >= 1 and argv[0] == "import":
+        if len(argv) != 2:
+            print("usage: probe_keystore.py import <expected_address>",
+                  file=sys.stderr)
+            return 2
+        try:
+            address, path = import_and_encrypt(argv[1])
+        except KeystoreError as e:
+            print(f"FAIL-CLOSED: {e}", file=sys.stderr)
+            return 1
+        # Deliberately print ONLY the address and path — never the key.
+        print(f"IMPORTED: {address} {path}")
+        return 0
+
+    # Default: decrypt-at-use entry; prompt for passphrase.
     try:
         key = decrypt_at_use()
     except KeystoreError as e:
         print(f"FAIL-CLOSED: {e}", file=sys.stderr)
-        sys.exit(1)
-    # Deliberately do NOT print the key. Confirm only length + derived address
-    # is out of scope here (no eth lib); operator verifies via their own tool.
+        return 1
+    # Deliberately do NOT print the key. Confirm only length; the operator
+    # verifies the derived address via their own tool.
     print(f"OK: key decrypted into memory ({len(key)} bytes); not printed.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

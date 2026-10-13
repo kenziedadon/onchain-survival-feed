@@ -396,6 +396,124 @@ def test_import_locked_permissions():
         _restore(orig, tmp)
 
 
+def test_import_cli_entrypoint():
+    """CLI: `probe_keystore.py import <addr>` prompts twice and succeeds."""
+    tmp, orig = _use_tmp_keystore()
+    try:
+        raw, key_hex, addr = _throwaway_key()
+        buf = io.StringIO()
+        with mock.patch("getpass.getpass",
+                        side_effect=[key_hex, THROWAWAY_PASS.decode()]):
+            with contextlib.redirect_stdout(buf):
+                rc = pk.main(["import", addr])
+        assert rc == 0, f"main() returned {rc}, expected 0"
+        out = buf.getvalue()
+        assert "IMPORTED:" in out, "success line missing"
+        assert addr in out, "address missing from output"
+        assert key_hex not in out, "key hex printed by CLI"
+        assert raw not in out.encode("utf-8", "ignore"), "key printed by CLI"
+        # round-trip through the CLI-created store
+        key = pk.decrypt_at_use(THROWAWAY_PASS)
+        assert bytes(key) == raw
+        print("PASS import: CLI entry point (import subcommand) round-trips, "
+              "key never printed")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_cli_wrong_key_exit_1():
+    """CLI: wrong key -> FAIL-CLOSED on stderr, exit 1, no file."""
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, _addr = _throwaway_key()
+        _r2, _h2, other_addr = _throwaway_key()
+        err = io.StringIO()
+        with mock.patch("getpass.getpass",
+                        side_effect=[key_hex, THROWAWAY_PASS.decode()]):
+            with contextlib.redirect_stderr(err):
+                rc = pk.main(["import", other_addr])
+        assert rc == 1, f"main() returned {rc}, expected 1 (fail-closed)"
+        assert "FAIL-CLOSED" in err.getvalue()
+        assert not os.path.exists(pk.KEYSTORE_FILE), "no file on wrong key"
+        print("PASS import: CLI wrong key -> exit 1, FAIL-CLOSED, no file")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_cli_import_usage_error():
+    """CLI: `import` without an address is a usage error (exit 2), no prompt."""
+    tmp, orig = _use_tmp_keystore()
+    try:
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            rc = pk.main(["import"])
+        assert rc == 2, f"main() returned {rc}, expected 2 (usage error)"
+        assert "usage:" in err.getvalue()
+        assert not os.path.exists(pk.KEYSTORE_FILE)
+        print("PASS CLI: import without address -> usage error, exit 2")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_cli_entrypoint():
+    """CLI: `probe_keystore.py import <addr>` prompts twice and succeeds."""
+    tmp, orig = _use_tmp_keystore()
+    try:
+        raw, key_hex, addr = _throwaway_key()
+        buf = io.StringIO()
+        with mock.patch("getpass.getpass",
+                        side_effect=[key_hex, THROWAWAY_PASS.decode()]):
+            with contextlib.redirect_stdout(buf):
+                rc = pk.main(["import", addr])
+        assert rc == 0, f"main() returned {rc}, expected 0"
+        out = buf.getvalue()
+        assert "IMPORTED:" in out, "success line missing"
+        assert addr in out, "address missing from output"
+        assert key_hex not in out, "key hex printed by CLI"
+        assert raw not in out.encode("utf-8", "ignore"), "key printed by CLI"
+        # round-trip through the CLI-created store
+        key = pk.decrypt_at_use(THROWAWAY_PASS)
+        assert bytes(key) == raw
+        print("PASS import: CLI entry point (import subcommand) round-trips, "
+              "key never printed")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_import_cli_wrong_key_exit_1():
+    """CLI: wrong key -> FAIL-CLOSED on stderr, exit 1, no file."""
+    tmp, orig = _use_tmp_keystore()
+    try:
+        _raw, key_hex, _addr = _throwaway_key()
+        _r2, _h2, other_addr = _throwaway_key()
+        err = io.StringIO()
+        with mock.patch("getpass.getpass",
+                        side_effect=[key_hex, THROWAWAY_PASS.decode()]):
+            with contextlib.redirect_stderr(err):
+                rc = pk.main(["import", other_addr])
+        assert rc == 1, f"main() returned {rc}, expected 1 (fail-closed)"
+        assert "FAIL-CLOSED" in err.getvalue()
+        assert not os.path.exists(pk.KEYSTORE_FILE), "no file on wrong key"
+        print("PASS import: CLI wrong key -> exit 1, FAIL-CLOSED, no file")
+    finally:
+        _restore(orig, tmp)
+
+
+def test_cli_import_usage_error():
+    """CLI: `import` without an address is a usage error (exit 2), no prompt."""
+    tmp, orig = _use_tmp_keystore()
+    try:
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            rc = pk.main(["import"])
+        assert rc == 2, f"main() returned {rc}, expected 2 (usage error)"
+        assert "usage:" in err.getvalue()
+        assert not os.path.exists(pk.KEYSTORE_FILE)
+        print("PASS CLI: import without address -> usage error, exit 2")
+    finally:
+        _restore(orig, tmp)
+
+
 if __name__ == "__main__":
     tests = [
         test_generation_returns_only_address,
@@ -418,6 +536,9 @@ if __name__ == "__main__":
         test_import_bad_expected_address_refused,
         test_import_signature,
         test_import_locked_permissions,
+        test_import_cli_entrypoint,
+        test_import_cli_wrong_key_exit_1,
+        test_cli_import_usage_error,
     ]
     failed = 0
     for t in tests:
