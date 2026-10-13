@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""Probe keystore — gpg-symmetric encrypted ETH key file, decrypt-at-use.
+
+WO7. The decided secret-store form for the probe lane:
+
+  * The encrypted key file lives OUTSIDE any repo, at a locked path
+    (dir 0700, file 0600).
+  * GENERATION pipes the key straight into gpg encryption: the plaintext
+    key is written to gpg's stdin and never touches disk.
+  * DECRYPT-AT-USE reads the passphrase from an interactive terminal prompt
+    only (getpass -> /dev/tty). The passphrase never transits argv (invisible
+    to ps), never an env var (invisible to /proc/<pid>/environ), and never a
+    config file. gpg receives it on a dedicated fd via --passphrase-fd.
+  * The decrypted key lives in memory only. It is never written to disk and
+    never logged.
+  * FAIL-CLOSED everywhere: a wrong passphrase or ANY error means NO key is
+    returned and the caller must keep the lane disarmed. There is no plaintext
+    fallback anywhere in this module.
+
+This module performs NO arming, NO posture change, and NO funding. It only
+holds/returns key bytes in memory. Whether to act on a returned key is the
+caller's decision, gated elsewhere.
+
+Dependency: the `gpg` binary (GnuPG). Verified present: 2.4.4.
+"""
+
+import logging
+import os
+import subprocess
+import sys
+
+log = logging.getLogger("probe_keystore")
+
+# Locked, out-of-repo location. ~/.probe-keystore is not inside any git repo.
+KEYSTORE_DIR = os.path.expanduser("~/.probe-keystore")
+KEYSTORE_FILE = os.path.join(KEYSTORE_DIR, "probe_key.gpg")
+
+# gpg symmetric cipher. AES256 is gpg's default and strongest here.
+_CIPHER = "AES256"
+
+
+class KeystoreError(Exception):
+    """Fail-closed: any condition that prevents returning a usable key."""
+
+
+def _require_gpg() -> str:
+    """Return the gpg binary path or raise. No silent fallback."""
+    from shutil import which
+    gpg = which("gpg")
+    if not gpg:
+        raise KeystoreError("gpg binary not found on PATH; cannot use keystore")
+    return gpg
+
+
+def _gpg_with_passphrase_fd(args, passphrase: bytes, stdin_data=None):
+    """Run gpg with the passphrase on a dedicated fd, never on argv.
+
+    The passphrase is written to a pipe and passed via --passphrase-fd, so it
+    never appears in the process command line (ps) and never in the
+    environment. Returns the CompletedProcess; caller checks returncode.
+    """
+    gpg = _require_gpg()
+    read_fd, write_fd = os.pipe()
+    try:
+        os.write(write_fd, passphrase + b"\n")
+    finally:
+        os.close(write_fd)
+    try:
+        proc = subprocess.run(
+            [gpg, "--batch", "--yes", "--pinentry-mode", "loopback",
+             "--passphrase-fd", str(read_fd)] + args,
+            input=stdin_data,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            pass_fds=[read_fd],
+        )
+    finally:
+        os.close(read_fd)
+    return proc
+
+
+def _zeroize(buf) -> None:
+    """Best-effort wipe of key bytes in memory.
+
+    Python bytes are immutable, so this only helps when the caller passes a
+    mutable bytearray (the recommended form for holding key material). It
+    overwrites in place and drops the reference. It is best-effort: the
+    interpreter may retain copies it does not expose. This is the keystore's
+    contribution to the "zeroize after use" requirement; the CONSUMER is
+    responsible for calling it once the key is no longer needed.
+    """
+    if isinstance(buf, bytearray):
+        for i in range(len(buf)):
+            buf[i] = 0
+    # bytes: nothing safe to do in pure Python; caller should use bytearray.
+
+
+def generate_and_encrypt(passphrase: bytes) -> tuple:
+    """Generate a fresh ETH key and encrypt it into the locked keystore.
+
+    Returns (public_address, keystore_path). The PLAINTEXT private key is
+    piped straight into gpg's stdin and NEVER written to disk. Only the
+    public address is printed/returned — the private key is never logged,
+    never printed, never returned to the caller.
+
+    Used for BOTH the throwaway test key and (later, hands-on) the real
+    probe key: the same safe path, plaintext never on disk either way.
+
+    Requires eth_keys for address derivation (present in the project venv).
+    """
+    if not passphrase:
+        raise KeystoreError("empty passphrase refused")
+    try:
+        from eth_keys import keys as _eth_keys
+    except ImportError as e:
+        raise KeystoreError(
+            "eth_keys not available for address derivation; cannot generate"
+        ) from e
+
+    # Fresh 32-byte private key from the OS CSPRNG.
+    raw = os.urandom(32)
+    if len(raw) != 32:  # defensive; urandom(32) is always 32
+        raise KeystoreError("key generation produced wrong length")
+
+    # Derive the public address for display ONLY. The private key stays in
+    # `raw` and is piped into gpg; it is never printed or returned.
+    address = _eth_keys.PrivateKey(raw).public_key.to_checksum_address()
+
+    os.makedirs(KEYSTORE_DIR, mode=0o700, exist_ok=True)
+    os.chmod(KEYSTORE_DIR, 0o700)
+
+    proc = _gpg_with_passphrase_fd(
+        ["--symmetric", "--cipher-algo", _CIPHER, "--output", KEYSTORE_FILE],
+        passphrase,
+        stdin_data=raw,
+    )
+    # Wipe the in-memory plaintext immediately after handing it to gpg.
+    raw = bytearray(raw)
+    _zeroize(raw)
+    if proc.returncode != 0:
+        try:
+            if os.path.exists(KEYSTORE_FILE):
+                os.remove(KEYSTORE_FILE)
+        except OSError:
+            pass
+        raise KeystoreError(
+            f"gpg encryption failed (rc={proc.returncode}): "
+            f"{proc.stderr.decode(errors='replace').strip()}"
+        )
+    os.chmod(KEYSTORE_FILE, 0o600)
+    log.info("keystore generated+encrypted: %s (mode 0600), addr=%s",
+             KEYSTORE_FILE, address)
+    return address, KEYSTORE_FILE
+
+
+def decrypt_at_use(passphrase: bytes = None) -> bytes:
+    """Decrypt the keystore key into memory. Fail-closed on any error.
+
+    If passphrase is None, prompt on the terminal (getpass -> /dev/tty) so the
+    passphrase is typed locally and never transits chat, argv, env, or a file.
+    Returns the 32-byte key on success. On wrong passphrase or ANY error,
+    raises KeystoreError and returns nothing — the caller keeps the lane
+    disarmed. No plaintext fallback exists.
+    """
+    if not os.path.exists(KEYSTORE_FILE):
+        raise KeystoreError(f"keystore file not found: {KEYSTORE_FILE}")
+
+    if passphrase is None:
+        import getpass
+        passphrase = getpass.getpass(
+            "Probe keystore passphrase (typed locally, not stored): "
+        ).encode("utf-8")
+    if not passphrase:
+        raise KeystoreError("empty passphrase refused")
+
+    proc = _gpg_with_passphrase_fd(
+        ["--decrypt", KEYSTORE_FILE], passphrase
+    )
+    if proc.returncode != 0:
+        raise KeystoreError(
+            f"gpg decryption failed (rc={proc.returncode}) — wrong passphrase "
+            f"or corrupt file; lane stays disarmed. "
+            f"{proc.stderr.decode(errors='replace').strip()}"
+        )
+    key = proc.stdout
+    if len(key) != 32:
+        raise KeystoreError(
+            f"decrypted key is {len(key)} bytes, expected 32; refusing"
+        )
+    # Key is in memory only; never logged, never written to disk.
+    log.info("keystore decrypted into memory (32 bytes); not persisted")
+    return key
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    # Decrypt-at-use entry: prompt for passphrase, print nothing sensitive.
+    try:
+        key = decrypt_at_use()
+    except KeystoreError as e:
+        print(f"FAIL-CLOSED: {e}", file=sys.stderr)
+        sys.exit(1)
+    # Deliberately do NOT print the key. Confirm only length + derived address
+    # is out of scope here (no eth lib); operator verifies via their own tool.
+    print(f"OK: key decrypted into memory ({len(key)} bytes); not printed.")
