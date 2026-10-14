@@ -260,6 +260,48 @@ def heartbeat():
         pass
 
 
+# The arm-provenance contract (WO14): the SAME contract risk.py and
+# policy.py already honor, pinned by the arm-gate key-shape suite. The
+# watchdog's enforce path never consulted it and reverted a valid
+# McKenzie arm on sight; WO14 teaches enforce the existing contract.
+# Fail-closed stays the default — the exception is earned only by an
+# EXACT match: arm_provenance == "arm_signal_v1" AND arm_authorized_by
+# present AND arm_applied_at present and parseable. Every other shape
+# (missing, partial, wrong value, malformed timestamp) force-disarms
+# exactly as before.
+ARM_PROVENANCE_VALUE = "arm_signal_v1"
+
+
+def _arm_provenance_valid(caps):
+    """True only on an EXACT contract match (WO14).
+
+    - arm_provenance must equal "arm_signal_v1" exactly.
+    - arm_authorized_by must be a non-empty string.
+    - arm_applied_at must be a non-empty string that parses as an
+      ISO-8601 timestamp (fromisoformat; a trailing 'Z' is accepted).
+
+    Anything else — missing key, wrong value, empty string, partial
+    shape, malformed timestamp — returns False, and the caller
+    force-disarms exactly as it did before WO14. This is the safety
+    layer: the exception is narrow on purpose.
+    """
+    if not isinstance(caps, dict):
+        return False
+    if caps.get("arm_provenance") != ARM_PROVENANCE_VALUE:
+        return False
+    authorized_by = caps.get("arm_authorized_by")
+    if not isinstance(authorized_by, str) or not authorized_by.strip():
+        return False
+    applied_at = caps.get("arm_applied_at")
+    if not isinstance(applied_at, str) or not applied_at.strip():
+        return False
+    try:
+        datetime.fromisoformat(applied_at.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
 def cmd_enforce(args):
     rc = cmd_check(args)
     caps = _read_caps()
@@ -271,6 +313,14 @@ def cmd_enforce(args):
     if ARM_MARKER.exists():
         _alert("caps.json shows armed state but .armed_by_human marker exists -- "
                "treating as human-authorized, not remediating")
+        return max(rc, 1)
+    # WO14: an EXACT valid-provenance arm is respected, not reverted.
+    # Logged visibly every run so the audit trail shows the decision.
+    if _arm_provenance_valid(caps):
+        print("ARM RESPECTED: provenance valid "
+              f"(arm_provenance={ARM_PROVENANCE_VALUE}, authorized_by present, "
+              f"applied_at parseable) -- enforce will not revert the arm",
+              flush=True)
         return max(rc, 1)
     caps["kill_switch"] = True
     caps["live_trading"] = False
