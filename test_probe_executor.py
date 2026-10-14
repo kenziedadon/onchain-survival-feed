@@ -36,6 +36,7 @@ import sys
 import tempfile
 import time
 import unittest
+from datetime import datetime, timezone
 from unittest import mock
 
 sys.path.insert(0, "/home/kenzodadon/base-trend-bot")
@@ -119,6 +120,20 @@ def leader_signal(pick_id="w1-0xdead"):
 
 def armed_posture():
     return (False, True)   # kill_switch=False, live_trading=True
+
+
+def pe_default_slippage():
+    """The executor's RULED slippage value — read from the source, never
+    hardcoded here (WO12: the 150 default became 300; a hardcoded 150
+    in this file would silently restore the old value)."""
+    import re as _re
+    src = open("/home/kenzodadon/base-trend-bot/"
+               "probe_executor.py").read()
+    m = _re.search(r"^PROBE_MAX_SLIPPAGE_BPS = ([\d.]+)", src, _re.M)
+    if m is None:
+        raise AssertionError("cannot read the executor's ruled slippage "
+                             "value from source")
+    return float(m.group(1))
 
 
 def read_ledger(ex):
@@ -320,7 +335,7 @@ class TestDailyLossHalt(unittest.TestCase):
         tmp = tempfile.mkdtemp(prefix="wo9_test_")
         try:
             ex = make_executor(tmp, posture_fn=armed_posture)
-            day = "2023-11-14"  # UTC day of NOW
+            day = pe._day_key(NOW)      # the Chicago day of NOW (WO12)
             ex.state.day_bucket[day] = -0.0015   # worse than the halt line
             r = ex.process_entry(leader_signal(), NOW)
             self.assertNotEqual(r["action"], "entered")
@@ -339,6 +354,133 @@ class TestDailyLossHalt(unittest.TestCase):
                              "exits must remain permitted under the halt")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+class TestSlippageAndDayBucketWO12(unittest.TestCase):
+    """WO12 pre-arm rulings, pinned against the executor source."""
+
+    def test_slippage_constant_is_the_ruled_300_no_env_knob(self):
+        """(A) PROBE_MAX_SLIPPAGE_BPS == 300 as a RULED constant — read
+        from the source so the test pins the value, not itself. No env
+        knob: the source must not read the variable."""
+        import re as _re
+        src = open("/home/kenzodadon/base-trend-bot/"
+                   "probe_executor.py").read()
+        m = _re.search(r"^PROBE_MAX_SLIPPAGE_BPS = ([\d.]+)", src, _re.M)
+        self.assertIsNotNone(m, "the constant must be defined in source")
+        self.assertEqual(float(m.group(1)), 300.0,
+                         "the ruled slippage value is 300")
+        self.assertEqual(pe.PROBE_MAX_SLIPPAGE_BPS, 300.0)
+        self.assertNotIn("PROBE_MAX_SLIPPAGE_BPS\", \"150\"", src,
+                         "no env knob — the value is not configurable")
+        self.assertNotIn('os.environ.get("PROBE_MAX_SLIPPAGE_BPS"', src,
+                         "no env knob on slippage")
+
+    def test_gate_passes_at_250_bps_aborts_at_350(self):
+        """(A) the gate consumes the ruled value: 250 bps adverse passes,
+        350 bps aborts — both sides of the 300 line."""
+        for venue in ("buy", "sell"):
+            tmp = tempfile.mkdtemp(prefix="wo12_test_")
+            try:
+                ex = make_executor(tmp, posture_fn=armed_posture)
+                # 250 bps adverse = quote 2.5% worse than the median
+                ex.quote_fn = lambda t, s, z: good_quote(
+                    price=PRICE * 1.025)
+                if venue == "buy":
+                    r = ex.process_entry(leader_signal(), NOW)
+                    self.assertEqual(r["action"], "entered",
+                                     f"{venue}: 250 bps must PASS the "
+                                     f"300-bps gate")
+                else:
+                    seed_open_position(ex, "w1-0xdead")
+                    r = ex.process_exit("w1-0xdead", "mirrored_exit", NOW)
+                    self.assertEqual(r["action"], "closed",
+                                     f"{venue}: 250 bps must PASS the "
+                                     f"300-bps gate")
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+            tmp = tempfile.mkdtemp(prefix="wo12_test_")
+            try:
+                ks = FakeKeystore()
+                ex = make_executor(tmp, posture_fn=armed_posture,
+                                   keystore=ks)
+                # 350 bps adverse = quote 3.5% worse than the median
+                ex.quote_fn = lambda t, s, z: good_quote(
+                    price=PRICE * 1.035)
+                if venue == "buy":
+                    r = ex.process_entry(leader_signal(), NOW)
+                    self.assertEqual(r["reason"], "unroutable_skip",
+                                     f"{venue}: 350 bps must ABORT")
+                    self.assertEqual(ks.decrypt_calls, 0)
+                else:
+                    seed_open_position(ex, "w1-0xdead")
+                    r = ex.process_exit("w1-0xdead", "mirrored_exit", NOW)
+                    self.assertIn("unroutable_skip", r["reason"],
+                                  f"{venue}: 350 bps must ABORT")
+                    self.assertEqual(ks.decrypt_calls, 0)
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_day_key_is_chicago_not_utc(self):
+        """(B) the day bucket key is the Chicago-local calendar day:
+        a loss at 01:00 UTC the next day still belongs to the SAME
+        Chicago day (19:00 local). UTC midnight is not the boundary."""
+        # 2023-11-15 01:00:00 UTC == 2023-11-14 19:00:00 Chicago (CST)
+        ts_after_utc_midnight = int(datetime(
+            2023, 11, 15, 1, 0, 0, tzinfo=timezone.utc).timestamp())
+        self.assertEqual(pe._day_key(ts_after_utc_midnight), "2023-11-14",
+                         "01:00 UTC the next day is still the same "
+                         "Chicago day — the halt does NOT reset at UTC "
+                         "midnight")
+        # and the plain UTC view of that same instant differs
+        self.assertEqual(
+            datetime.fromtimestamp(ts_after_utc_midnight,
+                                   tz=timezone.utc).strftime("%Y-%m-%d"),
+            "2023-11-15",
+            "the UTC date really is the next day — the two bucketing "
+            "rules discriminate on this instant")
+
+    def test_fresh_chicago_day_starts_while_utc_date_unchanged(self):
+        """(B) the boundary the ruling actually names: a NEW Chicago day
+        starts at local midnight (06:00 UTC in CST) while the UTC DATE
+        is unchanged. Two timestamps inside the same UTC date, in
+        different Chicago days."""
+        # 2023-11-14 23:30 UTC == 17:30 Chicago (still 11-14 local)
+        ts_before = int(datetime(2023, 11, 14, 23, 30, 0,
+                                 tzinfo=timezone.utc).timestamp())
+        # 2023-11-15 00:30 UTC == 18:30 Chicago the PREVIOUS day
+        # (both are the SAME Chicago day — local 11-14)
+        ts_same_local = int(datetime(2023, 11, 15, 0, 30, 0,
+                                     tzinfo=timezone.utc).timestamp())
+        # 2023-11-15 06:30 UTC == 00:30 Chicago — a FRESH Chicago day
+        # (11-15) while the UTC date is still 11-15 for the first of
+        # these two instants
+        ts_fresh_local = int(datetime(2023, 11, 15, 6, 30, 0,
+                                      tzinfo=timezone.utc).timestamp())
+        self.assertEqual(pe._day_key(ts_before), "2023-11-14")
+        self.assertEqual(pe._day_key(ts_same_local), "2023-11-14",
+                         "straddling UTC midnight does NOT start a new "
+                         "Chicago day")
+        self.assertEqual(pe._day_key(ts_fresh_local), "2023-11-15",
+                         "local midnight starts a fresh Chicago day")
+        # the two fresh-local/utc instants share the UTC date but not
+        # the Chicago day — the discriminating pair
+        utc_date_of_both = (datetime.fromtimestamp(ts_same_local,
+                                                   tz=timezone.utc)
+                            .strftime("%Y-%m-%d"))
+        utc_date_of_fresh = (datetime.fromtimestamp(ts_fresh_local,
+                                                    tz=timezone.utc)
+                             .strftime("%Y-%m-%d"))
+        self.assertEqual(utc_date_of_both, "2023-11-15")
+        self.assertEqual(utc_date_of_fresh, "2023-11-15")
+        self.assertNotEqual(pe._day_key(ts_same_local),
+                            pe._day_key(ts_fresh_local),
+                            "same UTC date, different Chicago days — the "
+                            "halt resets on the Chicago boundary")
+
+    def test_halt_limit_unchanged(self):
+        """(B) the halt LINE is untouched by the bucketing change."""
+        self.assertEqual(pe.DAILY_LOSS_HALT_ETH, 0.001)
 
 
 class TestExpiryHalt(unittest.TestCase):
@@ -439,7 +581,7 @@ class TestUnroutableSkip(unittest.TestCase):
                 self.assertEqual(r["reason"], "unroutable_skip")
                 self.assertEqual(ks.decrypt_calls, 0)
             finally:
-                pe.PROBE_MAX_SLIPPAGE_BPS = 150
+                pe.PROBE_MAX_SLIPPAGE_BPS = pe_default_slippage()
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -926,6 +1068,66 @@ class TestStepSequencingF1(unittest.TestCase):
                                  pos.token_amount)
             finally:
                 shutil.rmtree(tmp)
+
+    def test_exit_quote_sized_from_position_token_amount(self):
+        """(C, WO12): the exit-path quote call passes the POSITION'S
+        TOKEN AMOUNT as the sell size — the same number the wiring
+        encodes as amountIn. Entries still quote at TRADE_SIZE_ETH.
+        Captured from the executor's own quote_fn on a mirrored exit."""
+        tmp = tempfile.mkdtemp(prefix="wo12_test_")
+        try:
+            seen = []
+
+            def capture_quote(token, side, size):
+                seen.append({"token": token, "side": side, "size": size})
+                return good_quote(venue="uniswap_v3")
+
+            ex = make_executor(tmp, posture_fn=armed_posture,
+                               quote_fn=capture_quote,
+                               sign_fn=lambda tx, key: b"signed",
+                               submit_fn=lambda s: {
+                                   "tx_hash": "0x" + "de" * 32,
+                                   "block_number": 123,
+                                   "block_time": NOW,
+                                   "executed_price_usd": PRICE,
+                                   "gas_eth": 0.00002, "gas_usd": 0.05,
+                                   "amount_out": 1000.0})
+            # ENTRY first — size must be TRADE_SIZE_ETH (unchanged)
+            r = ex.process_entry(leader_signal("c1-0xent"), NOW)
+            self.assertEqual(r["action"], "entered")
+            entry_calls = [c for c in seen if c["side"] == "buy"]
+            self.assertTrue(entry_calls, "the entry quoted")
+            self.assertAlmostEqual(entry_calls[0]["size"],
+                                   pe.TRADE_SIZE_ETH,
+                                   "entry quote size stays TRADE_SIZE_ETH")
+            # now the MIRRORED EXIT — size must be pos.token_amount
+            pos = ex.state.open_positions["c1-0xent"]
+            seen.clear()
+            closes = os.path.join(tmp, "closes.jsonl")
+            with open(closes, "w") as f:
+                f.write(json.dumps({
+                    "pick_id": "c1-0xent", "close_reason": "mirrored_exit",
+                    "close_price": PRICE * 1.2, "close_ts": NOW + 300})
+                    + "\n")
+            ex.poller_closes_path = closes
+            summary = ex.run_cycle(NOW + 400)
+            self.assertEqual(summary["exits"][0]["action"], "closed")
+            sell_calls = [c for c in seen if c["side"] == "sell"]
+            self.assertEqual(len(sell_calls), 1,
+                             "exactly one sell quote on the exit")
+            self.assertAlmostEqual(
+                sell_calls[0]["size"], pos.token_amount,
+                msg="sell quote size must be pos.token_amount — the "
+                    "position's tokens, NOT the ETH notional")
+            self.assertNotAlmostEqual(
+                sell_calls[0]["size"], pos.size_eth,
+                msg="the ETH notional is NOT the sell quote size")
+            # and the emitted sell swap step carries the same number
+            steps = ex._build_exit_steps(pos, good_quote(venue="aerodrome"))
+            self.assertEqual(steps[1].position_token_amount,
+                             pos.token_amount)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def test_submitted_sequence_shapes_all_four_paths(self):
         """The SUBMITTED steps (captured from sign_fn) match each path."""

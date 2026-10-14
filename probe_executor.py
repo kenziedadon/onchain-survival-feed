@@ -34,6 +34,7 @@ import sys
 import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 log = logging.getLogger("probe_executor")
 
@@ -46,8 +47,10 @@ MAIN_WALLET = "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F"
 C_POT_ETH = 0.0100            # virtual pot (spec §3)
 TRADE_SIZE_ETH = C_POT_ETH / 50   # 0.0002 — exactly, never variable
 DAILY_LOSS_HALT_ETH = C_POT_ETH / 10  # 0.001 (McKenzie ruling 2026-10-12)
-PROBE_MAX_SLIPPAGE_BPS = float(
-    os.environ.get("PROBE_MAX_SLIPPAGE_BPS", "150"))  # OPEN DECISION #1
+PROBE_MAX_SLIPPAGE_BPS = 300.0   # WO12: was env-default 150. Ruled
+                                 # value, no env knob — every consumer
+                                 # (entry gate, exit gate, wiring's
+                                 # min-out discount) sees 300.
 PROBE_MAX_TRADES = int(os.environ.get("PROBE_MAX_TRADES", "50"))  # #3
 PROBE_EXPIRY_DAYS = 30        # spec §4
 MAX_HOLD_DAYS = 7             # poller's discipline, applied to follower entry
@@ -219,8 +222,20 @@ def default_posture_reader() -> tuple:
     return bool(c.get("kill_switch")), bool(c.get("live_trading"))
 
 
-def _utc_day(ts: int) -> str:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+# The daily-loss day boundary is AMERICA/CHICAGO (WO12): the halt resets
+# at local midnight, not UTC midnight. zoneinfo is stdlib; a host without
+# the tz database would fail closed at import rather than silently
+# bucketing by UTC.
+CHICAGO_TZ = ZoneInfo("America/Chicago")
+
+
+def _day_key(ts: int) -> str:
+    """The Chicago-local calendar day of a unix timestamp — the key the
+    day_bucket is bucketed by. UTC midnight is NOT the boundary: a loss
+    at 19:00 Chicago (01:00 UTC next day) belongs to the SAME Chicago
+    day, and a fresh Chicago day starts at local midnight while the UTC
+    date is unchanged."""
+    return datetime.fromtimestamp(ts, tz=CHICAGO_TZ).strftime("%Y-%m-%d")
 
 
 # ---------------------------------------------------------------------------
@@ -386,7 +401,7 @@ class ProbeExecutor:
 
     def check_daily_loss_halt(self, now: int) -> tuple:
         """Day-bucket realized PnL ≤ -0.001 → halt ENTRIES (exits allowed)."""
-        day = _utc_day(now)
+        day = _day_key(now)
         bucket = self.state.day_bucket.get(day, 0.0)
         if bucket <= -DAILY_LOSS_HALT_ETH + 1e-18:
             return False, (f"daily-loss halt: {day} realized {bucket} ≤ "
@@ -717,7 +732,11 @@ class ProbeExecutor:
             log.warning("exit price failure (%s): %s", pick_id, reason)
             return result
 
-        quote, qreason = self._quote(pos.token, "sell", pos.size_eth)
+        # Sell quote sized from the POSITION'S TOKEN AMOUNT (WO12): a
+        # sell moves tokens, not an ETH notional — the wiring's sign-time
+        # quote and encoded amountIn are sized from this same number.
+        # pos.size_eth (the entry notional) stays the cap-check field.
+        quote, qreason = self._quote(pos.token, "sell", pos.token_amount)
         if quote is None or not quote.routable or quote.amount_out <= 0:
             result["reason"] = "unroutable_skip (retry next cycle)"
             log.warning("exit unroutable (%s): %s", pick_id, qreason)
@@ -790,7 +809,7 @@ class ProbeExecutor:
         pnl_eth = receipt_row["follower_gross_eth"] - (
             pos.entry_gas_eth + pos.exit_gas_eth)
         self.state.realized_pnl_eth += pnl_eth
-        day = _utc_day(now)
+        day = _day_key(now)
         self.state.day_bucket[day] = (self.state.day_bucket.get(day, 0.0)
                                       + pnl_eth)
         self.state.cumulative_gas_eth += pos.exit_gas_eth
