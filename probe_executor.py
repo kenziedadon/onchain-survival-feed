@@ -855,7 +855,8 @@ class ProbeExecutor:
                        position_token_amount=pos.token_amount),
             UnsignedTx(to=router, function=swap_fn, value_eth=0.0,
                        amount_in_eth=pos.size_eth, token=pos.token,
-                       side="sell", deadline_ts=deadline),
+                       side="sell", deadline_ts=deadline,
+                       position_token_amount=pos.token_amount),
         ]
 
     def _execute_steps(self, pick_id: str, kind: str, steps: list,

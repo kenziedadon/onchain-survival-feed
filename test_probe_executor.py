@@ -899,6 +899,34 @@ class TestStepSequencingF1(unittest.TestCase):
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    def test_sell_swap_step_carries_position_token_amount(self):
+        """WO11: the sell SWAP step (both venues) carries the
+        position's token amount. amount_in_eth is the ETH notional;
+        the token amount is what the swap actually sells — encoding
+        the notional as token units was the wiring defect this field
+        fixes. The approve step already carried it; the swap step must
+        too, so the wiring can scale amountIn from the same source on
+        both venues."""
+        for venue in ("aerodrome", "uniswap_v3"):
+            tmp = tempfile.mkdtemp(prefix="wo11_test_")
+            try:
+                ex = make_executor(tmp, posture_fn=armed_posture)
+                seed_open_position(ex, "w1-0xdead")
+                pos = ex.state.open_positions["w1-0xdead"]
+                steps = ex._build_exit_steps(pos, good_quote(venue=venue))
+                swap_step = steps[1]
+                self.assertEqual(swap_step.position_token_amount,
+                                 pos.token_amount,
+                                 f"{venue} sell swap step must carry the "
+                                 f"position's token amount")
+                # the notional field is untouched — the two are separate
+                self.assertAlmostEqual(swap_step.amount_in_eth, pos.size_eth)
+                # and the approve step still carries it (regression guard)
+                self.assertEqual(steps[0].position_token_amount,
+                                 pos.token_amount)
+            finally:
+                shutil.rmtree(tmp)
+
     def test_submitted_sequence_shapes_all_four_paths(self):
         """The SUBMITTED steps (captured from sign_fn) match each path."""
         tmp = tempfile.mkdtemp(prefix="wo9_test_")
