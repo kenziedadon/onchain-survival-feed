@@ -1159,17 +1159,129 @@ def build_live_executor(state_path: str = None, ledger_path: str = None,
     ), providers
 
 
+class _RunnerKeystore:
+    """Keystore shim for runner mode (WO15): holds the PASSPHRASE in
+    memory only and delegates to the real keystore's decrypt_at_use
+    per signing event — the existing decrypt-at-use custody model is
+    preserved exactly: key material stays transient and zeroized per
+    use, exactly as built. The passphrase is zeroized by the runner on
+    exit via zeroize_master(). Nothing here touches disk."""
+
+    def __init__(self, passphrase_bytes: bytes, keystore_mod):
+        self._passphrase = bytearray(passphrase_bytes)
+        self._keystore_mod = keystore_mod
+
+    def decrypt_at_use(self, passphrase=None):
+        # Delegate to the real keystore — decrypt-at-use per event.
+        return self._keystore_mod.decrypt_at_use(bytes(self._passphrase))
+
+    def _zeroize(self, buf):
+        # The executor zeroizes the returned key buffer; the
+        # passphrase lives in the shim, not here. Accept both
+        # bytearray and bytes for robustness.
+        if isinstance(buf, bytearray):
+            for i in range(len(buf)):
+                buf[i] = 0
+        elif isinstance(buf, memoryview):
+            buf[:] = b'\x00' * len(buf)
+
+    def zeroize_master(self):
+        for i in range(len(self._passphrase)):
+            self._passphrase[i] = 0
+        self._passphrase = bytearray()
+
+
+def run_runner(ex, interval_s=60.0, max_cycles=None, sleep_fn=None):
+    """WO15 runner: loop ex.run_cycle() on a cadence. ex must already
+    be started (start() called). Returns the number of cycles run.
+    KeyboardInterrupt exits cleanly. Transient faults in run_cycle are
+    logged and the loop continues (the executor's in-flight recovery is
+    built for exactly this). Keystore errors propagate — revocation or
+    blindness must stop the runner, not spin against a deleted file
+    forever. sleep_fn is injectable for tests."""
+    import time as _time
+    if sleep_fn is None:
+        sleep_fn = _time.sleep
+    cycles = 0
+    try:
+        while max_cycles is None or cycles < max_cycles:
+            try:
+                summary = ex.run_cycle()
+            except Exception as exc:
+                # Check if it's a keystore error — those must stop the runner
+                try:
+                    from probe_keystore import KeystoreError
+                    if isinstance(exc, KeystoreError):
+                        raise
+                except ImportError:
+                    pass
+                # Transient fault — log and continue
+                import logging
+                logging.warning("cycle %d failed (transient): %s", cycles + 1, exc)
+                cycles += 1
+                if max_cycles is None or cycles < max_cycles:
+                    sleep_fn(interval_s)
+                continue
+            cycles += 1
+            print(json.dumps(summary, indent=2))
+            if max_cycles is None or cycles < max_cycles:
+                sleep_fn(interval_s)
+    except KeyboardInterrupt:
+        pass
+    return cycles
+
+
+def _run_runner_mode(args, getpass_fn=None, keystore_mod=None, sleep_fn=None):
+    """WO15 runner: passphrase entered once, held in memory only,
+    zeroized on exit. decrypt-at-use and zeroize in the real keystore
+    are untouched — the runner shim delegates to them per signing event.
+    getpass_fn, keystore_mod, and sleep_fn are injectable for tests."""
+    if getpass_fn is None:
+        import getpass as _gp
+        getpass_fn = _gp.getpass
+    if keystore_mod is None:
+        import probe_keystore as keystore_mod
+
+    passphrase = getpass_fn(
+        "Probe keystore passphrase (typed locally, not stored): ")
+    if not passphrase:
+        print("empty passphrase refused", file=sys.stderr)
+        return 1
+
+    runner_ks = _RunnerKeystore(passphrase.encode("utf-8"), keystore_mod)
+    try:
+        ex, _providers = build_live_executor(
+            poller_state_path=args.poller_state,
+            poller_closes_path=args.poller_closes)
+        ex.keystore = runner_ks
+        ex.start()
+        run_runner(ex, interval_s=args.interval, max_cycles=args.max_cycles,
+                   sleep_fn=sleep_fn)
+    finally:
+        runner_ks.zeroize_master()
+    return 0
+
+
 def main(argv=None) -> int:
     """Wiring entry: --dry-run walks a full cycle with the real READ
     providers wired in, zero sign/submit (posture enforced by the
-    executor itself)."""
+    executor itself). --runner loops run_cycle on a cadence with the
+    passphrase entered once at start."""
     import argparse
     logging.basicConfig(level=logging.INFO)
     p = argparse.ArgumentParser(description="WO10 probe wiring (build only)")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--poller-state", default="")
     p.add_argument("--poller-closes", default="")
+    p.add_argument("--runner", action="store_true",
+                   help="Loop run_cycle on a cadence; passphrase entered once.")
+    p.add_argument("--interval", type=float, default=60.0,
+                   help="Seconds between cycles in runner mode (default 60).")
+    p.add_argument("--max-cycles", type=int, default=None,
+                   help="Stop after N cycles in runner mode (default: infinite).")
     args = p.parse_args(argv)
+    if args.runner:
+        return _run_runner_mode(args)
     ex, _providers = build_live_executor(
         poller_state_path=args.poller_state,
         poller_closes_path=args.poller_closes, dry_run=args.dry_run)

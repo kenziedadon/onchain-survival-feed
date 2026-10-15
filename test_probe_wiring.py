@@ -34,6 +34,7 @@ test here. No test broadcasts to the network.
 """
 from __future__ import annotations
 
+import argparse
 import io
 import json
 import os
@@ -1921,6 +1922,247 @@ class TestExistingSuitesStillGreen(unittest.TestCase):
             self.assertEqual(r.returncode, 0,
                              f"{os.path.basename(path)} failed "
                              f"(rc={r.returncode}):\n{r.stdout}\n{r.stderr}")
+
+
+# ---------------------------------------------------------------------------
+# WO15 — runner mode: keystore shim + loop
+# ---------------------------------------------------------------------------
+
+class TestRunnerKeystore(unittest.TestCase):
+    """WO15 runner keystore shim: holds passphrase, delegates to real
+    keystore per signing event, zeroizes passphrase on exit."""
+
+    def _fake_keystore(self, key):
+        class _FakeKS:
+            def __init__(self):
+                self.decrypt_calls = 0
+                self.last_passphrase = None
+            def decrypt_at_use(self, passphrase=None):
+                self.decrypt_calls += 1
+                self.last_passphrase = passphrase
+                return key
+        return _FakeKS()
+
+    def test_delegates_to_real_keystore_per_call(self):
+        key = bytes(range(32))
+        fks = self._fake_keystore(key)
+        ks = pw._RunnerKeystore(b"test-pass", fks)
+        d1 = ks.decrypt_at_use()
+        d2 = ks.decrypt_at_use()
+        self.assertEqual(bytes(d1), key)
+        self.assertEqual(bytes(d2), key)
+        self.assertEqual(fks.decrypt_calls, 2)  # delegated each time
+        self.assertEqual(fks.last_passphrase, b"test-pass")  # passphrase passed
+
+    def test_decrypt_at_use_accepts_no_args(self):
+        # executor calls decrypt_at_use() with no args — must not raise
+        fks = self._fake_keystore(bytes(range(32)))
+        ks = pw._RunnerKeystore(b"test-pass", fks)
+        ks.decrypt_at_use()
+        self.assertEqual(fks.decrypt_calls, 1)
+
+    def test_zeroize_clears_passed_buffer(self):
+        fks = self._fake_keystore(bytes(range(32)))
+        ks = pw._RunnerKeystore(b"test-pass", fks)
+        buf = bytearray(ks.decrypt_at_use())  # executor wraps in bytearray
+        ks._zeroize(buf)
+        self.assertEqual(bytes(buf), bytes(32))  # buffer zeroized
+        self.assertEqual(fks.decrypt_calls, 1)  # passphrase not re-delegated
+
+    def test_zeroize_master_zeroizes_passphrase(self):
+        fks = self._fake_keystore(bytes(range(32)))
+        ks = pw._RunnerKeystore(b"test-pass", fks)
+        ks.zeroize_master()
+        self.assertEqual(bytes(ks._passphrase), b"")  # passphrase zeroized
+        # After zeroize, decrypt would pass empty passphrase — the
+        # runner's finally block calls zeroize_master then the process
+        # exits, so this is the terminal state.
+
+
+class TestRunRunner(unittest.TestCase):
+    """WO15 runner loop: cycles, cadence, max_cycles, KeyboardInterrupt."""
+
+    def _fake_ex(self):
+        class _Ex:
+            def __init__(self):
+                self.cycles = 0
+            def run_cycle(self):
+                self.cycles += 1
+                return {"entries": [], "exits": [], "refusals": [], "recovered": []}
+        return _Ex()
+
+    def test_runs_max_cycles(self):
+        ex = self._fake_ex()
+        n = pw.run_runner(ex, interval_s=999, max_cycles=3,
+                         sleep_fn=lambda s: None)
+        self.assertEqual(n, 3)
+        self.assertEqual(ex.cycles, 3)
+
+    def test_keyboard_interrupt_exits_cleanly(self):
+        ex = self._fake_ex()
+        def _raise(s):
+            raise KeyboardInterrupt
+        n = pw.run_runner(ex, interval_s=999, max_cycles=5,
+                         sleep_fn=_raise)
+        self.assertEqual(n, 1)  # one cycle ran, then interrupt on sleep
+        self.assertEqual(ex.cycles, 1)
+
+    def test_infinite_by_default(self):
+        # max_cycles=None means infinite — verify it would run forever
+        # by using a sleep_fn that interrupts after a few calls.
+        # Trace: cycle1, sleep(calls=1), cycle2, sleep(calls=2 → INT)
+        # → 2 cycles complete before the interrupt.
+        ex = self._fake_ex()
+        calls = []
+        def _interrupt_after_2(s):
+            calls.append(s)
+            if len(calls) >= 2:
+                raise KeyboardInterrupt
+        n = pw.run_runner(ex, interval_s=0.001, max_cycles=None,
+                         sleep_fn=_interrupt_after_2)
+        self.assertEqual(n, 2)
+        self.assertEqual(ex.cycles, 2)
+        self.assertEqual(len(calls), 2)
+
+
+class TestRunnerMode(unittest.TestCase):
+    """WO15 runner mode: passphrase once, held in memory, zeroized on exit."""
+
+    def _fake_ex(self):
+        class _Ex:
+            def __init__(self):
+                self.keystore = None
+                self.started = False
+                self.cycles = 0
+            def start(self):
+                self.started = True
+            def run_cycle(self):
+                self.cycles += 1
+                return {"entries": [], "exits": [], "refusals": [], "recovered": []}
+        return _Ex()
+
+    def _fake_keystore(self):
+        class _FakeKS:
+            def __init__(self):
+                self.decrypt_calls = 0
+            def decrypt_at_use(self, passphrase=None):
+                self.decrypt_calls += 1
+                return bytes(range(32))
+        return _FakeKS()
+
+    def test_runner_mode_passphrase_once_zeroize_on_exit(self):
+        import probe_wiring as pw
+        fake_ks = self._fake_keystore()
+        fake_ex = self._fake_ex()
+
+        orig_build = pw.build_live_executor
+        pw.build_live_executor = lambda **kw: (fake_ex, None)
+        try:
+            getpass_calls = []
+            def _fake_getpass(prompt=""):
+                getpass_calls.append(prompt)
+                return "test-passphrase"
+
+            args = argparse.Namespace(poller_state="", poller_closes="",
+                                      interval=999, max_cycles=2)
+            rc = pw._run_runner_mode(args, getpass_fn=_fake_getpass,
+                                     keystore_mod=fake_ks,
+                                     sleep_fn=lambda s: None)
+        finally:
+            pw.build_live_executor = orig_build
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(getpass_calls), 1)  # passphrase entered once
+        self.assertTrue(fake_ex.started)
+        self.assertEqual(fake_ex.cycles, 2)  # max_cycles=2
+        # shim holds the passphrase, not the key — real keystore
+        # not called at runner startup (no upfront decrypt)
+        self.assertEqual(fake_ks.decrypt_calls, 0)
+        # passphrase zeroized on exit
+        runner_ks = fake_ex.keystore
+        self.assertIsInstance(runner_ks, pw._RunnerKeystore)
+        self.assertEqual(bytes(runner_ks._passphrase), b"")
+
+    def test_runner_mode_empty_passphrase_refused(self):
+        orig_build = pw.build_live_executor
+        pw.build_live_executor = lambda **kw: (self._fake_ex(), None)
+        try:
+            def _fake_getpass(prompt=""):
+                return ""
+            args = argparse.Namespace(poller_state="", poller_closes="",
+                                      interval=60, max_cycles=None)
+            rc = pw._run_runner_mode(args, getpass_fn=_fake_getpass,
+                                     keystore_mod=self._fake_keystore())
+            self.assertEqual(rc, 1)
+        finally:
+            pw.build_live_executor = orig_build
+
+    def test_f1_zeroize_on_start_failure(self):
+        """F1: ex.start() raises (wrong passphrase at startup address
+        check) — zeroize_master() must still be called."""
+        class _FailStartEx:
+            def __init__(self):
+                self.keystore = None
+            def start(self):
+                raise RuntimeError("startup key derivation mismatch")
+            def run_cycle(self):
+                raise AssertionError("should not reach run_cycle")
+
+        fake_ex = _FailStartEx()
+        fake_ks = self._fake_keystore()
+
+        orig_build = pw.build_live_executor
+        pw.build_live_executor = lambda **kw: (fake_ex, None)
+        try:
+            def _fake_getpass(prompt=""):
+                return "wrong-pass"
+
+            args = argparse.Namespace(poller_state="", poller_closes="",
+                                      interval=60, max_cycles=None)
+            with self.assertRaises(RuntimeError):
+                pw._run_runner_mode(args, getpass_fn=_fake_getpass,
+                                    keystore_mod=fake_ks,
+                                    sleep_fn=lambda s: None)
+        finally:
+            pw.build_live_executor = orig_build
+
+        # F1 assertion: passphrase was zeroized even though start() raised
+        runner_ks = fake_ex.keystore
+        self.assertIsInstance(runner_ks, pw._RunnerKeystore)
+        self.assertEqual(bytes(runner_ks._passphrase), b"")
+
+
+class TestRunnerF2(unittest.TestCase):
+    """F2: log-and-continue on transient faults, exit on keystore errors."""
+
+    def _fake_ex_with_error(self, error_cls, fail_on_cycle=1):
+        class _Ex:
+            def __init__(self):
+                self.cycles = 0
+            def run_cycle(self):
+                self.cycles += 1
+                if self.cycles == fail_on_cycle:
+                    raise error_cls("injected fault")
+                return {"entries": [], "exits": [], "refusals": [], "recovered": []}
+        return _Ex()
+
+    def test_transient_fault_log_and_continue(self):
+        """Generic exception in run_cycle — runner logs and continues."""
+        ex = self._fake_ex_with_error(RuntimeError, fail_on_cycle=1)
+        n = pw.run_runner(ex, interval_s=999, max_cycles=3,
+                         sleep_fn=lambda s: None)
+        self.assertEqual(n, 3)  # all 3 cycles attempted
+        self.assertEqual(ex.cycles, 3)
+
+    def test_keystore_error_exits_runner(self):
+        """KeystoreError in run_cycle — runner must exit, not spin."""
+        from probe_keystore import KeystoreError
+        ex = self._fake_ex_with_error(KeystoreError, fail_on_cycle=2)
+        # max_cycles=5 but keystore error on cycle 2 must stop the runner
+        with self.assertRaises(KeystoreError):
+            pw.run_runner(ex, interval_s=999, max_cycles=5,
+                          sleep_fn=lambda s: None)
+        self.assertEqual(ex.cycles, 2)  # stopped at cycle 2
 
 
 if __name__ == "__main__":
