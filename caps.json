@@ -25,8 +25,8 @@
     "sell_high_pct": 0.04,
     "trailing_stop_pct": 0.015
   },
-  "kill_switch": true,
-  "live_trading": false,
+  "kill_switch": false,
+  "live_trading": true,
   "require_confirmation": true,
   "max_trade_eth": 0.001,
   "max_daily_loss_eth": 0.0004,
@@ -63,8 +63,8 @@
   },
   "_arm_ts": "2026-10-02T19:35:35.798432+00:00",
   "arm_provenance": "arm_signal_v1",
-  "arm_applied_at": null,
-  "arm_authorized_by": null,
+  "arm_applied_at": "2026-10-14T21:55:00Z",
+  "arm_authorized_by": "McKenzie Shannon — explicit go-live words in Telegram 2026-10-14 (post-revocation-test); passphrase typed locally at PC",
   "arm_note": "KILL SWITCH re-engaged 2026-09-14T21:30 UTC \u2014 auto-arm triggered at .32 balance with auto_confirm=true. Re-disarmed to preserve capital. Arm authorization (arm_signal_v1) preserved for audit.",
   "_override_applied_at": "2026-08-30T18:52:19.210694",
   "_user_override": {
