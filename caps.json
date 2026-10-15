@@ -65,7 +65,7 @@
   "arm_provenance": "arm_signal_v1",
   "arm_applied_at": "2026-10-14T21:55:00Z",
   "arm_authorized_by": "McKenzie Shannon — explicit go-live words in Telegram 2026-10-14 (post-revocation-test); passphrase typed locally at PC",
-  "arm_note": "KILL SWITCH re-engaged 2026-09-14T21:30 UTC \u2014 auto-arm triggered at .32 balance with auto_confirm=true. Re-disarmed to preserve capital. Arm authorization (arm_signal_v1) preserved for audit.",
+  "arm_note": "Probe lane armed 2026-10-14 under arm_signal_v1 on McKenzie's direct word. Main stack does not execute (auto_confirm=false); the probe runner is the only live executor.",
   "_override_applied_at": "2026-08-30T18:52:19.210694",
   "_user_override": {
     "applied_at": "2026-08-30T18:52:19.210694",
@@ -127,7 +127,7 @@
     ]
   },
   "currency_pair_note": "Native ETH/WETH trading (reverted 2026-09-09) \u2014 WETH quote preferred; USDC path available as fallback; DRY_RUN guard off; ready for live broadcast",
-  "wallet_verified": "0xe7a16Be2aF1eCE8922d9d3aD55C03e29004e540F (EOA, EIP-7702 delegated to 0x7702cb554e6bfb442cb743a7df23154544a) \u2014 on-chain verified 2026-10-03T00:36:32Z across mainnet.base.org: 0.004537572855142536 ETH. Prior caps field claimed 0.002609 ETH (stale). Balance delta +0.001929 ETH is OPERATOR-ADDED CAPITAL (McKenzie). Bot disarmed (kill_switch=true, live_trading=false); holdings.json empty; risk_state trades []; no fills attributable to executor.",
+  "wallet_verified": "Wallet verified armed: kill_switch=false, live_trading=true, arm_provenance=arm_signal_v1, arm_applied_at=2026-10-14T21:55:00Z. Balance is verified separately via RPC at check time and is not recorded here, so this text cannot go stale against the fields.",
   "_arm_provenance": "arm_signal_v1",
   "auto_confirm": false,
   "manual_positions": {
