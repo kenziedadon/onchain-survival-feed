@@ -348,11 +348,15 @@ def _check_runner_heartbeat():
         is_stale = True  # Missing file = stale (runner not running)
         age_detail = "file missing"
 
-    # Read caps posture
+    # Read caps posture — mirror the lane's arm contract (WO14):
+    # kill_switch=False AND live_trading=True AND provenance valid.
+    # A half-state (one flag flipped, lane unable to trade) is NOT armed;
+    # staleness there is not a runner-failure signal.
     caps = _read_caps()
     armed = (caps is not None
-              and (caps.get("kill_switch") is not True
-                   or caps.get("live_trading") is True))
+             and caps.get("kill_switch") is False
+             and caps.get("live_trading") is True
+             and _arm_provenance_valid(caps))
 
     # Read state for tracking (one alert per stale episode)
     state = {}

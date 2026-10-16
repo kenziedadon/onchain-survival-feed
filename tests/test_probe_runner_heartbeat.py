@@ -7,8 +7,9 @@ Tests:
   3. Stale + ARMED → exactly one alert
   4. Stale + ARMED → no second alert (already alerted)
   5. Stale + DISARMED → no alert
-  6. Recovery → one alert
-  7. New staleness → one alert
+  6. Stale + mixed posture → no alert (half-state can't trade)
+  7. Recovery → one alert
+  8. New staleness → one alert
 
 All tests use scratch fixtures in temp dirs. No test contacts a chain,
 a keystore, or starts an executor. The real caps.json is NEVER read or
@@ -54,6 +55,28 @@ def _armed_caps():
 def _disarmed_caps():
     """A plain disarmed caps — runner heartbeat staleness is expected."""
     return {"kill_switch": True, "live_trading": False}
+
+
+def _mixed_ks_false_lt_false():
+    """Mixed state: kill_switch=False, live_trading=False (can't trade)."""
+    return {
+        "kill_switch": False,
+        "live_trading": False,
+        "arm_provenance": "arm_signal_v1",
+        "arm_authorized_by": "McKenzie Shannon — explicit go-live words",
+        "arm_applied_at": "2026-10-14T21:10:00Z",
+    }
+
+
+def _mixed_ks_true_lt_true():
+    """Mixed state: kill_switch=True, live_trading=True (blocked)."""
+    return {
+        "kill_switch": True,
+        "live_trading": True,
+        "arm_provenance": "arm_signal_v1",
+        "arm_authorized_by": "McKenzie Shannon — explicit go-live words",
+        "arm_applied_at": "2026-10-14T21:10:00Z",
+    }
 
 
 def _scratch_bot(tmp_path, caps_dict, monkeypatch):
@@ -289,6 +312,41 @@ class TestStaleDisarmed:
                                                    monkeypatch):
         """Missing heartbeat + DISARMED → no alert."""
         bot = _scratch_bot(tmp_path, _disarmed_caps(), monkeypatch)
+        rc, out = _run_check(bot)
+        assert rc == 0
+        assert _alert_count(watchdog.ALERT_LOG) == 0
+
+
+# ---------------------------------------------------------------------------
+# (4b) Stale + mixed posture → no alert (half-state can't trade)
+# ---------------------------------------------------------------------------
+
+class TestMixedStates:
+    """kill_switch=False/live_trading=False → no alert; kill_switch=True/
+    live_trading=True → no alert.  The arm contract requires BOTH flags in
+    the trading direction AND valid provenance.  A half-state lane cannot
+    trade, so staleness is not a runner-failure signal."""
+
+    def test_stale_mixed_ks_false_lt_false_no_alert(self, tmp_path,
+                                                     monkeypatch):
+        """Stale heartbeat + kill_switch=False, live_trading=False → no alert."""
+        bot = _scratch_bot(tmp_path, _mixed_ks_false_lt_false(), monkeypatch)
+        hb = bot / "probe_runner.heartbeat"
+        hb.write_text("2026-10-15T00:00:00+00:00\n")
+        _set_heartbeat_mtime(hb, 600)
+
+        rc, out = _run_check(bot)
+        assert rc == 0
+        assert _alert_count(watchdog.ALERT_LOG) == 0
+
+    def test_stale_mixed_ks_true_lt_true_no_alert(self, tmp_path,
+                                                   monkeypatch):
+        """Stale heartbeat + kill_switch=True, live_trading=True → no alert."""
+        bot = _scratch_bot(tmp_path, _mixed_ks_true_lt_true(), monkeypatch)
+        hb = bot / "probe_runner.heartbeat"
+        hb.write_text("2026-10-15T00:00:00+00:00\n")
+        _set_heartbeat_mtime(hb, 600)
+
         rc, out = _run_check(bot)
         assert rc == 0
         assert _alert_count(watchdog.ALERT_LOG) == 0
