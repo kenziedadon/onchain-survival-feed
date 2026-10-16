@@ -214,6 +214,18 @@ def _load_baseforge():
     return _dex, cfg
 
 
+def _checksum(addr: str) -> str:
+    """Normalize an address to EIP-55 before it reaches web3.
+
+    web3.py's request formatter raises InvalidAddress on a non-checksummed
+    `to`, so any lowercased address (the poller's state file stores them
+    lowercase) would otherwise fail the very first eth_call. Cheap and
+    idempotent: an already-checksummed address round-trips unchanged.
+    """
+    from web3 import Web3
+    return Web3.to_checksum_address(addr)
+
+
 class _RpcClient:
     """Minimal ChainClient-shaped adapter over web3 for BaseForge's
     LiveQuoter (eth_call + balance + code checks only — read-only)."""
@@ -223,7 +235,7 @@ class _RpcClient:
         self.chain_id = CHAIN_ID
 
     def eth_call(self, to: str, data: str, value_wei: int = 0) -> str:
-        return self._w3.eth.call({"to": to, "data": data,
+        return self._w3.eth.call({"to": _checksum(to), "data": data,
                                   "value": value_wei}).hex()
 
     def get_base_fee_wei(self) -> int:
@@ -239,7 +251,7 @@ class _RpcClient:
         return int(self.eth_call(token, data), 16)
 
     def has_bytecode(self, address: str) -> bool:
-        return len(self._w3.eth.get_code(address)) > 2
+        return len(self._w3.eth.get_code(_checksum(address))) > 2
 
     def send_raw_transaction(self, signed_tx: str) -> str:  # not used here
         raise ExecutorError("read-only client: send refused")
@@ -449,7 +461,7 @@ class LiveProviders:
         dex, _cfg = self._ensure_dex()
         data = "0x" + (dex.selector(_BALANCE_OF_SIG)
                        + dex.enc_address(owner)).hex()
-        raw = self._ensure_chain().eth.call({"to": token, "data": data})
+        raw = self._ensure_chain().eth.call({"to": _checksum(token), "data": data})
         return int(bytes(raw).hex(), 16)
 
     # -- signing (float -> integer wei boundary lives HERE) ----------------------

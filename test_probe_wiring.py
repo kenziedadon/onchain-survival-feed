@@ -2165,5 +2165,74 @@ class TestRunnerF2(unittest.TestCase):
         self.assertEqual(ex.cycles, 2)  # stopped at cycle 2
 
 
+class TestAddressChecksumBoundary(unittest.TestCase):
+    """WO17: web3.py's request formatter raises InvalidAddress on a
+    non-checksummed `to`. The poller state file stores token addresses
+    lowercase, so EVERY address that reaches web3 must be normalized
+    first — including the direct `w3.eth.call` in _balance_of, which does
+    NOT pass through _RpcClient. Regression guard for the WO17 fix.
+    """
+
+    LOWER = "0xb2000000000000000000003d760a57f93078d901"
+    OWNER = "0x" + "11" * 20
+
+    def _stub_w3(self):
+        from web3 import Web3
+        outer = self
+        outer.seen = {}
+        outer.checksum = Web3.to_checksum_address(self.LOWER)
+
+        class _Eth:
+            def call(inner, tx):
+                outer.seen["call_to"] = tx.get("to")
+                return b"\x00" * 32
+
+            def get_code(inner, addr):
+                outer.seen["code_addr"] = addr
+                return "0x60016001"
+
+        class _W3:
+            pass
+
+        w3 = _W3()
+        w3.eth = _Eth()
+        return w3
+
+    def test_rpc_client_eth_call_checksums_to(self):
+        client = pw._RpcClient(self._stub_w3())
+        client.eth_call(self.LOWER, "0x313ce567")
+        self.assertEqual(self.seen["call_to"], self.checksum)
+
+    def test_rpc_client_has_bytecode_checksums_address(self):
+        client = pw._RpcClient(self._stub_w3())
+        client.has_bytecode(self.LOWER)
+        self.assertEqual(self.seen["code_addr"], self.checksum)
+
+    def test_balance_of_checksums_token(self):
+        """_balance_of calls w3.eth.call directly, bypassing _RpcClient,
+        so it must normalize the token itself."""
+        class _StubDex:
+            @staticmethod
+            def selector(sig):
+                return b"\x70\xa0\x82\x31"
+
+            @staticmethod
+            def enc_address(addr):
+                return b"\x00" * 12 + bytes.fromhex(str(addr)[2:].rjust(40, "0"))
+
+        providers = pw.LiveProviders.__new__(pw.LiveProviders)
+        providers._w3 = self._stub_w3()
+        providers._dex = _StubDex()
+        providers._config = object()
+        providers._balance_of(self.LOWER, self.OWNER)
+        self.assertEqual(self.seen["call_to"], self.checksum)
+
+    def test_checksum_is_idempotent(self):
+        """An already-checksummed address must round-trip unchanged."""
+        from web3 import Web3
+        cs = Web3.to_checksum_address(self.LOWER)
+        self.assertEqual(pw._checksum(cs), cs)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
