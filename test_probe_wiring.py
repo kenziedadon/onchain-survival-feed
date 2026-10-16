@@ -2234,5 +2234,58 @@ class TestAddressChecksumBoundary(unittest.TestCase):
         self.assertEqual(pw._checksum(cs), cs)
 
 
+class TestDryRunWritesNothing(unittest.TestCase):
+    """WO18-1: a dry-run cycle is observe-only. It must leave the ledger
+    and state files it was handed byte-identical — no _append_ledger, no
+    processed_pick_ids persisted, no save_state.
+
+    This is the regression that would have caught the WO17 incident, where
+    two dry-runs appended 46 rows (36 distinct, 10 duplicates) to the
+    production ledger and sync_probe_ledger.sh pushed them to GitHub.
+    """
+
+    REAL_POLLER_STATE = "/home/kenzodadon/base-trend-bot/copy_trader/state.json"
+    REAL_POLLER_CLOSES = ("/home/kenzodadon/Grok-muse/handoff/"
+                          "copy-trader-closes/closes.jsonl")
+
+    def test_dry_run_leaves_production_files_byte_identical(self):
+        tmp = tempfile.mkdtemp(prefix="wo18_dryrun_")
+        state_path = os.path.join(tmp, "probe_lane_state.json")
+        ledger_path = os.path.join(tmp, "probe_ledger.jsonl")
+
+        # Seed both production paths with known content.
+        seed_state = json.dumps(pe.LaneState().to_dict(), indent=2)
+        seed_ledger = json.dumps({"seed": True}, sort_keys=True) + "\n"
+        with open(state_path, "w") as f:
+            f.write(seed_state)
+        with open(ledger_path, "w") as f:
+            f.write(seed_ledger)
+        before_state = open(state_path, "rb").read()
+        before_ledger = open(ledger_path, "rb").read()
+
+        # Real poller inputs; providers stubbed so the cycle is offline.
+        # price_fn returns no price -> every position lands on the
+        # price_failure_skip branch, which is one of the branches that
+        # used to append to the ledger and save state.
+        ex = pe.ProbeExecutor(
+            state_path=state_path, ledger_path=ledger_path,
+            poller_state_path=self.REAL_POLLER_STATE,
+            poller_closes_path=self.REAL_POLLER_CLOSES,
+            posture_fn=lambda: (False, True),          # armed
+            price_fn=lambda t: (None, "no price"),
+            dry_run=True,
+        )
+        summary = ex.run_cycle()
+
+        # The cycle was non-vacuous: exactly one refusal per leader pick.
+        with open(self.REAL_POLLER_STATE) as f:
+            n_positions = len(json.load(f).get("open_positions") or {})
+        self.assertEqual(len(summary["refusals"]), n_positions)
+
+        # The property under test: nothing was written.
+        self.assertEqual(open(state_path, "rb").read(), before_state)
+        self.assertEqual(open(ledger_path, "rb").read(), before_ledger)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

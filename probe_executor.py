@@ -288,6 +288,11 @@ class ProbeExecutor:
         return LaneState()
 
     def save_state(self) -> None:
+        if self.dry_run:
+            # WO18: see _append_ledger — dry-run must not persist state.
+            # Gating here (not at each call site) covers every writer:
+            # process_entry, process_exit, _recover_inflight, run_cycle.
+            return
         tmp = self.state_path + ".tmp"
         with open(tmp, "w") as f:
             json.dump(self.state.to_dict(), f, indent=2)
@@ -296,6 +301,11 @@ class ProbeExecutor:
         os.replace(tmp, self.state_path)
 
     def _append_ledger(self, row: dict) -> None:
+        if self.dry_run:
+            # WO18: a dry-run cycle is observe-only. This is the write
+            # that put 46 dry-run rows into the production ledger (and
+            # GitHub) during the WO17 investigation.
+            return
         os.makedirs(os.path.dirname(self.ledger_path), exist_ok=True)
         with open(self.ledger_path, "a") as f:
             f.write(json.dumps(row, sort_keys=True) + "\n")
