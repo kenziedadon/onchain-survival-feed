@@ -9,9 +9,14 @@ Tests:
   5. Stale + DISARMED → no alert
   6. Stale + mixed posture → no alert (half-state can't trade)
   7. Recovery → one alert
-  8. New staleness → one alert
+  8. New staleness → one alert (new episode)
+  9. F4: stale-while-disarmed → arm → one alert (fresh episode)
+  10. F4: stale-while-disarmed → fresh → no spurious recovery
 
-All tests use scratch fixtures in temp dirs. No test contacts a chain,
+F4 tests call _check_runner_heartbeat() directly rather than cmd_check(),
+because arming the lane mid-test rewrites caps.json — which cmd_check also
+flags as a posture/file change. The state-machine transition is what F4
+pins, so we call the function under test directly.
 a keystore, or starts an executor. The real caps.json is NEVER read or
 written by this suite.
 
@@ -315,6 +320,64 @@ class TestStaleDisarmed:
         rc, out = _run_check(bot)
         assert rc == 0
         assert _alert_count(watchdog.ALERT_LOG) == 0
+
+
+class TestF4DisarmedToArmedTransition:
+    """F4: stale-while-disarmed must NOT carry the was_stale flag forward.
+
+    When staleness is observed while DISARMED, the flag must be cleared
+    (not set True) so that arming the lane while the runner is still down
+    starts a fresh episode and fires exactly one STALE alert — not silence.
+    """
+
+    def test_stale_disarmed_then_arm_fires_once(self, tmp_path, monkeypatch):
+        """Stale+DISARMED (no alert) → arm caps → stale+ARMED → one alert.
+
+        Before F4: the disarmed-stale tick set was_stale=True in state, so
+        the first armed+stale tick read 'already alerted' and stayed silent.
+        After F4: the flag is cleared on the disarmed-stale branch, so the
+        arm transition starts a fresh episode and fires exactly one alert.
+        """
+        bot = _scratch_bot(tmp_path, _disarmed_caps(), monkeypatch)
+        hb = bot / "probe_runner.heartbeat"
+        hb.write_text("2026-10-15T00:00:00+00:00\n")
+        _set_heartbeat_mtime(hb, 600)  # stale
+
+        # Step 1: disarmed + stale → no alert (flag cleared by F4)
+        alert1 = watchdog._check_runner_heartbeat()
+        assert alert1 is None
+
+        # Step 2: arm the lane WITHOUT restarting the runner (still stale)
+        (bot / "caps.json").write_text(json.dumps(_armed_caps()))
+
+        # Step 3: armed + stale → exactly one STALE alert (new episode)
+        alert2 = watchdog._check_runner_heartbeat()
+        assert alert2 is not None
+        assert "RUNNER HEARTBEAT STALE" in alert2
+
+        # Step 4: second check, still stale + armed → no new alert
+        alert3 = watchdog._check_runner_heartbeat()
+        assert alert3 is None  # already alerted for this episode
+
+    def test_disarmed_stale_then_fresh_no_spurious_recovery(self, tmp_path,
+                                                             monkeypatch):
+        """Stale+DISARMED (no alert) → runner starts fresh while still
+        disarmed → NO spurious RECOVERED alert (flag was cleared)."""
+        bot = _scratch_bot(tmp_path, _disarmed_caps(), monkeypatch)
+        hb = bot / "probe_runner.heartbeat"
+        hb.write_text("2026-10-15T00:00:00+00:00\n")
+        _set_heartbeat_mtime(hb, 600)  # stale
+
+        # Step 1: disarmed + stale → no alert (flag cleared by F4)
+        alert1 = watchdog._check_runner_heartbeat()
+        assert alert1 is None
+
+        # Step 2: runner starts (fresh heartbeat), still disarmed
+        hb.write_text(datetime.now(timezone.utc).isoformat() + "\n")
+
+        # Step 3: disarmed + fresh → no spurious RECOVERED
+        alert2 = watchdog._check_runner_heartbeat()
+        assert alert2 is None  # before F4: this would have been RECOVERED
 
 
 # ---------------------------------------------------------------------------

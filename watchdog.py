@@ -384,8 +384,18 @@ def _check_runner_heartbeat():
         else:
             alert = None
 
-    # Update state
-    state["runner_heartbeat_was_stale"] = is_stale
+    # Update state.
+    # F4: staleness observed while DISARMED is expected, not an episode.
+    # Clear the flag on the disarmed-stale branch so an arm transition
+    # into stale territory starts a fresh episode (fires exactly one alert).
+    # Previously the flag was carried True from a disarmed-stale tick, causing
+    # the first armed+stale tick to read "already alerted" and stay silent.
+    # Side benefit: a runner starting while disarmed after a disarmed-stale
+    # period produces no spurious RECOVERED alert (flag was cleared).
+    if is_stale and not armed:
+        state["runner_heartbeat_was_stale"] = False
+    else:
+        state["runner_heartbeat_was_stale"] = is_stale
     try:
         STATE_FILE.write_text(json.dumps(state, indent=2))
     except OSError:
