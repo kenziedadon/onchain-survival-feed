@@ -263,7 +263,7 @@ class ProbeExecutor:
                                    if poller_closes_path else "")
         self.posture_fn = posture_fn
         self.price_fn = price_fn          # (token) -> (price_usd|None, reason)
-        self.quote_fn = quote_fn          # (token, side, size_eth) -> Quote|None
+        self.quote_fn = quote_fn          # (token, side, size_eth) -> (Quote|None, reason)
         self.sign_fn = sign_fn            # (UnsignedTx, key_bytearray) -> bytes
         self.submit_fn = submit_fn        # (signed) -> receipt dict
         self.balance_fn = balance_fn      # () -> eth balance float
@@ -520,10 +520,14 @@ class ProbeExecutor:
         return (price if price else None), reason
 
     def _quote(self, token: str, side: str, size_eth: float):
-        """(Quote|None, reason). Best executable quote or None."""
+        """(Quote|None, reason). Best executable quote or None.
+
+        WO18-2: the quoter's own reason is threaded through instead of the
+        hardcoded "" this used to return — an empty reason is why every
+        refusal line read `unroutable (<pick>): ` with nothing after it."""
         if self.quote_fn is None:
             return None, "no quoter configured"
-        return self.quote_fn(token, side, size_eth), ""
+        return self.quote_fn(token, side, size_eth)
 
     def _slippage_bps(self, quoted: float, executed: float) -> float:
         """Positive = adverse vs the quote."""

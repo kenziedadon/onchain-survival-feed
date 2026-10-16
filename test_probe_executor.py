@@ -97,7 +97,7 @@ def make_executor(tmp, **kw):
         ledger_path=os.path.join(tmp, "ledger.jsonl"),
         posture_fn=lambda: (True, False),          # disarmed by default
         price_fn=lambda token: (PRICE, "ok"),
-        quote_fn=lambda token, side, size: good_quote(),
+        quote_fn=lambda token, side, size: (good_quote(), ""),
         sign_fn=lambda tx, key: b"signed",
         submit_fn=lambda signed: {
             "tx_hash": "0x" + "de" * 32, "block_number": 123,
@@ -384,8 +384,8 @@ class TestSlippageAndDayBucketWO12(unittest.TestCase):
             try:
                 ex = make_executor(tmp, posture_fn=armed_posture)
                 # 250 bps adverse = quote 2.5% worse than the median
-                ex.quote_fn = lambda t, s, z: good_quote(
-                    price=PRICE * 1.025)
+                ex.quote_fn = lambda t, s, z: (good_quote(
+                    price=PRICE * 1.025), "")
                 if venue == "buy":
                     r = ex.process_entry(leader_signal(), NOW)
                     self.assertEqual(r["action"], "entered",
@@ -405,8 +405,8 @@ class TestSlippageAndDayBucketWO12(unittest.TestCase):
                 ex = make_executor(tmp, posture_fn=armed_posture,
                                    keystore=ks)
                 # 350 bps adverse = quote 3.5% worse than the median
-                ex.quote_fn = lambda t, s, z: good_quote(
-                    price=PRICE * 1.035)
+                ex.quote_fn = lambda t, s, z: (good_quote(
+                    price=PRICE * 1.035), "")
                 if venue == "buy":
                     r = ex.process_entry(leader_signal(), NOW)
                     self.assertEqual(r["reason"], "unroutable_skip",
@@ -555,7 +555,7 @@ class TestUnroutableSkip(unittest.TestCase):
         try:
             ks = FakeKeystore()
             ex = make_executor(tmp, posture_fn=armed_posture,
-                               quote_fn=lambda token, side, size: None,
+                               quote_fn=lambda token, side, size: (None, "no route"),
                                keystore=ks)
             r = ex.process_entry(leader_signal(), NOW)
             self.assertEqual(r["action"], "skip")
@@ -576,7 +576,7 @@ class TestUnroutableSkip(unittest.TestCase):
             pe.PROBE_MAX_SLIPPAGE_BPS = 100
             try:
                 # quote 5% worse than the median
-                ex.quote_fn = lambda t, s, z: good_quote(price=PRICE * 1.05)
+                ex.quote_fn = lambda t, s, z: (good_quote(price=PRICE * 1.05), "")
                 r = ex.process_entry(leader_signal(), NOW)
                 self.assertEqual(r["reason"], "unroutable_skip")
                 self.assertEqual(ks.decrypt_calls, 0)
@@ -1080,7 +1080,7 @@ class TestStepSequencingF1(unittest.TestCase):
 
             def capture_quote(token, side, size):
                 seen.append({"token": token, "side": side, "size": size})
-                return good_quote(venue="uniswap_v3")
+                return good_quote(venue="uniswap_v3"), ""
 
             ex = make_executor(tmp, posture_fn=armed_posture,
                                quote_fn=capture_quote,
@@ -1148,7 +1148,7 @@ class TestStepSequencingF1(unittest.TestCase):
             signed_txs.clear()
             ex2 = make_executor(tmp2, posture_fn=armed_posture,
                                 quote_fn=lambda t, s, z:
-                                good_quote(venue="uniswap_v3"),
+                                (good_quote(venue="uniswap_v3"), ""),
                                 sign_fn=lambda tx, key:
                                 signed_txs.append(tx) or b"s")
             r2 = ex2.process_entry(leader_signal("u1-0xuni"), NOW)
@@ -1166,7 +1166,7 @@ class TestStepSequencingF1(unittest.TestCase):
                     "close_price": PRICE * 1.2, "close_ts": NOW + 300}) + "\n")
             ex2.poller_closes_path = closes
             # quote for the sell: uniswap venue (position's token)
-            ex2.quote_fn = lambda t, s, z: good_quote(venue="uniswap_v3")
+            ex2.quote_fn = lambda t, s, z: (good_quote(venue="uniswap_v3"), "")
             summary = ex2.run_cycle(NOW + 400)
             self.assertEqual(summary["exits"][0]["action"], "closed")
             self.assertEqual([t.function for t in signed_txs],
@@ -1191,7 +1191,7 @@ class TestStepSequencingF1(unittest.TestCase):
 
             ex = make_executor(tmp, posture_fn=armed_posture,
                                quote_fn=lambda t, s, z:
-                               good_quote(venue="uniswap_v3"),
+                               (good_quote(venue="uniswap_v3"), ""),
                                sign_fn=failing_second)
             r = ex.process_entry(leader_signal(), NOW)
             self.assertNotEqual(r["action"], "entered")
@@ -1216,7 +1216,7 @@ class TestStepSequencingF1(unittest.TestCase):
         try:
             ex = make_executor(tmp, posture_fn=armed_posture,
                                quote_fn=lambda t, s, z:
-                               good_quote(venue="uniswap_v3"),
+                               (good_quote(venue="uniswap_v3"), ""),
                                submit_fn=lambda signed: (_ for _ in ()).throw(
                                    KeyboardInterrupt("simulated crash")))
             # A true crash propagates (BaseException is NOT caught by

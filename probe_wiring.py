@@ -311,11 +311,12 @@ class LiveProviders:
 
     def _best_quote(self, token: str, side: str, size_eth: float):
         """The shared quoting core: best executable across Aerodrome
-        and Uniswap V3 QuoterV2. Returns a dict with the venue name,
-        amount_out in OUTPUT-token base units, the output token's
-        decimals, and the winning quote's exec params — or None when
-        unquotable. quote_fn and sign_fn both build on this so the
-        gate and the signature see the same numbers."""
+        and Uniswap V3 QuoterV2. Returns (quote_dict, reason) — the dict
+        carries the venue name, amount_out in OUTPUT-token base units, the
+        output token's decimals, and the winning quote's exec params;
+        reason is '' on success and says why when unquotable. quote_fn and
+        sign_fn both build on this so the gate and the signature see the
+        same numbers."""
         dex, cfg = self._ensure_dex()
         client = _RpcClient(self._ensure_chain())
         adapters = [
@@ -337,9 +338,9 @@ class LiveProviders:
             quotes = quoter.quotes(token_in, token_out, size_eth)
         except Exception as exc:  # noqa: BLE001 — quoter revert = unroutable
             log.warning("quote failure (%s %s): %s", side, token, exc)
-            return None
+            return None, f"quoter reverted: {exc}"
         if not quotes:
-            return None
+            return None, "no venue quoted a route"
         # best = highest p0 (reference price per unit in)
         best = max(quotes, key=lambda q: q.p0)
         venue_name = str(getattr(best, "venue", ""))
@@ -368,12 +369,13 @@ class LiveProviders:
             "dec_out": dec_out,
             "dec_in": dec_in,
             "exec_params": dict(getattr(best, "exec_params", {}) or {}),
-        }
+        }, ""
 
     def quote_fn(self, token: str, side: str, size_eth: float):
-        """Returns the executor's Quote shape: (venue, amount_out,
-        implied_price_usd, routable). Best executable across Aerodrome
-        and Uniswap V3 QuoterV2. None → executor treats as unroutable.
+        """Returns (Quote|None, reason) — the executor's Quote shape:
+        (venue, amount_out, implied_price_usd, routable). None plus a
+        reason when unquotable. Best executable across Aerodrome and
+        Uniswap V3 QuoterV2.
 
         W1: implied_price_usd is the TOKEN's USD price on both sides —
         buy (size_eth * eth_usd) / amount_out_units, sell
@@ -381,9 +383,9 @@ class LiveProviders:
         slippage gate compares this against the token median, so it
         must be a token price, not USD-per-ETH.
         """
-        q = self._best_quote(token, side, size_eth)
+        q, reason = self._best_quote(token, side, size_eth)
         if q is None:
-            return None
+            return None, reason or "no executable quote"
         amount_out_units = float(q["amount_out_wei"]) / (10 ** q["dec_out"])
         # eth_usd from the unified chain (W1). A price outage makes the
         # quote unexpressible in USD — unroutable, never a default.
@@ -392,14 +394,15 @@ class LiveProviders:
         except ExecutorError as exc:
             log.warning("eth_usd unavailable for quote (%s %s): %s",
                         side, token, exc)
-            return None
+            return None, f"eth_usd unavailable: {exc}"
         if side == "buy":
             implied_usd = (size_eth * eth_usd) / amount_out_units
         else:
             implied_usd = (amount_out_units / size_eth) * eth_usd
         return pe.Quote(venue=q["venue"],
                         amount_out=float(amount_out_units),
-                        implied_price_usd=float(implied_usd), routable=True)
+                        implied_price_usd=float(implied_usd),
+                        routable=True), ""
 
     # -- RPC reads ---------------------------------------------------------------
 

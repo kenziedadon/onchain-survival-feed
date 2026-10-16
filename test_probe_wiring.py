@@ -225,9 +225,9 @@ def make_executor(tmp, providers, **kw):
         ledger_path=os.path.join(tmp, "ledger.jsonl"),
         posture_fn=lambda: (False, True),   # armed for these tests
         price_fn=lambda t: (PRICE, "ok"),
-        quote_fn=lambda t, s, z: pe.Quote(
+        quote_fn=lambda t, s, z: (pe.Quote(
             venue="aerodrome", amount_out=1000.0,
-            implied_price_usd=PRICE, routable=True),
+            implied_price_usd=PRICE, routable=True), ""),
         sign_fn=None, submit_fn=None,
         balance_fn=providers.balance_fn,
         gas_price_fn=lambda: (0.05, 0.05),
@@ -278,7 +278,8 @@ class TestQuoteImpliedPriceUnits(unittest.TestCase):
                                "exec_params": {}})()]
             with mock.patch.object(providers, "price_fn",
                                    return_value=(ETH_USD, "ok")):
-                return providers.quote_fn(token, side, size_eth)
+                q, _reason = providers.quote_fn(token, side, size_eth)
+                return q
 
     def test_buy_implied_price_is_token_usd(self):
         """A $1 token: 0.0002 ETH (=$0.50) buys 0.5 token units, so
@@ -953,9 +954,9 @@ class TestSignPathThrowawayKeystore(unittest.TestCase):
                 ledger_path=os.path.join(tmp, "ledger.jsonl"),
                 posture_fn=lambda: (False, True),
                 price_fn=lambda t: (PRICE, "ok"),
-                quote_fn=lambda t, s, z: pe.Quote(
+                quote_fn=lambda t, s, z: (pe.Quote(
                     venue="aerodrome", amount_out=1000.0,
-                    implied_price_usd=PRICE, routable=True),
+                    implied_price_usd=PRICE, routable=True), ""),
                 sign_fn=spy_sign, submit_fn=lambda s: {
                     "tx_hash": "0x" + "de" * 32, "block_number": 1,
                     "block_time": NOW, "executed_price_usd": PRICE,
@@ -1382,9 +1383,9 @@ class TestDryRunEndToEnd(unittest.TestCase):
                 poller_state_path="",
                 posture_fn=lambda: (True, False),   # DISARMED
                 price_fn=lambda t: (PRICE, "ok"),   # mock: no live chain
-                quote_fn=lambda t, s, z: pe.Quote(
+                quote_fn=lambda t, s, z: (pe.Quote(
                     venue="aerodrome", amount_out=1000.0,
-                    implied_price_usd=PRICE, routable=True),
+                    implied_price_usd=PRICE, routable=True), ""),
                 sign_fn=providers.sign_fn,
                 submit_fn=providers.submit_fn,
                 balance_fn=providers.balance_fn,
@@ -1444,9 +1445,9 @@ class TestGasJournalOnFailedSequence(unittest.TestCase):
                 ledger_path=os.path.join(tmp, "ledger.jsonl"),
                 posture_fn=lambda: (False, True),
                 price_fn=lambda t: (PRICE, "ok"),
-                quote_fn=lambda t, s, z: pe.Quote(
+                quote_fn=lambda t, s, z: (pe.Quote(
                     venue="uniswap_v3", amount_out=1000.0,
-                    implied_price_usd=PRICE, routable=True),
+                    implied_price_usd=PRICE, routable=True), ""),
                 sign_fn=providers.sign_fn, submit_fn=submit,
                 balance_fn=lambda: 1.0, gas_price_fn=lambda: (0.05, 0.05),
                 nonce_fn=lambda: (5, 5), keystore=ks,
@@ -1859,9 +1860,9 @@ class TestHardBoundaries(unittest.TestCase):
                 ledger_path=os.path.join(tmp, "ledger.jsonl"),
                 posture_fn=lambda: (True, False),
                 price_fn=lambda t: (PRICE, "ok"),
-                quote_fn=lambda t, s, z: pe.Quote(
+                quote_fn=lambda t, s, z: (pe.Quote(
                     venue="aerodrome", amount_out=1000.0,
-                    implied_price_usd=PRICE, routable=True),
+                    implied_price_usd=PRICE, routable=True), ""),
                 sign_fn=providers.sign_fn,
                 submit_fn=providers.submit_fn,
                 keystore=FakeKeystore(), dry_run=True,
@@ -2285,6 +2286,43 @@ class TestDryRunWritesNothing(unittest.TestCase):
         # The property under test: nothing was written.
         self.assertEqual(open(state_path, "rb").read(), before_state)
         self.assertEqual(open(ledger_path, "rb").read(), before_ledger)
+
+
+class TestQuoteReasonThreading(unittest.TestCase):
+    """WO18-2: _quote must return the quoter's own reason, not "".
+
+    The hardcoded "" is why every refusal line read
+    `unroutable (<pick>): ` with nothing after the colon — the quoter knew
+    why and the executor threw the reason away.
+    """
+
+    def _executor(self, **kw):
+        tmp = tempfile.mkdtemp(prefix="wo18_reason_")
+        kw.setdefault("state_path", os.path.join(tmp, "state.json"))
+        kw.setdefault("ledger_path", os.path.join(tmp, "ledger.jsonl"))
+        return pe.ProbeExecutor(**kw)
+
+    def test_quote_threads_quoter_reason(self):
+        ex = self._executor(
+            quote_fn=lambda t, s, z: (None, "no pool on aerodrome or uniswap_v3"))
+        quote, reason = ex._quote(TOKEN, "buy", 0.0005)
+        self.assertIsNone(quote)
+        self.assertEqual(reason, "no pool on aerodrome or uniswap_v3")
+
+    def test_quote_without_quoter_reports_it(self):
+        ex = self._executor(quote_fn=None)
+        quote, reason = ex._quote(TOKEN, "buy", 0.0005)
+        self.assertIsNone(quote)
+        self.assertEqual(reason, "no quoter configured")
+
+    def test_quote_success_reason_is_empty(self):
+        ex = self._executor(
+            quote_fn=lambda t, s, z: (pe.Quote(
+                venue="aerodrome", amount_out=1.0,
+                implied_price_usd=PRICE, routable=True), ""))
+        quote, reason = ex._quote(TOKEN, "buy", 0.0005)
+        self.assertIsNotNone(quote)
+        self.assertEqual(reason, "")
 
 
 if __name__ == "__main__":
