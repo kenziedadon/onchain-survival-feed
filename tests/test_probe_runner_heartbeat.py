@@ -15,8 +15,8 @@ All tests use scratch fixtures in temp dirs. No test contacts a chain,
 a keystore, or starts an executor. The real caps.json is NEVER read or
 written by this suite.
 
-Run: python3 -m pytest tests/test_probe_runner_heartbeat.py -v
-     (system python 3.14 + pytest 9.1.1; the venvs lack pytest)
+Run: .venv/bin/python -m pytest tests/test_probe_runner_heartbeat.py -v
+     (venv Python 3.11.15 + pytest 9.1.1 — bootstrapped via ensurepip)
 """
 from __future__ import annotations
 
