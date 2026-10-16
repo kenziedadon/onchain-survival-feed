@@ -91,6 +91,7 @@ import logging
 import os
 import sys
 import time
+from datetime import datetime, timezone
 
 log = logging.getLogger("probe_wiring")
 
@@ -109,6 +110,27 @@ USDC = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
 # Lane state dir (absolute — the WO1 rule; no CWD-relative paths).
 LANE_DIR = os.path.join(PROJECT_ROOT, "probe_lane")
 GAS_JOURNAL_PATH = os.path.join(LANE_DIR, "gas_journal.jsonl")
+
+# WO16 liveness heartbeat — touched once per runner loop iteration.
+# mtime semantics: the watchdog checks staleness by mtime age. Content is
+# the cycle timestamp (ISO-8601 UTC). A hung cycle produces no touch.
+RUNNER_HEARTBEAT_FILE = os.path.join(PROJECT_ROOT, "probe_runner.heartbeat")
+RUNNER_HEARTBEAT_STALE_S = 5 * 60  # 5 minutes
+
+
+def _touch_heartbeat():
+    """WO16: touch probe_runner.heartbeat to prove the loop is iterating.
+
+    Writes the current UTC timestamp; mtime updates automatically. Best-effort:
+    an OSError here must never crash the runner. A hung cycle (where
+    run_cycle() never returns) produces no touch — that is the liveness signal
+    the watchdog consumes.
+    """
+    try:
+        with open(RUNNER_HEARTBEAT_FILE, "w") as f:
+            f.write(datetime.now(timezone.utc).isoformat() + "\n")
+    except OSError:
+        pass
 
 # ---------------------------------------------------------------------------
 # Calldata signatures + selectors (W2)
@@ -1198,7 +1220,11 @@ def run_runner(ex, interval_s=60.0, max_cycles=None, sleep_fn=None):
     logged and the loop continues (the executor's in-flight recovery is
     built for exactly this). Keystore errors propagate — revocation or
     blindness must stop the runner, not spin against a deleted file
-    forever. sleep_fn is injectable for tests."""
+    forever. sleep_fn is injectable for tests.
+
+    WO16: touches probe_runner.heartbeat after EVERY cycle attempt
+    (success and transient-fault branches alike) — the touch proves the
+    loop is iterating. A hung cycle produces no touch."""
     import time as _time
     if sleep_fn is None:
         sleep_fn = _time.sleep
@@ -1219,10 +1245,12 @@ def run_runner(ex, interval_s=60.0, max_cycles=None, sleep_fn=None):
                 import logging
                 logging.warning("cycle %d failed (transient): %s", cycles + 1, exc)
                 cycles += 1
+                _touch_heartbeat()
                 if max_cycles is None or cycles < max_cycles:
                     sleep_fn(interval_s)
                 continue
             cycles += 1
+            _touch_heartbeat()
             print(json.dumps(summary, indent=2))
             if max_cycles is None or cycles < max_cycles:
                 sleep_fn(interval_s)

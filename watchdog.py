@@ -16,12 +16,20 @@ Provenance: this implementation originated on the PC (deployed 2026-09-22);
 reviewed and fixed in v0.3.0 (2026-09-22):
   - _alert appends to the log instead of read-modify-write (old code crashed
     when the log file did not exist, and was O(n^2) + non-atomic).
-  - heartbeat() now also writes .watchdog_heartbeat (mtime file), because the
-    alert forwarder and dashboard read that path, not watchdog_state.json.
+  - heartbeat() now also writes .watchdog_heartbeat (mtime file), because
+    the alert forwarder and dashboard read that path, not watchdog_state.json.
     The missing write was the cause of the 2026-09-22 stale-heartbeat CRITICAL.
   - _diff_caps redacts values for secret-like keys instead of logging them.
   - _read_caps rejects non-dict JSON instead of crashing later on .get/[]=.
   - .env scan also flags MNEMONIC / SEED_PHRASE, not just RPC_URL / PRIVATE_KEY.
+
+WO16 (2026-10-15): runner liveness heartbeat check.
+  - probe_wiring.py touches probe_runner.heartbeat once per loop iteration.
+  - The watchdog checks staleness (mtime > 5 min) while caps read ARMED.
+  - One alert per stale episode: new staleness + recovery, not every tick.
+  - Staleness while DISARMED is expected (runner stopped) — no alert.
+  - The watchdog NEVER starts, restarts, or signals the runner — alerting
+    only. A restart stays McKenzie-at-the-PC with the passphrase, by design.
 """
 
 import argparse
@@ -40,6 +48,12 @@ ALERT_LOG = BOT_DIR / "logs" / "watchdog_alerts.log"
 STATE_FILE = BOT_DIR / "watchdog_state.json"
 HEARTBEAT_FILE = BOT_DIR / ".watchdog_heartbeat"
 ARM_MARKER = BOT_DIR / ".armed_by_human"
+
+# WO16 — runner liveness heartbeat (probe_wiring.py touches this once per
+# loop iteration).  Staleness while DISARMED is expected (runner stopped);
+# while ARMED, a stale heartbeat means the runner may be hung.
+RUNNER_HEARTBEAT_FILE = BOT_DIR / "probe_runner.heartbeat"
+RUNNER_HEARTBEAT_STALE_S = 5 * 60  # 5 minutes
 
 # Key-name fragments whose values must never appear in an alert or diff.
 REDACT_KEY_PARTS = ("PRIVATE_KEY", "MNEMONIC", "SEED_PHRASE", "SECRET")
@@ -227,6 +241,12 @@ def cmd_check(args):
         _alert("go_live_loop.py.DISABLED is gone")
         alerts += 1
 
+    # WO16: runner liveness heartbeat check (one alert per stale episode)
+    runner_alert = _check_runner_heartbeat()
+    if runner_alert:
+        _alert(runner_alert)
+        alerts += 1
+
     heartbeat()
     if alerts:
         print(f"WATCHDOG: {alerts} alert(s) -- see {ALERT_LOG}", flush=True)
@@ -300,6 +320,74 @@ def _arm_provenance_valid(caps):
     except ValueError:
         return False
     return True
+
+
+def _check_runner_heartbeat():
+    """WO16: check runner liveness heartbeat staleness.
+
+    Returns an alert string or None.  Tracks state in watchdog_state.json
+    so the watchdog alerts ONCE per stale episode — on new staleness and on
+    recovery, not every tick.  Staleness while DISARMED is expected (the
+    runner is stopped); while ARMED, a stale heartbeat means the runner
+    may be hung.
+
+    The watchdog NEVER starts, restarts, or signals the runner — alerting
+    only.  A restart stays McKenzie-at-the-PC with the passphrase, by
+    design.
+    """
+    hb_path = RUNNER_HEARTBEAT_FILE
+    now = datetime.now(timezone.utc)
+
+    # Check staleness
+    if hb_path.exists():
+        mtime = datetime.fromtimestamp(hb_path.stat().st_mtime, tz=timezone.utc)
+        age_s = (now - mtime).total_seconds()
+        is_stale = age_s > RUNNER_HEARTBEAT_STALE_S
+        age_detail = f"age {age_s:.0f}s"
+    else:
+        is_stale = True  # Missing file = stale (runner not running)
+        age_detail = "file missing"
+
+    # Read caps posture
+    caps = _read_caps()
+    armed = (caps is not None
+              and (caps.get("kill_switch") is not True
+                   or caps.get("live_trading") is True))
+
+    # Read state for tracking (one alert per stale episode)
+    state = {}
+    if STATE_FILE.exists():
+        try:
+            state = json.loads(STATE_FILE.read_text())
+        except ValueError:
+            state = {}
+    was_stale = state.get("runner_heartbeat_was_stale", False)
+
+    # Determine alert
+    if is_stale:
+        if armed:
+            if not was_stale:
+                alert = (f"RUNNER HEARTBEAT STALE: probe_runner.heartbeat "
+                         f"{age_detail} — runner may be hung")
+            else:
+                alert = None  # Already alerted for this episode
+        else:
+            alert = None  # DISARMED: staleness expected
+    else:
+        if was_stale:
+            alert = ("RUNNER HEARTBEAT RECOVERED: probe_runner.heartbeat "
+                     "is fresh again")
+        else:
+            alert = None
+
+    # Update state
+    state["runner_heartbeat_was_stale"] = is_stale
+    try:
+        STATE_FILE.write_text(json.dumps(state, indent=2))
+    except OSError:
+        pass
+
+    return alert
 
 
 def cmd_enforce(args):
