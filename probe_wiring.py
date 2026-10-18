@@ -655,7 +655,7 @@ class LiveProviders:
         data_hex = self._build_calldata(tx)
         tx_dict = {
             "chainId": CHAIN_ID, "nonce": nonce,
-            "gasPrice": w3.eth.gas_price(),
+            "gasPrice": w3.eth.gas_price,
             "gas": _gas_for(tx.function),
             "to": Web3.to_checksum_address(tx.to),
             "value": value_wei,
@@ -697,6 +697,7 @@ class LiveProviders:
             from rlp import decode as _rlp_decode
         except ImportError as exc:  # pragma: no cover - venv dep
             raise ExecutorError("rlp unavailable for tx decoding") from exc
+        from web3 import Web3
         raw = bytes(signed)
         if not raw or raw[0] < 0xC0:
             raise ExecutorError(
@@ -714,7 +715,7 @@ class LiveProviders:
             raise ExecutorError(
                 f"sender recovery failed: {exc}") from exc
         return {
-            "sender": sender.lower(),
+            "sender": Web3.to_checksum_address(sender),
             "to": ("0x" + bytes(to).hex()).lower(),
             "value_wei": int.from_bytes(bytes(value), "big"),
             "data": bytes(data),

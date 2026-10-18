@@ -141,6 +141,7 @@ class FakeW3:
                 def get_transaction_count(inner_self, addr, tag="latest"):
                     return outer._nonce
 
+                @property
                 def gas_price(inner_self):
                     return outer._gas_price
 
@@ -973,6 +974,37 @@ class TestSignPathThrowawayKeystore(unittest.TestCase):
                              "executor hands sign_fn a bytearray")
             self.assertEqual(ks.decrypt_calls, 1)
             self.assertEqual(ks.zeroize_calls, 1)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_gas_price_accessed_as_property_not_method(self):
+        """Regression: web3.py v8.x exposes ``gas_price`` as a @property
+        (returns int), not a method. The live code must read it without
+        parentheses. With the old ``w3.eth.gas_price()`` call, the
+        property's int return value is invoked →
+        ``TypeError: 'int' object is not callable`` — the exact defect
+        that killed all 427 probe picks at the sign step.
+
+        The FakeW3 mock now mirrors web3.py by exposing ``gas_price`` as
+        a @property, so this test would FAIL if the production line
+        reverts to ``()`` — the mock returns an int, and calling it
+        raises the same TypeError."""
+        tmp = tempfile.mkdtemp(prefix="wo10_test_")
+        try:
+            _raw, key_hex, _addr = throwaway_key()
+            providers = make_wiring(tmp, w3=FakeW3(gas_price=42_000_000))
+            providers._decimals = lambda t: 6 if t.lower() == TOKEN.lower() \
+                else 18
+            tx = pe.UnsignedTx(to=pe.WETH, function="deposit",
+                               value_eth=0.0002, amount_in_eth=0.0002,
+                               token=TOKEN, side="buy",
+                               deadline_ts=NOW + 120)
+            signed = providers._build_and_sign(
+                tx, bytearray(bytes.fromhex(key_hex)))
+            d = _decode_signed(signed)
+            self.assertEqual(d["gas"], pw.GAS_BY_FUNCTION["deposit"])
+            # gasPrice must be the int the property returned, not a method
+            self.assertIsInstance(providers._w3.eth.gas_price, int)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -2233,6 +2265,78 @@ class TestAddressChecksumBoundary(unittest.TestCase):
         from web3 import Web3
         cs = Web3.to_checksum_address(self.LOWER)
         self.assertEqual(pw._checksum(cs), cs)
+
+    def test_decode_signed_sender_is_checksummed(self):
+        """WO20: _decode_signed_tx must return a checksummed sender.
+
+        The recovered sender is later passed to w3.eth.get_balance /
+        get_transaction_count as an address argument (via
+        _snapshot_balances -> owner = ctx.get("sender")). web3.py v8
+        raises InvalidAddress on a lowercase address. The old code
+        lowercased the recovered sender (sender.lower()), which then
+        reached get_balance as lowercase and surfaced the exact
+        production error:
+
+            submit: ('web3.py only accepts checksum addresses...',
+                     '0xe7a16be2af1ece8922d9d3ad55c03e29004e540f')
+
+        Fix: sender is checksummed at the decode production point via
+        Web3.to_checksum_address(sender), not per-call-site band-aids.
+
+        This test drives the REAL _build_and_sign with a throwaway key
+        and validates the decoded sender against web3.py v8's own address
+        formatter (using a dummy provider that fails fast — no RPC).
+        Fails on revert: a lowered sender reproduces the production
+        InvalidAddress error string.
+        """
+        from web3 import Web3
+        from web3.exceptions import InvalidAddress
+        from web3.providers import BaseProvider
+        import tempfile
+
+        class _DummyProvider(BaseProvider):
+            """Never connects — lets web3's request-formatter validation
+            run first. A valid (checksummed) address passes the formatter
+            and reaches make_request (→ ConnectionError). A lowercase
+            address is rejected at the formatter with InvalidAddress."""
+            def make_request(self, method, params):
+                raise ConnectionError("dummy provider")
+
+        tmp = tempfile.mkdtemp(prefix="wo20_test_")
+        try:
+            _raw, key_hex, recover_addr = throwaway_key()
+            # wallet in LOWERCASE, exactly as production config holds it
+            providers = make_wiring(
+                tmp, wallet=recover_addr.lower())
+            tx = pe.UnsignedTx(to=pe.WETH, function="deposit",
+                               value_eth=0.0002, amount_in_eth=0.0002,
+                               token=TOKEN, side="buy",
+                               deadline_ts=NOW + 120)
+            signed = providers._build_and_sign(
+                tx, bytearray(bytes.fromhex(key_hex)))
+            decoded = pw.LiveProviders._decode_signed_tx(signed)
+            # The recovered sender must be EIP-55 checksummed.
+            expected = Web3.to_checksum_address(recover_addr)
+            self.assertEqual(decoded["sender"], expected)
+            self.assertNotEqual(decoded["sender"], recover_addr.lower())
+
+            # Validate with web3.py v8's own formatter: the checksummed
+            # sender must pass (→ ConnectionError from dummy, NOT
+            # InvalidAddress). On revert to .lower(), the lowercase
+            # sender raises InvalidAddress and this assertion fires.
+            real_w3 = Web3(_DummyProvider())
+            try:
+                real_w3.eth.get_balance(decoded["sender"])
+            except InvalidAddress as exc:
+                self.fail(
+                    f"decoded sender is not checksummed — web3.py v8 "
+                    f"rejected it with InvalidAddress: {exc}\n"
+                    f"decoded['sender'] = {decoded['sender']!r}\n"
+                    f"expected (checksummed) = {expected!r}")
+            except ConnectionError:
+                pass  # checksum passed validation; provider refused RPC — OK
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 class TestDryRunWritesNothing(unittest.TestCase):
