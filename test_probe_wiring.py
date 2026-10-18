@@ -2339,6 +2339,43 @@ class TestAddressChecksumBoundary(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+class TestPollerInputDefaults(unittest.TestCase):
+    """WO21 §1: a bare `probe_wiring.py --runner` must still load the feed.
+
+    Twice the runner launched with neither poller flag; argparse defaulted
+    both to "", the executor's readers returned {} / [] silently, and the
+    lane ran inert for hours behind a healthy heartbeat.
+
+    The literals below are the canonical paths named by WO21. The code
+    DERIVES them (os.path.join over PROJECT_ROOT and its parent), so these
+    assertions compare derivation against specification — not a constant
+    against itself.
+    """
+
+    CANON_STATE = "/home/kenzodadon/base-trend-bot/copy_trader/state.json"
+    CANON_CLOSES = ("/home/kenzodadon/Grok-muse/handoff/"
+                    "copy-trader-closes/closes.jsonl")
+
+    def test_defaults_resolve_to_canonical_paths(self):
+        args = pw.build_arg_parser().parse_args([])
+        self.assertEqual(args.poller_state, self.CANON_STATE)
+        self.assertEqual(args.poller_closes, self.CANON_CLOSES)
+
+    def test_defaults_are_nonempty_absolute_paths(self):
+        args = pw.build_arg_parser().parse_args([])
+        for name in ("poller_state", "poller_closes"):
+            value = getattr(args, name)
+            self.assertNotEqual(value, "", f"{name} default must not be empty")
+            self.assertTrue(os.path.isabs(value), f"{name} must be absolute")
+
+    def test_explicit_flags_override_defaults(self):
+        args = pw.build_arg_parser().parse_args(
+            ["--poller-state", "/tmp/x.json",
+             "--poller-closes", "/tmp/y.jsonl"])
+        self.assertEqual(args.poller_state, "/tmp/x.json")
+        self.assertEqual(args.poller_closes, "/tmp/y.jsonl")
+
+
 class TestDryRunWritesNothing(unittest.TestCase):
     """WO18-1: a dry-run cycle is observe-only. It must leave the ledger
     and state files it was handed byte-identical — no _append_ledger, no

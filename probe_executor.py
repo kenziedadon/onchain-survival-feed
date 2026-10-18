@@ -77,6 +77,19 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_STATE_PATH = os.path.join(PROJECT_ROOT, "probe_lane_state.json")
 DEFAULT_LEDGER_PATH = os.path.join(PROJECT_ROOT, "probe_ledger.jsonl")
 
+# WO21 canonical poller inputs. probe_wiring's argparse defaults resolve
+# here, so a bare `probe_wiring.py --runner` still loads the feed. Twice
+# observed: the runner launched with neither flag, argparse defaulted both
+# to "", these readers returned {} / [] SILENTLY, and the lane ran inert for
+# hours behind a healthy heartbeat. Derived from PROJECT_ROOT rather than a
+# hardcoded home (WO1 absolute-path rule); the tests pin the resolved values
+# against the exact canonical paths the work order names.
+DEFAULT_POLLER_STATE_PATH = os.path.join(
+    PROJECT_ROOT, "copy_trader", "state.json")
+DEFAULT_POLLER_CLOSES_PATH = os.path.join(
+    os.path.dirname(PROJECT_ROOT), "Grok-muse", "handoff",
+    "copy-trader-closes", "closes.jsonl")
+
 # Posture source: the SAME file the paper stack's arm gate reads (caps.json),
 # read-only here. (risk.load_caps() itself may REWRITE caps.json when it
 # force-disarms; the executor must never write posture, so it reads the
@@ -278,6 +291,10 @@ class ProbeExecutor:
         self.dry_run = dry_run
         self.state = self._load_state()
         self._verified_key = False
+        # WO21: last observed presence per poller input, so the loud-absence
+        # signal fires at startup and on every absent<->present transition
+        # without repeating on every unchanged cycle.
+        self._poller_presence = {}
 
     # -- state persistence (atomic: write-temp + rename) --------------------
 
@@ -312,19 +329,96 @@ class ProbeExecutor:
 
     # -- poller inputs (read-only) -------------------------------------------
 
+    def _poller_input_absence(self, path: str) -> str:
+        """WO21: '' when the input is readable, else why it is absent.
+
+        The two conditions the work order names: an empty path (no flag and
+        no default resolved) and a missing file.
+        """
+        if not path:
+            return "path empty (no --poller-* flag and no default resolved)"
+        if not os.path.exists(path):
+            return f"file missing: {path}"
+        return ""
+
+    def _note_poller_input(self, name: str, path: str, why: str) -> None:
+        """WO21 LOUD ABSENCE - an absent poller input is never silent.
+
+        Emits a `poller_inputs_absent` ledger row (naming the input and why)
+        plus the same line on stderr when the input is observed ABSENT, and
+        on every absent<->present transition. Repeat observations of an
+        unchanged state emit nothing, so a permanently-absent input does not
+        spam the ledger once per cycle.
+
+        A healthy start is deliberately quiet: the work order's acceptance
+        is "the bare command loads the feed and picks flow, OR the loud row
+        fires - never silence", so the row is the failure-side signal. An
+        input that is present on first observation records presence in the
+        tracker and writes nothing.
+
+        A recovery transition (absent -> present) carries the same row type
+        with state="present", so the ledger records the input coming back.
+        That row type for a present state is the work order naming one type
+        for both directions; `state` disambiguates.
+
+        Dry-run: _append_ledger is already a no-op (WO18), so a rehearsal
+        writes nothing while the stderr line still prints.
+        """
+        present = not why
+        prev = self._poller_presence.get(name)
+        if prev is not None and prev == present:
+            return
+        self._poller_presence[name] = present
+        if present and prev is None:
+            return  # healthy start: quiet, no row, no stderr line
+        if present:
+            line = f"poller input present: {name} = {path}"
+        else:
+            line = f"poller input ABSENT: {name} ({why})"
+        print(line, file=sys.stderr)
+        self._append_ledger({
+            "row": "poller_inputs_absent",
+            "input": name,
+            "path": path,
+            "state": "present" if present else "absent",
+            "why": why,
+            "ts": int(self.now_fn()),
+        })
+
+    def _check_poller_inputs(self) -> None:
+        """WO21: evaluate both inputs once at cycle start.
+
+        Called before the posture gate so an absent input is reported even
+        on a cycle that then refuses. The readers below re-evaluate on
+        direct use; the presence tracker makes the two idempotent within an
+        unchanged state.
+        """
+        for name, path in (("open_positions", self.poller_state_path),
+                           ("closes", self.poller_closes_path)):
+            self._note_poller_input(name, path,
+                                    self._poller_input_absence(path))
+
     def _read_poller_open_positions(self) -> dict:
-        """pick_id -> position dict from the paper poller's state file."""
-        if not self.poller_state_path or not os.path.exists(
-                self.poller_state_path):
+        """pick_id -> position dict from the paper poller's state file.
+
+        WO21: absence still returns {} - but loudly, never silently.
+        """
+        why = self._poller_input_absence(self.poller_state_path)
+        self._note_poller_input("open_positions", self.poller_state_path, why)
+        if why:
             return {}
         with open(self.poller_state_path) as f:
             data = json.load(f)
         return data.get("open_positions", {}) or {}
 
     def _read_poller_closes(self) -> list:
-        """Close rows from the paper poller's journal (JSONL)."""
-        if not self.poller_closes_path or not os.path.exists(
-                self.poller_closes_path):
+        """Close rows from the paper poller's journal (JSONL).
+
+        WO21: absence still returns [] - but loudly, never silently.
+        """
+        why = self._poller_input_absence(self.poller_closes_path)
+        self._note_poller_input("closes", self.poller_closes_path, why)
+        if why:
             return []
         rows = []
         with open(self.poller_closes_path) as f:
@@ -1050,6 +1144,9 @@ class ProbeExecutor:
     def run_cycle(self, now: int = None) -> dict:
         """One cycle: consume poller outputs read-only, act, persist."""
         now = int(now if now is not None else self.now_fn())
+        # WO21: report poller-input presence before anything else, so an
+        # absent feed is loud even on a cycle that then refuses on posture.
+        self._check_poller_inputs()
         summary = {"entries": [], "exits": [], "refusals": [],
                    "recovered": []}
 

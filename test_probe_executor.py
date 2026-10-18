@@ -1437,6 +1437,159 @@ class TestCloseRowDedupF3b(unittest.TestCase):
             shutil.rmtree(tmp, ignore_errors=True)
 
 
+class TestPollerInputLoudAbsence(unittest.TestCase):
+    """WO21 §2: an absent poller input is never silent.
+
+    The defect: the readers returned {} / [] when the path was empty or the
+    file missing, so an inert lane looked healthy behind a live heartbeat.
+    Each observation of absence now writes a `poller_inputs_absent` ledger
+    row naming the input and why, plus the same line on stderr. The ledger
+    write is asserted here, not just the return value.
+    """
+
+    ROW = "poller_inputs_absent"
+
+    def _rows(self, ex):
+        return [r for r in read_ledger(ex) if r.get("row") == self.ROW]
+
+    def _read_state(self, ex):
+        err = io.StringIO()
+        with mock.patch("sys.stderr", err):
+            out = ex._read_poller_open_positions()
+        return out, err.getvalue()
+
+    def _read_closes(self, ex):
+        err = io.StringIO()
+        with mock.patch("sys.stderr", err):
+            out = ex._read_poller_closes()
+        return out, err.getvalue()
+
+    def test_missing_file_writes_loud_row(self):
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp)
+            ex.poller_state_path = os.path.join(tmp, "nope.json")
+            out, err = self._read_state(ex)
+            self.assertEqual(out, {}, "still returns {} - but not silently")
+            rows = self._rows(ex)
+            self.assertEqual(len(rows), 1, rows)
+            self.assertEqual(rows[0]["input"], "open_positions")
+            self.assertEqual(rows[0]["state"], "absent")
+            self.assertIn("file missing", rows[0]["why"])
+            self.assertIn("nope.json", rows[0]["why"])
+            self.assertIn("ABSENT", err)
+            self.assertIn("open_positions", err)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_empty_path_writes_loud_row(self):
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp)          # poller_state_path defaults to ""
+            self.assertEqual(ex.poller_state_path, "")
+            out, err = self._read_state(ex)
+            self.assertEqual(out, {})
+            rows = self._rows(ex)
+            self.assertEqual(len(rows), 1, rows)
+            self.assertEqual(rows[0]["input"], "open_positions")
+            self.assertEqual(rows[0]["state"], "absent")
+            self.assertIn("path empty", rows[0]["why"])
+            self.assertIn("ABSENT", err)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_missing_closes_file_writes_loud_row(self):
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp)
+            ex.poller_closes_path = os.path.join(tmp, "nope.jsonl")
+            out, err = self._read_closes(ex)
+            self.assertEqual(out, [])
+            rows = self._rows(ex)
+            self.assertEqual(len(rows), 1, rows)
+            self.assertEqual(rows[0]["input"], "closes")
+            self.assertEqual(rows[0]["state"], "absent")
+            self.assertIn("nope.jsonl", rows[0]["why"])
+            self.assertIn("ABSENT", err)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_absent_then_present_emits_on_both_transitions(self):
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp)
+            path = os.path.join(tmp, "poller.json")
+            ex.poller_state_path = path
+            self._read_state(ex)                      # absent -> row
+            with open(path, "w") as f:
+                json.dump({"open_positions": {}}, f)
+            self._read_state(ex)                      # present -> row
+            rows = self._rows(ex)
+            self.assertEqual([r["state"] for r in rows],
+                             ["absent", "present"], rows)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_repeat_absent_reads_do_not_spam(self):
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp)
+            ex.poller_state_path = os.path.join(tmp, "nope.json")
+            for _ in range(5):
+                self._read_state(ex)
+            self.assertEqual(len(self._rows(ex)), 1,
+                             "unchanged state must not repeat per read")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_present_input_is_quiet_at_startup(self):
+        """The alarm is for absence: a healthy feed writes no row."""
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp)
+            path = os.path.join(tmp, "poller.json")
+            with open(path, "w") as f:
+                json.dump({"open_positions": {}}, f)
+            ex.poller_state_path = path
+            out, err = self._read_state(ex)
+            self.assertEqual(out, {})
+            self.assertEqual(self._rows(ex), [])
+            self.assertEqual(err, "")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_cycle_reports_absence_even_when_posture_refuses(self):
+        """run_cycle checks the inputs BEFORE the posture gate, so a
+        disarmed refusal cannot mask an absent feed."""
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp, posture_fn=lambda: (True, False))
+            ex.poller_state_path = os.path.join(tmp, "nope.json")
+            ex.poller_closes_path = os.path.join(tmp, "nope.jsonl")
+            err = io.StringIO()
+            with mock.patch("sys.stderr", err):
+                summary = ex.run_cycle(NOW)
+            self.assertTrue(summary["refusals"], "posture refused")
+            rows = self._rows(ex)
+            self.assertEqual(sorted(r["input"] for r in rows),
+                             ["closes", "open_positions"])
+            self.assertTrue(all(r["state"] == "absent" for r in rows), rows)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_dry_run_writes_no_row_but_still_prints(self):
+        """WO18 still holds: a rehearsal persists nothing."""
+        tmp = tempfile.mkdtemp(prefix="wo21_test_")
+        try:
+            ex = make_executor(tmp, dry_run=True)
+            ex.poller_state_path = os.path.join(tmp, "nope.json")
+            out, err = self._read_state(ex)
+            self.assertEqual(self._rows(ex), [], "dry-run must not write")
+            self.assertIn("ABSENT", err, "stderr still fires")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class TestExistingSuitesStillGreen(unittest.TestCase):
     """ACCEPTANCE 15 / F5: all four suites — poller, exit-pending,
     arm-gate, probe-keystore — run and their full outputs are captured

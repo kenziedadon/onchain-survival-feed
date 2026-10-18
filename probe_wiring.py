@@ -1306,23 +1306,38 @@ def _run_runner_mode(args, getpass_fn=None, keystore_mod=None, sleep_fn=None):
     return 0
 
 
-def main(argv=None) -> int:
-    """Wiring entry: --dry-run walks a full cycle with the real READ
-    providers wired in, zero sign/submit (posture enforced by the
-    executor itself). --runner loops run_cycle on a cadence with the
-    passphrase entered once at start."""
+def build_arg_parser():
+    """WO21: the parser is its own function so the poller-input defaults
+    are testable without running a cycle."""
     import argparse
-    logging.basicConfig(level=logging.INFO)
     p = argparse.ArgumentParser(description="WO10 probe wiring (build only)")
     p.add_argument("--dry-run", action="store_true")
-    p.add_argument("--poller-state", default="")
-    p.add_argument("--poller-closes", default="")
+    # WO21: these default to the canonical poller inputs. A bare
+    # `probe_wiring.py --runner` (observed twice) defaulted both to "" and
+    # the lane ran inert behind a healthy heartbeat. Explicit flags still
+    # override. build_live_executor() keeps its "" defaults on purpose: a
+    # programmatic caller that passes nothing now trips the executor's
+    # loud-absence row instead of failing silently.
+    p.add_argument("--poller-state", default=pe.DEFAULT_POLLER_STATE_PATH,
+                   help="Paper poller state file (default: canonical path).")
+    p.add_argument("--poller-closes", default=pe.DEFAULT_POLLER_CLOSES_PATH,
+                   help="Paper poller close journal (default: canonical path).")
     p.add_argument("--runner", action="store_true",
                    help="Loop run_cycle on a cadence; passphrase entered once.")
     p.add_argument("--interval", type=float, default=60.0,
                    help="Seconds between cycles in runner mode (default 60).")
     p.add_argument("--max-cycles", type=int, default=None,
                    help="Stop after N cycles in runner mode (default: infinite).")
+    return p
+
+
+def main(argv=None) -> int:
+    """Wiring entry: --dry-run walks a full cycle with the real READ
+    providers wired in, zero sign/submit (posture enforced by the
+    executor itself). --runner loops run_cycle on a cadence with the
+    passphrase entered once at start."""
+    logging.basicConfig(level=logging.INFO)
+    p = build_arg_parser()
     args = p.parse_args(argv)
     if args.runner:
         return _run_runner_mode(args)
