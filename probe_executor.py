@@ -361,6 +361,11 @@ class ProbeExecutor:
         That row type for a present state is the work order naming one type
         for both directions; `state` disambiguates.
 
+        RULED 2026-10-18 (McKenzie, main chat) - upheld as built: no row on a
+        healthy startup (this row is failure-side only), and recovery keeps
+        this type with state="present" rather than splitting into a second
+        type. Do not "fix" either without a new ruling.
+
         Dry-run: _append_ledger is already a no-op (WO18), so a rehearsal
         writes nothing while the stderr line still prints.
         """

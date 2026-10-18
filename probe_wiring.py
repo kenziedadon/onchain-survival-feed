@@ -1317,7 +1317,9 @@ def build_arg_parser():
     # the lane ran inert behind a healthy heartbeat. Explicit flags still
     # override. build_live_executor() keeps its "" defaults on purpose: a
     # programmatic caller that passes nothing now trips the executor's
-    # loud-absence row instead of failing silently.
+    # loud-absence row instead of failing silently. RULED 2026-10-18
+    # (McKenzie, main chat): no canonical-path inheritance there — leave as
+    # built.
     p.add_argument("--poller-state", default=pe.DEFAULT_POLLER_STATE_PATH,
                    help="Paper poller state file (default: canonical path).")
     p.add_argument("--poller-closes", default=pe.DEFAULT_POLLER_CLOSES_PATH,
