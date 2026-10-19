@@ -23,9 +23,11 @@ yields zero valid lines is a loud failure, never a quiet empty result.
 """
 
 import json
+import logging
 import os
 import tempfile
 
+logger = logging.getLogger(__name__)
 
 def _fsync_dir(directory: str) -> None:
     """Best-effort directory fsync (POSIX). Deliberately non-fatal."""
@@ -39,19 +41,46 @@ def _fsync_dir(directory: str) -> None:
         pass
 
 
+def _iter_jsonl_bytes_bytes(path: str):
+    """Yield (line_no, byte_offset, raw_line_bytes) for each line in the file.
+
+    byte_offset is the byte offset of the FIRST byte of the line (0-indexed).
+    Fast byte-level iterator; no JSON parsing. Used by the tolerant read path.
+    """
+    offset = 0
+    line_no = 0
+    with open(path, "rb") as f:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+            line_no += 1
+            yield line_no, offset, line
+            offset += len(line)
+
+
 def atomic_jsonl_append(path: str, record: dict) -> None:
     """Append a single JSON record to discovered.jsonl atomically.
 
-    Reads the existing file, appends the new record, and writes the combined
-    result to a temp file in the same directory, fsyncs it, then renames it
-    over the target. Atomic on POSIX: a crash mid-write leaves either the old
-    file or the new file, never a partial/truncated result.
+    Tolerates a corrupted existing file: bad lines are skipped (logged loudly,
+    one at a time) instead of crashing the whole run. Reads the existing file,
+    appends the new record, and writes the combined result to a temp file in
+    the same directory, fsyncs it, then renames it over the target. Atomic on
+    POSIX: a crash mid-write leaves either the old file or the new file,
+    never a partial/truncated result.
     """
     directory = os.path.dirname(os.path.abspath(path)) or "."
     existing = []
     if os.path.exists(path) and os.path.getsize(path) > 0:
-        with open(path, "r", encoding="utf-8") as f:
-            existing = [json.loads(line) for line in f if line.strip()]
+        # Tolerant read: skip + log loudly on bad lines.
+        for line_no, _offset, raw_line in _iter_jsonl_bytes_bytes(path):
+            line_text = raw_line.decode("utf-8", errors="replace").rstrip("\n").rstrip("\r")
+            if not line_text.strip():
+                continue
+            try:
+                existing.append(json.loads(line_text))
+            except json.JSONDecodeError as e:
+                logger.warning("atomic_jsonl_append: corrupt_line_no=%d error=%s", line_no, e)
     existing.append(record)
 
     fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".discovered-")
@@ -73,12 +102,34 @@ def atomic_jsonl_append(path: str, record: dict) -> None:
 
 
 def atomic_jsonl_append_records(path: str, records: list[dict]) -> None:
-    """Append multiple JSON records atomically (single temp file + rename)."""
+    """Append multiple JSON records atomically.
+
+    Tolerates a corrupted existing file: bad lines are skipped (logged loudly,
+    one at a time) instead of crashing the whole run. Reads the existing file,
+    appends the new records, and writes the combined result to a temp file in
+    the same directory, fsyncs it, then renames it over the target. Atomic on
+    POSIX: a crash mid-write leaves either the old file or the new file,
+    never a partial/truncated result. Unlike atomic_jsonl_write, this does
+    NOT replace existing valid records — it appends.
+    """
     directory = os.path.dirname(os.path.abspath(path)) or "."
+    existing = []
+    if os.path.exists(path) and os.path.getsize(path) > 0:
+        # Tolerant read: skip + log loudly on bad lines.
+        for line_no, _offset, raw_line in _iter_jsonl_bytes_bytes(path):
+            line_text = raw_line.decode("utf-8", errors="replace").rstrip("\n").rstrip("\r")
+            if not line_text.strip():
+                continue
+            try:
+                existing.append(json.loads(line_text))
+            except json.JSONDecodeError as e:
+                logger.warning("atomic_jsonl_append_records: corrupt_line_no=%d error=%s", line_no, e)
+    existing.extend(records)
+
     fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".discovered-")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            for rec in records:
+            for rec in existing:
                 json.dump(rec, f)
                 f.write("\n")
             f.flush()

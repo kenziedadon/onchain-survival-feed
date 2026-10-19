@@ -8,6 +8,7 @@ Costs realistic (fee + slippage-from-liquidity + gas).
 import json, time, urllib.request
 from datetime import datetime, timezone
 from indicators import sma, rsi, roc, eth_usd_price, CANDLE_LIMIT
+from _tolerant_read import iter_jsonl_entries
 
 UA = {"User-Agent": "Mozilla/5.0", "Accept": "application/json;version=20230302"}
 _cache = {}
@@ -36,11 +37,8 @@ def load_coins():
     import os
     coins = []
     last_rec = None
-    if os.path.exists("discovered.jsonl"):
-        with open("discovered.jsonl") as f:
-            for line in f:
-                if line.strip():
-                    last_rec = json.loads(line)   # keep LAST record (most recent scan)
+    for rec in iter_jsonl_entries("discovered.jsonl"):
+        last_rec = rec   # keep LAST record (most recent scan)
     if last_rec:
         coins = last_rec.get("coins", [])
     # keep only ETH-paired, liquid, non-bluechip, NON-STABLE, POSITIVE 24h

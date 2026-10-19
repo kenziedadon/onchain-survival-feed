@@ -10,6 +10,7 @@ New coins from this run (trend_discovery.py @ 2026-08-29T06:14Z):
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
 
 RPC = "https://mainnet.base.org"
 WETH = "0x4200000000000000000000000000000000000006"
@@ -98,8 +99,7 @@ def main():
         "rpc": RPC,
         "coins": results,
     }
-    with open("discovered.jsonl", "a") as f:
-        f.write(json.dumps(record) + "\n")
+    atomic_jsonl_append("discovered.jsonl", record)
     print(f"\nAppended verification record for {len(results)} coins to discovered.jsonl")
 
 

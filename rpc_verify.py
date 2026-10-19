@@ -5,6 +5,7 @@ Verifies pool contract exists (eth_getCode) and token0/token1 match expected pai
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
 
 RPC = "https://mainnet.base.org"
 WETH = "0x4200000000000000000000000000000000000006"
@@ -224,8 +225,7 @@ def main():
             for p in results
         ],
     }
-    with open("discovered.jsonl", "a") as f:
-        f.write(json.dumps(rec) + "\n")
+    atomic_jsonl_append("discovered.jsonl", rec)
     print("Wrote verified records to discovered.jsonl")
 
 

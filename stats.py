@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json, os, sys
 from risk import _live_balance, capital_band, load_state, load_caps
+from _tolerant_read import iter_jsonl_entries
 
 print('=== WALLET ===')
 bal = _live_balance()
@@ -48,9 +49,10 @@ except Exception as e:
 
 print('\n=== LATEST DISCOVERY ===')
 try:
-    with open('discovered.jsonl') as f:
-        for line in f:
-            rec = json.loads(line)
+    recs = list(iter_jsonl_entries('discovered.jsonl'))
+    if not recs:
+        raise FileNotFoundError('discovered.jsonl missing')
+    rec = recs[-1]
     coins = rec.get('coins', [])
     print(f'Coins discovered: {len(coins)}')
     for c in coins[:5]:

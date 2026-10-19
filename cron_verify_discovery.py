@@ -12,6 +12,8 @@ Stdlib only. 1.5s rate limit between RPC calls.
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
+from _tolerant_read import iter_jsonl_entries
 
 RPCS = [
     "https://mainnet.base.org",
@@ -85,17 +87,9 @@ def verify(coin):
 def main():
     # Find the latest discovery record (has "coins" and a "ts", no "verified_by")
     last_disc = None
-    with open(DISCOVERY_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rec = json.loads(line)
-            except Exception:
-                continue
-            if "coins" in rec and "verified_by" not in rec:
-                last_disc = rec
+    for rec in iter_jsonl_entries(DISCOVERY_FILE):
+        if "coins" in rec and "verified_by" not in rec:
+            last_disc = rec
     if not last_disc:
         print("No discovery record found.")
         return
@@ -133,8 +127,7 @@ def main():
         "source_ts": last_disc.get("ts"),
         "coins": out,
     }
-    with open(DISCOVERY_FILE, "a") as f:
-        f.write(json.dumps(record) + "\n")
+    atomic_jsonl_append(DISCOVERY_FILE, record)
     print(f"Wrote verification record ({len(out)} coins) to {DISCOVERY_FILE}")
 
 

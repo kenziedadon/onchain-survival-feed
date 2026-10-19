@@ -7,6 +7,7 @@ Rate limit: 1.5s between RPC calls.
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
 
 RPC_ENDPOINTS = [
     "https://mainnet.base.org",
@@ -89,6 +90,5 @@ print(f"\nVERIFIED {len(verified)}/{len(results)} coins via {USED_RPC[0]}")
 
 out = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) + ".000Z",
        "verified_by": "rpc_verify_scan", "coins": results}
-with open("discovered.jsonl", "a") as f:
-    f.write(json.dumps(out) + "\n")
+atomic_jsonl_append("discovered.jsonl", out)
 print("Appended fresh RPC verification to discovered.jsonl")

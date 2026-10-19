@@ -76,13 +76,12 @@ def verdict(e):
 
 # Load coins same way as grid_search.load_coins()
 import os
+from _tolerant_read import iter_jsonl_entries
 coins = []
 last_rec = None
-if os.path.exists("discovered.jsonl"):
-    with open("discovered.jsonl") as f:
-        for line in f:
-            if line.strip():
-                last_rec = json.loads(line)
+last_rec = None
+for rec in iter_jsonl_entries("discovered.jsonl"):
+    last_rec = rec
 if last_rec:
     coins = last_rec.get("coins", [])
 out = []

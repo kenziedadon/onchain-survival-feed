@@ -32,6 +32,7 @@ from research_harness.base_rpc_data import (_load_pool_snapshots,
                                             select_highest_liquidity_pool)
 from research_harness.strategies.simple_ema_v1 import generate_signals, exit_rule
 from research_harness.no_lookahead import run_guarded, proof_of_no_lookahead
+from _tolerant_read import iter_jsonl_entries
 
 # --- SEAL2 digests ---
 SEAL_DIGESTS = {
@@ -101,15 +102,13 @@ def load_discovered_coins() -> list[dict]:
     """Load coins from discovered.jsonl (the pinned universe source)."""
     coins = []
     seen = set()
-    with open(REPO / "discovered.jsonl") as f:
-        for line in f:
-            rec = json.loads(line.strip())
-            if rec.get("coins") and len(rec["coins"]) > 0:
-                for c in rec["coins"]:
-                    addr = c.get("token_addr") or c.get("address")
-                    if addr and addr not in seen:
-                        seen.add(addr)
-                        coins.append(c)
+    for rec in iter_jsonl_entries(REPO / "discovered.jsonl"):
+        if rec.get("coins") and len(rec["coins"]) > 0:
+            for c in rec["coins"]:
+                addr = c.get("token_addr") or c.get("address")
+                if addr and addr not in seen:
+                    seen.add(addr)
+                    coins.append(c)
     return coins
 
 

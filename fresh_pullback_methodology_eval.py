@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from indicators import CANDLE_LIMIT, sma, rsi, roc
 from backtest import fetch_ohlcv
 from grid_search import bt as grid_bt  # uses entry_roc/ob params
+from _tolerant_read import iter_jsonl_entries
 
 UA = {"User-Agent": "Mozilla/5.0", "Accept": "application/json;version=20230302"}
 
@@ -81,20 +82,18 @@ def load_discovered_coins():
     """Load latest discovery record, return ALL coins (no +2% filter) for eval."""
     import os
     coins = []
-    if os.path.exists("discovered.jsonl"):
-        with open("discovered.jsonl") as f:
-            lines = [json.loads(l) for l in f if l.strip()]
-        if lines:
-            last_rec = lines[-1]
-            for c in last_rec.get("coins", []):
-                if c["liquidity"] < 500000:
-                    continue
-                name_up = c["name"].upper()
-                if "USDC" in name_up or "USDT" in name_up or "DAI" in name_up:
-                    continue
-                if c.get("score", 0) < 35:
-                    continue
-                coins.append(c)
+    lines = list(iter_jsonl_entries("discovered.jsonl"))
+    if lines:
+        last_rec = lines[-1]
+        for c in last_rec.get("coins", []):
+            if c["liquidity"] < 500000:
+                continue
+            name_up = c["name"].upper()
+            if "USDC" in name_up or "USDT" in name_up or "DAI" in name_up:
+                continue
+            if c.get("score", 0) < 35:
+                continue
+            coins.append(c)
     return coins
 
 def main():

@@ -26,6 +26,7 @@ def get(url, timeout=25, retries=5):
             raise
 
 import time
+from _tolerant_read import iter_jsonl_entries
 
 # Load recent backtest results to know winners/losers
 results = json.load(open("backtest_results.json"))
@@ -42,8 +43,7 @@ for r in results:
     name = r['name']
     addr = None
     # Find address from pools
-    for line in open("discovered.jsonl"):
-        rec = json.loads(line)
+    for rec in iter_jsonl_entries("discovered.jsonl"):
         for c in rec.get("coins", []):
             if c["name"] == name:
                 addr = c["address"]

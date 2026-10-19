@@ -4,6 +4,7 @@ Reuses the multi-endpoint RpcClient + verify_pool from rpc_verify.py.
 """
 import json, time, sys, datetime
 from rpc_verify import RpcClient, verify_pool, WETH
+from _atomic_write import atomic_jsonl_append_records
 
 # New coins from this scan run with score > 50 (DRB/WETH).
 NEW_COINS = [
@@ -44,9 +45,7 @@ def main():
         print(f"      token1={v['token1']}")
         print(f"      reason={v['reason']}")
     # Append to discovered.jsonl as a verification record
-    with open("discovered.jsonl", "a") as f:
-        for r in results:
-            f.write(json.dumps(r) + "\n")
+    atomic_jsonl_append_records("discovered.jsonl", results)
     print(f"\nWrote {len(results)} verification record(s) to discovered.jsonl")
     return results
 

@@ -34,6 +34,7 @@ import capital_manager
 import strategy_router
 import debate_gate
 import router_weights
+from _tolerant_read import iter_jsonl_entries
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SWAP_JS = os.path.join(HERE, "swap.js")
@@ -871,13 +872,9 @@ def main():
     # Phase 2: Discover and buy
     print("--- PHASE 2: DISCOVER + BUY ---")
     coins = []
-    if os.path.exists("discovered.jsonl"):
-        with open("discovered.jsonl") as f:
-            for line in f:
-                if line.strip():
-                    entry = json.loads(line)
-                    # Each line is {"ts": "...", "coins": [coin1, coin2, ...]}
-                    coins.extend(entry.get("coins", []))
+    for entry in iter_jsonl_entries("discovered.jsonl"):
+        # Each line is {"ts": "...", "coins": [coin1, coin2, ...]}
+        coins.extend(entry.get("coins", []))
 
     if not coins:
         print("NO COINS: no discovered.jsonl found")

@@ -3,6 +3,7 @@
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
 
 RPC_ENDPOINTS = [
     "https://mainnet.base.org",
@@ -68,6 +69,5 @@ entry = {
 print(f"{NAME:14s} exists={pool_exists} codesize={size} t0={t0} t1={t1} pair_match={pair_match} rpc={USED_RPC[0]}")
 
 out = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) + ".000Z", "verified_by": "rpc_verify", "coins": [entry]}
-with open("discovered.jsonl", "a") as f:
-    f.write(json.dumps(out) + "\n")
+atomic_jsonl_append("discovered.jsonl", out)
 print("Appended VVV verification to discovered.jsonl" if entry["onchain"]["verified"] else "WARNING: VVV NOT verified")

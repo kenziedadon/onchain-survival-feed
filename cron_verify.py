@@ -11,6 +11,8 @@ import json
 import time
 import urllib.request
 import urllib.error
+from _atomic_write import atomic_jsonl_append
+from _tolerant_read import iter_jsonl_entries
 
 WETH = "0x4200000000000000000000000000000000000006".lower()
 TOKEN0_SEL = "0x0dfe1681"
@@ -73,15 +75,8 @@ def verify(pool):
 def main():
     path = "discovered.jsonl"
     rows = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except Exception:
-                pass
+    for rec in iter_jsonl_entries(path):
+        rows.append(rec)
 
     # Build set of already-verified addresses from verified_by entries
     verified_addrs = set()
@@ -152,13 +147,12 @@ def main():
 
     # Append verified_by entries
     if results:
-        with open(path, "a") as f:
-            rec = {
-                "ts": time.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00", time.gmtime()),
-                "verified_by": "rpc_verify",
-                "coins": results,
-            }
-            f.write(json.dumps(rec) + "\n")
+        rec = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00", time.gmtime()),
+            "verified_by": "rpc_verify",
+            "coins": results,
+        }
+        atomic_jsonl_append(path, rec)
         print(f"\nAppended {len(results)} verified entries to discovered.jsonl")
 
     print("\n=== SUMMARY ===")

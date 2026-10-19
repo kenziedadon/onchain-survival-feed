@@ -31,6 +31,7 @@ def get(url, timeout=25, retries=5):
 
 # Re-exported from discovery — single source of truth for pool discovery.
 from discovery import discover_trending, fetch_ohlcv
+from _tolerant_read import iter_jsonl_entries
 
 
 def backtest(candles, fee_bps, liquidity, score=50, trade_eth=0.0005, gas_usd=0.04,
@@ -129,24 +130,22 @@ def main():
     DISCOVERY_CACHE = "discovered.jsonl"
     live_pools = []
     _discovery_ts = None
-    if os.path.exists(DISCOVERY_CACHE):
-        try:
-            with open(DISCOVERY_CACHE) as f:
-                lines = [l.strip() for l in f if l.strip()]
-            if lines:
-                freshest = json.loads(lines[-1])
-                _discovery_ts = datetime.fromisoformat(freshest.get("ts", "").replace("Z", "+00:00"))
-                live_pools = freshest.get("coins", [])
-                ts = freshest.get("ts", "?")
-                print(f"=== DISCOVER TRENDING ETH-PAIRED BASE COINS (v9 — ATR exits) ===")
-                print(f"Filters: stable pairs excluded, vol>$50k momentum regime\n")
-                print(f"(live discovery from {ts} — {len(live_pools)} coins with live momentum)\n")
-                for i, p in enumerate(live_pools[:30]):
-                    print(f"  {i+1:2}. {p['name'][:30]:30} liq=${p['liquidity']:>11,.0f} "
-                          f"fee={p['fee_bps']:.0f}bps score={p['score']}")
-                print()
-        except Exception as e:
-            print(f"  [warn] could not read {DISCOVERY_CACHE}: {e}", file=sys.stderr)
+    try:
+        lines = list(iter_jsonl_entries(DISCOVERY_CACHE))
+        if lines:
+            freshest = lines[-1]
+            _discovery_ts = datetime.fromisoformat(freshest.get("ts", "").replace("Z", "+00:00"))
+            live_pools = freshest.get("coins", [])
+            ts = freshest.get("ts", "?")
+            print(f"=== DISCOVER TRENDING ETH-PAIRED BASE COINS (v9 — ATR exits) ===")
+            print(f"Filters: stable pairs excluded, vol>$50k momentum regime\n")
+            print(f"(live discovery from {ts} — {len(live_pools)} coins with live momentum)\n")
+            for i, p in enumerate(live_pools[:30]):
+                print(f"  {i+1:2}. {p['name'][:30]:30} liq=${p['liquidity']:>11,.0f} "
+                      f"fee={p['fee_bps']:.0f}bps score={p['score']}")
+            print()
+    except Exception as e:
+        print(f"  [warn] could not read {DISCOVERY_CACHE}: {e}", file=sys.stderr)
 
     # Fall back to canonical discover if the cache had nothing.
     if not live_pools:

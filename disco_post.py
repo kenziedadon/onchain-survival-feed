@@ -103,9 +103,9 @@ coins_data.sort(key=lambda x: x["score"], reverse=True)
 
 # Write cache
 from datetime import datetime, timezone
-with open("/home/kenzodadon/base-trend-bot/discovered.jsonl", "a") as f:
-    rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": coins_data}
-    f.write(json.dumps(rec) + "\n")
+from _atomic_write import atomic_jsonl_append
+rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": coins_data}
+atomic_jsonl_append("/home/kenzodadon/base-trend-bot/discovered.jsonl", rec)
 
 print(f"\n=== FINAL: {len(coins_data)} discovered coins written to cache ===")
 for i, c in enumerate(coins_data[:15]):

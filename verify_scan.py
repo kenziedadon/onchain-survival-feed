@@ -3,6 +3,7 @@
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
 
 RPCS = [
     "https://mainnet.base.org",
@@ -65,6 +66,5 @@ for c in PENDING:
 
 record = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime()),
           "verified_by": "verify_scan", "coins": out}
-with open("discovered.jsonl", "a") as f:
-    f.write(json.dumps(record) + "\n")
+atomic_jsonl_append("discovered.jsonl", record)
 print("Wrote verification record to discovered.jsonl")

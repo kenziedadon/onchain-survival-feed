@@ -24,6 +24,7 @@ import time
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
+from _atomic_write import atomic_jsonl_append
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -659,8 +660,7 @@ def write_discovered(signals):
             "ts": datetime.now(timezone.utc).isoformat(),
             "coins": signals,
         }
-        with open(path, "a") as f:
-            f.write(json.dumps(entry) + "\n")
+        atomic_jsonl_append(path, entry)
 
 
 def main():

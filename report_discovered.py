@@ -1,18 +1,11 @@
 import json
 from collections import defaultdict
+from _tolerant_read import iter_jsonl_entries
 
 latest = {}
-with open('/home/kenzodadon/base-trend-bot/discovered.jsonl') as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            rec = json.loads(line)
-            ts = rec.get('ts','')
-            latest[ts] = rec
-        except:
-            pass
+for rec in iter_jsonl_entries('/home/kenzodadon/base-trend-bot/discovered.jsonl'):
+    ts = rec.get('ts','')
+    latest[ts] = rec
 
 if not latest:
     print("[SILENT] - no discovered.jsonl data")

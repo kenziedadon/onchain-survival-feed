@@ -153,7 +153,7 @@ for i, c in enumerate(verified[:15]):
 
 # Write cache
 from datetime import datetime, timezone
-with open("/home/kenzodadon/base-trend-bot/discovered.jsonl", "a") as f:
-    rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": verified}
-    f.write(json.dumps(rec) + "\n")
+from _atomic_write import atomic_jsonl_append
+rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": verified}
+atomic_jsonl_append("/home/kenzodadon/base-trend-bot/discovered.jsonl", rec)
 print(f"\nWrote {len(verified)} coins to discovered.jsonl")

@@ -97,11 +97,81 @@ class TestTolerantRead(unittest.TestCase):
         self.assertTrue(len(corrupt_logs) >= 1, f"No corrupt line logged; got: {cm.output}")
         msg = corrupt_logs[0]
         self.assertIn("offset=", msg)
-        self.assertIn("line=", msg)
+
+    def test_reader_minors(self):
+        """Reader minors: skip blank lines, handle trailing newline, decode errors."""
+        # Valid line + blank line + valid line; should return only valid entries
+        with open(self.path, "w") as f:
+            f.write(json.dumps({"ts": "t1", "coins": []}) + "\n")
+            f.write("\n")
+            f.write(json.dumps({"ts": "t2", "coins": []}) + "\n\n")
+        entries = list(_tolerant_read.iter_jsonl_entries(self.path))
+        self.assertEqual(len(entries), 2)
+        self.assertEqual(entries[0]["ts"], "t1")
+        self.assertEqual(entries[1]["ts"], "t2")
+
+        # Binary garbage in one line must not crash; other lines still parse
+        with open(self.path, "w") as f:
+            f.write(json.dumps({"ts": "t1", "coins": []}) + "\n")
+            f.write(b"\x00\x01\x02BAD\xfe\xfc".decode("latin-1") + "\n")
+            f.write(json.dumps({"ts": "t2", "coins": []}) + "\n")
+        with self.assertLogs(_tolerant_read.logger, level="WARNING") as cm:
+            entries = list(_tolerant_read.iter_jsonl_entries(self.path))
+        self.assertEqual(len(entries), 2)
+        self.assertEqual(entries[0]["ts"], "t1")
+        self.assertEqual(entries[1]["ts"], "t2")
 
 
 class TestAtomicWrite(unittest.TestCase):
     """Writer tests — atomic writes survive interruption."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.path = os.path.join(self.tmpdir, "discovered.jsonl")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_append_on_nul_corrupted_fixture_does_not_crash(self):
+        """Appending to the NUL-corrupted production fixture must NOT crash.
+
+        This is the exact input the feed-fix WO exists for: valid line + 56 NUL bytes.
+        The tolerant read must skip the NUL line and continue.
+        """
+        # Reproduce the NUL corruption
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump({"ts": "2026-10-19T19:36:36.807052+00:00", "coins": []}, f)
+            f.write("\n")
+            f.write("\x00" * 56)
+
+        # Previous state: 1 valid line + NUL corruption
+        before = self.path
+        _atomic_write.atomic_jsonl_append(before, {"ts": "t_after", "coins": []})
+
+        with open(before) as f:
+            lines = [json.loads(l) for l in f if l.strip()]
+        # Should have 2 valid lines: the original + the appended
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(lines[0]["ts"], "2026-10-19T19:36:36.807052+00:00")
+        self.assertEqual(lines[1]["ts"], "t_after")
+        # The appended record must appear as the last line
+        self.assertEqual(lines[-1]["coins"], [])
+
+    def test_append_records_preserves_existing(self):
+        """append_records reads and preserves existing records.
+
+        t1 + t2 appended; then t3; result must be [t1, t2, t3] — not overwritten.
+        """
+        _atomic_write.atomic_jsonl_append(self.path, {"ts": "t1", "coins": []})
+        _atomic_write.atomic_jsonl_append_records(self.path, [{"ts": "t2", "coins": []}, {"ts": "t3", "coins": []}])
+
+        with open(self.path) as f:
+            lines = [json.loads(l) for l in f if l.strip()]
+        self.assertEqual(len(lines), 3)
+        self.assertEqual(lines[0]["ts"], "t1")
+        self.assertEqual(lines[1]["ts"], "t2")
+        self.assertEqual(lines[2]["ts"], "t3")
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()

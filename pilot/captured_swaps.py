@@ -54,6 +54,7 @@ from seal2_scorer import (
     save_counter,
 )
 from research_harness.costs import CostModel
+from _tolerant_read import iter_jsonl_entries
 
 # --- config ---------------------------------------------------------------
 TEST_NAME = "captured_swaps"
@@ -304,22 +305,17 @@ def main():
         pilot_coins = manifest["coins"]
     else:
         pilot_coins = []
-        with open(REPO / "discovered.jsonl") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                rec = json.loads(line)
-                if rec.get("coins"):
-                    for c in rec["coins"]:
-                        addr = c.get("token_addr") or c.get("address")
-                        if addr:
-                            pilot_coins.append({"token_addr": addr,
-                                                "name": c.get("name", "unknown")})
-                        if len(pilot_coins) >= 3:
-                            break
-                if len(pilot_coins) >= 3:
-                    break
+        for rec in iter_jsonl_entries(REPO / "discovered.jsonl"):
+            if rec.get("coins"):
+                for c in rec["coins"]:
+                    addr = c.get("token_addr") or c.get("address")
+                    if addr:
+                        pilot_coins.append({"token_addr": addr,
+                                            "name": c.get("name", "unknown")})
+                    if len(pilot_coins) >= 3:
+                        break
+            if len(pilot_coins) >= 3:
+                break
 
     print(f"[pilot] writing {len(pilot_coins)} pilot coins")
     manifest = build_manifest(pilot_coins)

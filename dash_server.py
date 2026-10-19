@@ -3,6 +3,7 @@
 import json, os, time
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
+from _tolerant_read import iter_jsonl_entries
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE)
@@ -16,13 +17,8 @@ def read_json(name, default=None):
 
 def read_last_jsonl(name):
     try:
-        with open(os.path.join(BASE, name)) as f:
-            rec = None
-            for line in f:
-                line = line.strip()
-                if line:
-                    rec = json.loads(line)
-        return rec or {}
+        recs = list(iter_jsonl_entries(os.path.join(BASE, name)))
+        return recs[-1] if recs else {}
     except Exception:
         return {}
 

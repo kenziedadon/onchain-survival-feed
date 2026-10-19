@@ -3,6 +3,7 @@
 import json
 import time
 import urllib.request
+from _atomic_write import atomic_jsonl_append
 
 RPC = "https://mainnet.base.org"
 
@@ -74,8 +75,7 @@ def main():
         }]
     }
     # append verified result as a single JSONL line
-    with open("discovered.jsonl", "a") as f:
-        f.write(json.dumps(result) + "\n")
+    atomic_jsonl_append("discovered.jsonl", result)
     print(json.dumps(result, indent=2))
     return result
 

@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import time
+from _atomic_write import atomic_jsonl_append
 
 # Latest discovery from line 113
 pool_address = "0xc211e1f853a898bd1302385ccde55f33a8c4b3f3"
@@ -105,7 +106,6 @@ verify_entry = {
     }]
 }
 
-with open("/home/kenzodadon/base-trend-bot/discovered.jsonl", "a") as f:
-    f.write(json.dumps(verify_entry) + "\n")
+atomic_jsonl_append("/home/kenzodadon/base-trend-bot/discovered.jsonl", verify_entry)
 
 print("\nAppended verification to discovered.jsonl")

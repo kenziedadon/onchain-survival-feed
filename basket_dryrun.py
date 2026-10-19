@@ -12,6 +12,7 @@ the basket is net-positive AFTER gas (which is the whole point at micro size).
 """
 import json, os, time, urllib.request
 from datetime import datetime, timezone
+from _tolerant_read import iter_jsonl_entries
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UA = {"User-Agent": "Mozilla/5.0", "Accept": "application/json;version=20230302"}
@@ -43,13 +44,7 @@ def eth_usd():
 def latest_scan_coins():
     """Read the most recent discovered.jsonl record (basket universe)."""
     import glob
-    recs = []
-    if os.path.exists(os.path.join(HERE, "discovered.jsonl")):
-        with open(os.path.join(HERE, "discovered.jsonl")) as f:
-            for line in f:
-                if line.strip():
-                    try: recs.append(json.loads(line))
-                    except: pass
+    recs = list(iter_jsonl_entries(os.path.join(HERE, "discovered.jsonl")))
     return recs[-1].get("coins", []) if recs else []
 
 def basket_from_backtest():

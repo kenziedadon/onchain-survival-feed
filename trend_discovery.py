@@ -40,6 +40,7 @@ MIN_VOL_24H = 25_000        # USD; matches caps.json min_vol_24h_usd
 
 from discovery import discover_trending as _canonical_discover
 from rpc_verify import RpcClient, verify_pool
+from _atomic_write import atomic_jsonl_append
 
 # FOMO MCP integration — social-trading signal source
 # Source .env BEFORE importing fomo_client (it reads API_KEY at module level)
@@ -708,9 +709,8 @@ def main():
     except Exception as e:
         print(f"  [warn] token grading unavailable: {e}", file=sys.stderr)
 
-    with open(CACHE, "a") as f:
-        rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": coins}
-        f.write(json.dumps(rec) + "\n")
+    rec = {"ts": datetime.now(timezone.utc).isoformat(), "coins": coins}
+    atomic_jsonl_append(CACHE, rec)
     print(f"\nWrote {len(coins)} discovered coins to {CACHE}")
     return coins
 

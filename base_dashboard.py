@@ -17,6 +17,7 @@ import os
 import glob
 from datetime import datetime, timezone
 from pathlib import Path
+from _tolerant_read import iter_jsonl_entries
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -31,14 +32,7 @@ def load_json(path):
 def load_jsonl(path):
     items = []
     try:
-        with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    try:
-                        items.append(json.loads(line))
-                    except Exception:
-                        pass
+        items = list(iter_jsonl_entries(path))
     except Exception:
         pass
     return items

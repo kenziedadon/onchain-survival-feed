@@ -8,6 +8,7 @@ import json
 import sys
 import os
 import urllib.request
+from _tolerant_read import iter_jsonl_entries
 
 STATE_FILE = "scout_state.json"
 HOLDINGS_FILE = "holdings.json"
@@ -102,21 +103,15 @@ def _load_dynamic_targets():
             pass
 
     # Include any tokens discovered by the bot but not yet bought
-    if os.path.exists(DISCOVERED_FILE):
-        try:
-            with open(DISCOVERED_FILE, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    data = json.loads(line)
-                    for coin in data.get("coins", []):
-                        addr = coin.get("token_addr") or coin.get("address")
-                        name = coin.get("name", addr)
-                        if addr:
-                            targets[addr] = f"DISC:{name}"
-        except Exception:
-            pass
+    try:
+        for data in iter_jsonl_entries(DISCOVERED_FILE):
+            for coin in data.get("coins", []):
+                addr = coin.get("token_addr") or coin.get("address")
+                name = coin.get("name", addr)
+                if addr:
+                    targets[addr] = f"DISC:{name}"
+    except Exception:
+        pass
 
     return targets
 

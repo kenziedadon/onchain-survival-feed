@@ -1,8 +1,9 @@
 """Backtest the exact 12 coins from the latest discovered.jsonl through v8 engine."""
 import json, time
 from backtest import fetch_ohlcv, backtest, CANDLE_LIMIT
+from _tolerant_read import iter_jsonl_entries
 
-pools = [json.loads(l) for l in open('discovered.jsonl')][-1]['coins']
+pools = list(iter_jsonl_entries('discovered.jsonl'))[-1]['coins']
 print(f"=== v8 BACKTEST — {len(pools)} discovered Base pools ===\n")
 res, skipped = [], []
 for p in pools:
