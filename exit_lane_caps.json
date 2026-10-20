@@ -1,0 +1,18 @@
+{
+  "kill_switch": true,
+  "live_trading": false,
+  "slippage_bps": 300,
+  "sell_only": true,
+  "output_asset": "ETH",
+  "allowed_tokens": ["0x5ab000ff9b9ffe0349ce5ffa5fd86f217c3680f5"],
+  "allowed_routers": ["0x2626664c2603336e57b271c5c0b26f421741e481"],
+  "max_trade_eth": 0.0005,
+  "positions": {
+    "STONKEX": {
+      "token": "0x5ab000ff9b9ffe0349ce5ffa5fd86f217c3680f5",
+      "pool": "0x7692acc1cdd771d09ebcae3663e1843b2911bec7",
+      "held": 447.1503235
+    }
+  },
+  "note": "EXIT LANE CAPS — separate from probe caps.json. Probe caps.json is never read or inherited. Kill switch default ON (disarmed)."
+}
