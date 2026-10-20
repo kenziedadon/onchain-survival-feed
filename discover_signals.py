@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from signals import scan_opportunities
+from _atomic_write import atomic_jsonl_write
 
 BASE_DIR = Path(__file__).resolve().parent
 OUT_PATH = BASE_DIR / "discovered.jsonl"
@@ -38,7 +39,7 @@ def main():
         return
 
     # Write as JSONL
-    lines = []
+    entries = []
     for opp in opportunities:
         entry = {
             "name": opp.get("token_symbol", "?"),
@@ -56,14 +57,13 @@ def main():
             "ts": datetime.now(timezone.utc).isoformat(),
             "source": "signals_scanner",
         }
-        lines.append(json.dumps(entry))
+        entries.append(entry)
 
-    OUT_PATH.write_text("\n".join(lines) + "\n")
-    print(f"Wrote {len(lines)} opportunities to {OUT_PATH.name}")
-    for line in lines[:5]:
-        obj = json.loads(line)
-        print(f"  {obj['name']} score={obj['score']:.1f} liq=${obj['liquidity_usd']:,.0f} "
-              f"vol=${obj['volume_24h_usd']:,.0f} chg5m={obj['price_change_5m']:.1f}%")
+    atomic_jsonl_write(str(OUT_PATH), entries)
+    print(f"Wrote {len(entries)} opportunities to {OUT_PATH.name}")
+    for entry in entries[:5]:
+        print(f"  {entry['name']} score={entry['score']:.1f} liq=${entry['liquidity_usd']:,.0f} "
+              f"vol=${entry['volume_24h_usd']:,.0f} chg5m={entry['price_change_5m']:.1f}%")
 
 
 if __name__ == "__main__":

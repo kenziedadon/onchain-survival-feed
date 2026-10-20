@@ -7,6 +7,7 @@ Does NOT touch: swap.js, caps.json, shadow_book.json, risk_state.json.
 Re-checks kill_switch before running; aborts if not armed.
 """
 import json, os, pathlib, datetime, shutil
+from _atomic_write import atomic_jsonl_strings_write
 
 HERE = pathlib.Path(__file__).resolve().parent
 TS = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
@@ -43,7 +44,7 @@ def main():
     removed_dj = before_lines - len(kept)
     backup = dj.with_suffix(f".jsonl.bak.{TS}")
     shutil.copy(dj, backup)
-    dj.write_text("\n".join(kept) + ("\n" if kept else ""))
+    atomic_jsonl_strings_write(str(dj), kept)
 
     # --- scout_state.json (dict keyed by token address) ---
     ss = HERE / "scout_state.json"
